@@ -18,11 +18,11 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 lg:px-14 h-[72px] flex items-center justify-between">
         <Link href="/" aria-label="IgireVerify Home">
           <Image
-            src="/logo-igire.webp"
+            src="/Real.png"
             alt="IgireVerify Logo"
-            width={52}
-            height={52}
-            className="rounded-lg shadow-md"
+            width={56}
+            height={56}
+            className="h-14 w-14 object-contain bg-transparent"
             priority
           />
         </Link>

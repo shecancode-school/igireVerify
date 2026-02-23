@@ -19,6 +19,7 @@ export default function CTASection() {
                        uppercase px-16 py-5 rounded-lg transition-all duration-200
                        hover:-translate-y-1 active:scale-95"
             style={{ background: "#C47D0E", boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}>
+              
         GET STARTED
       </Link>
     </section>
