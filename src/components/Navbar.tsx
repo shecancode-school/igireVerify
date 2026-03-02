@@ -9,20 +9,20 @@ export default function Navbar() {
   const links = [
     { label: "Home", href: "/" },
     { label: "How it Works", href: "#how-it-works" },
-    { label: "Register", href: "#register" },
-  
+    { label: "Register", href: "/register" },
+    
   ];
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-6 lg:px-14 h-[72px] flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 h-[64px] flex items-center justify-between">
         <Link href="/" aria-label="IgireVerify Home">
           <Image
             src="/Real.png"
             alt="IgireVerify Logo"
-            width={56}
-            height={56}
-            className="h-14 w-14 object-contain bg-transparent"
+            width={48}
+            height={48}
+            className="h-12 w-12 object-contain"
             priority
           />
         </Link>
@@ -50,6 +50,7 @@ export default function Navbar() {
             <Link key={label} href={href}
                   className="font-semibold text-gray-900 hover:text-[#2E7D32]"
                   onClick={() => setOpen(false)}>
+                  
               {label}
             </Link>
           ))}

@@ -21,3 +21,157 @@ html { scroll-behavior: smooth; }
 }
 .animate-fade-up { animation: fadeUp 0.65s ease both; }
 .animate-fade-up-delay { animation: fadeUp 0.65s 0.15s ease both; }
+
+
+
+/* 1. Fade In - Welcome Text */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 2. Zoom + Rotate - Logo */
+@keyframes zoomRotate {
+  0% {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1) rotate(10deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-zoom-rotate {
+  animation: zoomRotate 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+
+/* 3. Pulsing Glow - Logo Background */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+/* 4. Slide Up Delayed - IRO Text */
+@keyframes slideUpDelayed {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up-delayed {
+  animation: slideUpDelayed 1s ease-out 1.2s both;
+}
+
+/* 5. Fade In Slow - Loading Bar */
+@keyframes fadeInSlow {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in-slow {
+  animation: fadeInSlow 1s ease-in 1.8s both;
+}
+
+/* 6. Loading Bar Progress */
+@keyframes loadingBar {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.animate-loading-bar {
+  animation: loadingBar 3.5s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both;
+}
+
+/* 7. Floating Particles */
+@keyframes float1 {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate(20px, -30px);
+    opacity: 0.8;
+  }
+}
+
+@keyframes float2 {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(-30px, 20px);
+    opacity: 0.7;
+  }
+}
+
+@keyframes float3 {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(25px, 25px);
+    opacity: 0.9;
+  }
+}
+
+.animate-float-1 {
+  animation: float1 4s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: float2 5s ease-in-out infinite;
+}
+
+.animate-float-3 {
+  animation: float3 6s ease-in-out infinite;
+}
+
+/* 8. Mobile Optimizations */
+@media (max-width: 768px) {
+  .animate-zoom-rotate {
+    animation-duration: 1.2s;
+  }
+  
+  .animate-slide-up-delayed {
+    animation-delay: 0.9s;
+  }
+}

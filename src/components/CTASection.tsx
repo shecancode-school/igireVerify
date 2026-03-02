@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function CTASection() {
   return (
     <section id="register" className="py-20 px-6 lg:px-14 text-center"
-             style={{ background: "#2E7D32" }}>
+             style={{ background: "#004720" }}>
       <h2 className="font-black text-white tracking-tight mb-5"
           style={{ fontSize: "clamp(28px, 4vw, 44px)" }}>
         Get Started on IgireVerify

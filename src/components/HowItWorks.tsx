@@ -2,28 +2,28 @@ const steps = [
   {
     num: 1, reverse: false,
     title: "GPS Location Verification",
-    icon: "🗺️", visualLabel: "GPS Location Verification",
+    icon: "", visualLabel: "GPS Location Verification",
     badge: null,
     desc: <>The system will verify that the user by the time of check-in is at the <strong>IGIRE RWANDA ORGANISATION</strong>&apos;s premises. If not, the system will deny continuing to the next step.</>,
   },
   {
     num: 2, reverse: true,
     title: "Live Camera Capture",
-    icon: "📸", visualLabel: "Live Camera Capture",
+    icon: "", visualLabel: "Live Camera Capture",
     badge: "Identity Confirmed",
     desc: <>Once the location is verified, <strong>Camera</strong> will be enabled for the user to take the live photo during the scheduled time.</>,
   },
   {
     num: 3, reverse: false,
     title: "AI Face Verification",
-    icon: "🤖", visualLabel: "AI Face Verification",
+    icon: "", visualLabel: "AI Face Verification",
     badge: "Match Found",
     desc: <>After capturing your image, the integrated AI will scan your face to check if it&apos;s the right person and save it in the system.</>,
   },
   {
     num: 4, reverse: true,
     title: "Time Window Validation",
-    icon: "⏰", visualLabel: "Time Window Validation",
+    icon: "", visualLabel: "Time Window Validation",
     badge: "Validated & Locked",
     desc: <>The system validates that check-in/out is done within the scheduled time window. This prevents early/late check-ins and ensures accurate attendance records.</>,
   },
@@ -60,7 +60,7 @@ export default function HowItWorks() {
               <p className="font-semibold text-[14px] text-gray-600">{step.visualLabel}</p>
               {step.badge && (
                 <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ background: "#F0F7F0" }}>
-                  <span>✅</span>
+                  <span></span>
                   <span className="text-[12px] font-semibold" style={{ color: "#2E7D32" }}>{step.badge}</span>
                 </div>
               )}

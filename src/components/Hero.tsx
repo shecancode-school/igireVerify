@@ -12,7 +12,7 @@ export default function Hero() {
       <div className="flex-1 max-w-[480px] w-full animate-fade-up">
         <h1 className="font-black leading-[1.1] tracking-tighter mb-8"
             style={{ fontSize: "clamp(56px, 8vw, 82px)", letterSpacing: "-0.02em" }}>
-          <span style={{ color: "rgb(255, 157, 0)" }}>Igire</span>
+          <span style={{ color: "#C47D0E" }}>Igire</span>
           <span style={{ color: "#2E7D32" }}>Verify</span>
         </h1>
         <p className="text-[16px] leading-[1.8] text-gray-700">
