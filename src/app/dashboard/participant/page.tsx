@@ -4,12 +4,10 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
 import ProgramCard from "@/components/dashboard/ProgramCard";
 import AttendanceStats from "@/components/dashboard/AttendanceStats";
+import AttendanceHistory from "@/components/dashboard/AttendanceHistory";
 import AttendanceChart from "@/components/dashboard/AttendanceChart";
-import RequirementsBanner from "@/components/dashboard/RequirementsBanner"; 
-import DashboardFooter from "@/components/dashboard/DashboardFooter";
 
 export default function ParticipantDashboard() {
-
   const userData = {
     userName: "Alice Uwera",
     programName: "Web fundamentals",
@@ -23,14 +21,12 @@ export default function ParticipantDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-[#F5F5F5] flex">
       
-
       <Sidebar />
 
       <div className="flex-1 ml-[120px]">
         
-    
         <TopBar
           userName={userData.userName}
           programName={userData.programName}
@@ -40,26 +36,38 @@ export default function ParticipantDashboard() {
           currentTime={userData.currentTime}
         />
 
-      
-        <main className="px-12 py-8 space-y-10 bg-white min-h-screen">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            <div className="lg:col-span-5">
+        {/* CENTERED CONTENT WITH FREE SPACE ON SIDES */}
+        <main className="px-16 py-8 max-w-[1400px]">
+          
+          {/* Row 1: Program Card (LEFT) + Attendance Chart (RIGHT) */}
+          <div className="grid grid-cols-12 gap-6 mb-8">
+            {/* Program Card - Takes 5 columns */}
+            <div className="col-span-5">
               <ProgramCard programName={userData.programName} />
             </div>
-            <div className="lg:col-span-7">
+            
+            {/* Attendance Chart - Takes 7 columns */}
+            <div className="col-span-7">
               <AttendanceChart />
             </div>
           </div>
 
-          <AttendanceStats
-            daysAttended={userData.daysAttended}
-            pendingAlerts={userData.pendingAlerts}
-            missedDays={userData.missedDays}
-          />
+          {/* Row 2: Attendance Stats - 3 cards */}
+          <div className="mb-8">
+            <AttendanceStats
+              daysAttended={userData.daysAttended}
+              pendingAlerts={userData.pendingAlerts}
+              missedDays={userData.missedDays}
+            />
+          </div>
 
-          <RequirementsBanner />
-
-          <DashboardFooter />
+          {/* Row 3: Attendance History - Takes only LEFT half */}
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-7">
+              <AttendanceHistory />
+            </div>
+            {/* Right side is FREE SPACE */}
+          </div>
 
         </main>
       </div>

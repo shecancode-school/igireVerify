@@ -49,7 +49,7 @@ export default function WhySection() {
                        hover:-translate-y-1 hover:shadow-xl transition-all duration-300"
             style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
           >
-            {/* Icon circle with SVG */}
+    
             <div
               className="w-[80px] h-[80px] rounded-full flex items-center justify-center
                          mx-auto mb-6 transition-colors duration-300"
@@ -58,7 +58,7 @@ export default function WhySection() {
               <FeatureIcon name={f.icon} />
             </div>
 
-            {/* Title */}
+    
             <h3
               className="font-bold text-[17px] mb-3 leading-snug"
               style={{ color: "#C47D0E" }}
@@ -66,7 +66,7 @@ export default function WhySection() {
               {f.title}
             </h3>
 
-            {/* Description */}
+        
             <p className="text-[14px] leading-[1.7] text-gray-600">{f.desc}</p>
           </div>
         ))}
@@ -75,9 +75,6 @@ export default function WhySection() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   ICON COMPONENT
-═══════════════════════════════════════════════════════════ */
 
 function FeatureIcon({ name }: { name: string }) {
   const iconColor = "#2E7D32";

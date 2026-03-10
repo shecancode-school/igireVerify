@@ -37,7 +37,8 @@ export default function HowItWorks() {
         How &nbsp;<span style={{ color: "#C47D0E" }}>Igire</span><span style={{ color: "#2E7D32" }}>Verify</span>&nbsp; Works
       </h2>
       <p className="text-center text-gray-400 text-[16px] leading-[1.75] max-w-[660px] mx-auto mb-16">
-        Attendance is verified using GPS, live camera capture, AI verification, and human review.
+        Attendance is verified using GPS, live camera capture, AI verification, and human review. Here is 
+        step by step process of how it works:
       </p>
 
       <div className="max-w-4xl mx-auto flex flex-col">

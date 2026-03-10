@@ -1,5 +1,3 @@
-
-
 export default function TopBar({ 
   userName = "Alice Uwera",
   programName = "Web fundamentals",

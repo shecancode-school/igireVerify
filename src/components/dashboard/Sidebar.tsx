@@ -1,5 +1,4 @@
-// src/components/dashboard/Sidebar.tsx
-// Left navigation sidebar for participant dashboard
+
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -53,7 +52,9 @@ export default function Sidebar() {
   );
 }
 
-/* Icon Component */
+
+
+
 function NavIcon({ name, active }: { name: string; active: boolean }) {
   const color = "#FFFFFF";
   const strokeWidth = active ? "2.5" : "2";
