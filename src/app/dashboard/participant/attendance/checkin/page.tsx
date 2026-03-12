@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
 
@@ -82,13 +83,14 @@ export default function CheckInPage() {
             setCameraStatus("active");
           };
         }
-      } catch (error: any) {
-        console.error("Camera error:", error);
+      } catch (error: unknown) {
+        const cameraError = error instanceof Error ? error : new Error(String(error));
+        console.error("Camera error:", cameraError);
         setCameraStatus("error");
         
-        if (error.name === "NotAllowedError") {
+        if (cameraError.name === "NotAllowedError") {
           setCameraError("Camera permission denied. Please allow camera access.");
-        } else if (error.name === "NotFoundError") {
+        } else if (cameraError.name === "NotFoundError") {
           setCameraError("No camera found on your device.");
         } else {
           setCameraError("Failed to access camera. Please try again.");
@@ -352,9 +354,10 @@ export default function CheckInPage() {
             <div className="relative w-full max-w-md mx-auto mb-6">
               <div className="aspect-[4/3] bg-black rounded-xl overflow-hidden relative">
                 {cameraStatus === "captured" && capturedImage ? (
-                  <img 
+                  <Image
                     src={capturedImage} 
                     alt="Captured" 
+                    fill
                     className="w-full h-full object-cover"
                   />
                 ) : (

@@ -352,11 +352,13 @@ export default function CheckInPage() {
             <div className="relative w-full max-w-md mx-auto mb-6">
               <div className="aspect-[4/3] bg-black rounded-xl overflow-hidden relative">
                 {cameraStatus === "captured" && capturedImage ? (
-                  <img 
+
+                  <Image>
                     src={capturedImage} 
                     alt="Captured" 
                     className="w-full h-full object-cover"
-                  />
+                  </Image>
+
                 ) : (
                   <video
                     ref={videoRef}

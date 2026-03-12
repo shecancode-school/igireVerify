@@ -1,9 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Link from "next/link";
 
-export default function HRDashboard() {
+export default function AttendanceManagementHub() {
+  const router = useRouter();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const handleLogout = () => {
@@ -14,28 +15,29 @@ export default function HRDashboard() {
     <div className="min-h-screen bg-white flex">
       {/* Sidebar */}
       <aside className="w-[160px] bg-[#7FAF8C] fixed left-0 top-0 h-screen flex flex-col items-center py-8">
-        {/* Logo */}
         <div className="mb-12">
           <h1 className="font-black text-2xl text-white">
             Igire<span className="text-[#C47D0E]">Verify</span>
           </h1>
         </div>
 
-        {/* Nav Icons */}
         <nav className="flex-1 flex flex-col gap-8">
-          <Link href="/dashboard/hr" className="w-14 h-14 rounded-xl bg-white/90 shadow-lg flex items-center justify-center">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#14532D" strokeWidth="2">
+          <button
+            onClick={() => router.push("/dashboard/hr")}
+            className="w-14 h-14 rounded-xl hover:bg-white/20 transition-colors flex items-center justify-center"
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             </svg>
-          </Link>
+          </button>
           
-          <Link href="/dashboard/hr/attendance" className="w-14 h-14 rounded-xl hover:bg-white/20 transition-colors flex items-center justify-center">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+          <button className="w-14 h-14 rounded-xl bg-white/90 shadow-lg flex items-center justify-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#14532D" strokeWidth="2">
               <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
               <circle cx="8.5" cy="7" r="4"/>
               <polyline points="17 11 19 13 23 9"/>
             </svg>
-          </Link>
+          </button>
         </nav>
       </aside>
 
@@ -91,132 +93,54 @@ export default function HRDashboard() {
           </div>
         </header>
 
-        {/* Dashboard Content */}
-        <main className="px-12 py-10">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-4 gap-6 mb-10">
-            <div className="bg-[#F0F0F0] rounded-xl p-6">
-              <p className="text-sm text-gray-600 mb-2">Attendance Today</p>
-              <p className="text-5xl font-black text-[#16A34A] mb-2">92%</p>
-              <p className="text-xs text-gray-500">Verified Check-ins</p>
+        {/* Page Content */}
+        <main className="px-12 py-16 min-h-[calc(100vh-180px)] flex items-center justify-center">
+          <div className="max-w-4xl w-full text-center">
+            
+            {/* Header */}
+            <h1 className="text-6xl font-black mb-6" style={{ color: "#16A34A" }}>
+              Attendance Management
+            </h1>
+
+            {/* Decorative Line */}
+            <div className="flex items-center justify-center gap-2 mb-8">
+              <div className="h-1 w-32 rounded-full" style={{ background: "#16A34A" }}/>
+              <div className="h-1 w-4 rounded-full" style={{ background: "#16A34A" }}/>
+              <div className="h-1 w-4 rounded-full" style={{ background: "#16A34A" }}/>
+              <div className="h-1 w-4 rounded-full" style={{ background: "#16A34A" }}/>
+              <div className="h-1 w-32 rounded-full" style={{ background: "#16A34A" }}/>
             </div>
 
-            <div className="bg-[#F0F0F0] rounded-xl p-6">
-              <p className="text-sm text-gray-600 mb-2">Expected Today</p>
-              <p className="text-5xl font-black text-gray-900 mb-2">128 <span className="text-2xl">people</span></p>
-              <p className="text-xs text-gray-500">Verified Check-ins</p>
-            </div>
+            {/* Description */}
+            <p className="text-lg text-gray-700 mb-16 max-w-3xl mx-auto leading-relaxed">
+              Attendance is the official record of presence and participation for both 
+              staff and program participants. This system ensures accurate tracking 
+              using verified credentials such as email identity, GPS location, camera 
+              verification, and timestamps.
+            </p>
 
-            <div className="bg-[#F0F0F0] rounded-xl p-6">
-              <p className="text-sm text-gray-600 mb-2">Pending Reviews</p>
-              <p className="text-5xl font-black text-[#C47D0E] mb-2">6</p>
-              <p className="text-xs text-gray-500">Offline / AI Flagged</p>
-            </div>
+            {/* Action Buttons */}
+            <div className="flex items-center justify-center gap-8">
+              <button
+                onClick={() => router.push("/dashboard/hr/attendance/program")}
+                className="px-12 py-5 rounded-2xl text-white text-xl font-bold transition-all hover:opacity-90 hover:scale-105 shadow-lg"
+                style={{ background: "#16A34A" }}
+              >
+                Program Attendance
+              </button>
 
-            <div className="bg-[#F0F0F0] rounded-xl p-6">
-              <p className="text-sm text-gray-600 mb-2">System status</p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#16A34A]"/>
-                  <span className="text-xs">GPS Checked</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#16A34A]"/>
-                  <span className="text-xs">AI Activated</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#16A34A]"/>
-                  <span className="text-xs">Camera Ready</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Timeline and Summary */}
-          <div className="grid grid-cols-3 gap-6 mb-10">
-            <div className="col-span-2 bg-white rounded-xl p-6 border border-gray-200">
-              <h3 className="text-xl font-black mb-6">Today's Attendance Timeline</h3>
-              {/* Timeline visualization would go here */}
-              <div className="space-y-3">
-                {["Mon", "Tue", "Wed", "Thur", "Fri"].map((day) => (
-                  <div key={day} className="flex items-center gap-4">
-                    <span className="w-16 text-sm font-medium">{day}</span>
-                    <div className="flex-1 flex gap-2">
-                      <div className="h-8 bg-[#16A34A] rounded flex-1"/>
-                      <div className="h-8 bg-[#C47D0E] rounded w-20"/>
-                      <div className="h-8 bg-gray-300 rounded w-32"/>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-[#F5F5F5] rounded-xl p-6 border border-gray-200">
-              <h3 className="text-xl font-black mb-6">Quick Summary</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">✓ Verified : 110</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">⏳ Pending : 12</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">✗ Absent : 6</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <h3 className="font-bold mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <button className="w-full py-3 bg-[#14532D] text-white rounded-lg font-semibold">
-                  Check-In
-                </button>
-                <button className="w-full py-3 bg-gray-400 text-white rounded-lg font-semibold">
-                  Check-Out
-                </button>
-                <button className="w-full py-3 bg-red-600 text-white rounded-lg font-semibold text-sm">
-                  AI-Verification in process
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <h3 className="flex items-center gap-2 font-bold mb-4">
-                <span>⚠️</span> Needed Actions
-              </h3>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500 mt-1.5"/>
-                  Session start at 08:30 AM
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-2 h-2 rounded-full bg-orange-500 mt-1.5"/>
-                  Attendance audit today at 04:30 PM
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-2 h-2 rounded-full bg-red-500 mt-1.5"/>
-                  Attendance audit today at 04:30 PM
-                </li>
-              </ul>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <h3 className="flex items-center gap-2 font-bold mb-4">
-                <span>📢</span> Announcements
-              </h3>
-              <div className="space-y-3 text-sm">
-                <p>Session start at 08:30 AM</p>
-                <p>Attendance audit today at 04:30 PM</p>
-              </div>
+              <button
+                onClick={() => router.push("/dashboard/hr/attendance/staff")}
+                className="px-12 py-5 rounded-2xl text-white text-xl font-bold transition-all hover:opacity-90 hover:scale-105 shadow-lg"
+                style={{ background: "#16A34A" }}
+              >
+                Staff Attendance
+              </button>
             </div>
           </div>
         </main>
 
-        {/* Footer */}
+        {/* Footer - Fixed at bottom */}
         <footer className="px-12 py-6 text-center text-sm text-gray-500 border-t border-gray-200">
           © 2026 Igire Rwanda Organisation - All Actions are auditable
         </footer>
