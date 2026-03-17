@@ -17,6 +17,7 @@ export default function RegisterPage() {
     program: "",
     password: "",
     confirmPassword: "",
+    
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

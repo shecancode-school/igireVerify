@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3; 
 type GpsStatus = "idle" | "checking" | "verified" | "error";
 type CameraStatus = "idle" | "active" | "captured" | "error";
+
 
 const IGIRE_LAT = -1.9306;
 const IGIRE_LNG = 30.0746;

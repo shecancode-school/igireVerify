@@ -27,15 +27,15 @@ export default function ProgramOverviewPage() {
             className="w-14 h-14 rounded-xl hover:bg-white/20 transition-colors flex items-center justify-center"
           >
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             </svg>
           </button>
-          
+
           <button className="w-14 h-14 rounded-xl bg-white/90 shadow-lg flex items-center justify-center">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#14532D" strokeWidth="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="8.5" cy="7" r="4"/>
-              <polyline points="17 11 19 13 23 9"/>
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="8.5" cy="7" r="4" />
+              <polyline points="17 11 19 13 23 9" />
             </svg>
           </button>
         </nav>
@@ -47,7 +47,7 @@ export default function ProgramOverviewPage() {
         <header className="bg-[#F5F5F5] border-b border-gray-200 px-12 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2">
-              <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+              <path d="M5 12.55a11 11 0 0 1 14.08 0" />
             </svg>
             <span className="font-medium text-gray-700">Online</span>
           </div>
@@ -59,12 +59,12 @@ export default function ProgramOverviewPage() {
             >
               <div className="text-right">
                 <p className="font-bold text-gray-900">Juliette NYIRASAFARI</p>
-                <p className="text-sm text-gray-600">HR& Finance</p>
+                <p className="text-sm text-gray-600">HR  & Finance</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
                 </svg>
               </div>
             </button>
@@ -88,7 +88,7 @@ export default function ProgramOverviewPage() {
 
         {/* Page Content */}
         <main className="px-12 py-10 min-h-[calc(100vh-120px)]">
-          
+
           {/* Page Title */}
           <h1 className="text-4xl font-black text-[#111111] mb-10">
             Program Overview
@@ -100,8 +100,8 @@ export default function ProgramOverviewPage() {
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A90E2" strokeWidth="2">
-                    <polyline points="16 18 22 12 16 6"/>
-                    <polyline points="8 6 2 12 8 18"/>
+                    <polyline points="16 18 22 12 16 6" />
+                    <polyline points="8 6 2 12 8 18" />
                   </svg>
                 </div>
                 <div>
@@ -115,10 +115,10 @@ export default function ProgramOverviewPage() {
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
                 </div>
                 <div>
@@ -132,7 +132,7 @@ export default function ProgramOverviewPage() {
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C47D0E" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12"/>
+                    <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </div>
                 <div>
@@ -146,9 +146,9 @@ export default function ProgramOverviewPage() {
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
                   </svg>
                 </div>
                 <div>
@@ -161,7 +161,7 @@ export default function ProgramOverviewPage() {
 
           {/* Data Table Section */}
           <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
-            
+
             {/* Table Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h2 className="text-xl font-black text-[#111111]">
@@ -169,9 +169,9 @@ export default function ProgramOverviewPage() {
               </h2>
               <button className="px-6 py-2 bg-[#16A34A] text-white rounded-lg font-semibold text-sm flex items-center gap-2 hover:opacity-90">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
                 Export CSV
               </button>
@@ -219,8 +219,8 @@ export default function ProgramOverviewPage() {
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2">
-                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                          <circle cx="9" cy="7" r="4"/>
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                          <circle cx="9" cy="7" r="4" />
                         </svg>
                         <span className="text-sm font-semibold">59</span>
                       </div>
@@ -236,8 +236,8 @@ export default function ProgramOverviewPage() {
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2">
-                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                          <circle cx="9" cy="7" r="4"/>
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                          <circle cx="9" cy="7" r="4" />
                         </svg>
                         <span className="text-sm font-semibold">59</span>
                       </div>
@@ -253,8 +253,8 @@ export default function ProgramOverviewPage() {
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2">
-                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                          <circle cx="9" cy="7" r="4"/>
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                          <circle cx="9" cy="7" r="4" />
                         </svg>
                         <span className="text-sm font-semibold">59</span>
                       </div>

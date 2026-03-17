@@ -1,30 +1,36 @@
-const steps = [
+import Image from "next/image";
+
+type Step = {
+  num: number;
+  reverse: boolean;
+  title: string;
+  imageSrc: string;
+  desc: React.ReactNode;
+};
+
+const steps: Step[] = [
   {
     num: 1, reverse: false,
     title: "GPS Location Verification",
-    icon: "", visualLabel: "GPS Location Verification",
-    badge: null,
-    desc: <>The system will verify that the user by the time of check-in is at the <strong>IGIRE RWANDA ORGANISATION</strong>&apos;s premises. If not, the system will deny continuing to the next step.</>,
+    imageSrc: "/gps.png",
+    desc: <>The system verifies that, at check-in time, the user is at <strong>IGIRE RWANDA ORGANISATION</strong>&apos;s premises. If not, the system denies continuing to the next step.</>,
   },
   {
     num: 2, reverse: true,
     title: "Live Camera Capture",
-    icon: "", visualLabel: "Live Camera Capture",
-    badge: "Identity Confirmed",
+    imageSrc: "/live.png",
     desc: <>Once the location is verified, <strong>Camera</strong> will be enabled for the user to take the live photo during the scheduled time.</>,
   },
   {
     num: 3, reverse: false,
     title: "AI Face Verification",
-    icon: "", visualLabel: "AI Face Verification",
-    badge: "Match Found",
+    imageSrc: "/AI.png",
     desc: <>After capturing your image, the integrated AI will scan your face to check if it&apos;s the right person and save it in the system.</>,
   },
   {
     num: 4, reverse: true,
+    imageSrc: "/Time%20window.png",
     title: "Time Window Validation",
-    icon: "", visualLabel: "Time Window Validation",
-    badge: "Validated & Locked",
     desc: <>The system validates that check-in/out is done within the scheduled time window. This prevents early/late check-ins and ensures accurate attendance records.</>,
   },
 ];
@@ -41,30 +47,34 @@ export default function HowItWorks() {
         step by step process of how it works:
       </p>
 
-      <div className="max-w-4xl mx-auto flex flex-col">
-        {steps.map((step, idx) => (
+      <div className="max-w-5xl mx-auto flex flex-col gap-24">
+        {steps.map((step) => (
           <div key={step.num}
-               className={`grid grid-cols-1 md:grid-cols-2 items-center gap-10 md:gap-16 py-14 relative
-                           ${idx < steps.length - 1 ? "border-b border-gray-100" : ""}`}>
+               className={`grid grid-cols-1 md:grid-cols-2 items-center gap-12 md:gap-20 lg:gap-28 py-14 relative
+                           `}>
 
-            <div className={`absolute top-10 w-11 h-11 rounded-full text-white flex items-center
-                             justify-center font-black text-[18px] z-10
-                             ${step.reverse ? "md:right-0 right-0" : "md:left-0 left-0"}`}
-                 style={{ background: "#1E5E2A", boxShadow: "0 2px 12px rgba(30,94,42,0.35)" }}>
-              {step.num}
-            </div>
+            <div className={`relative overflow-visible ${step.reverse ? "md:order-2" : "md:order-1"}`}>
+              <div
+                className={`absolute bottom-full mb-4 w-12 h-12 rounded-full text-white flex items-center
+                            justify-center font-black text-[18px] z-10
+                            ${step.reverse ? "right-0 translate-x-3" : "left-0 -translate-x-3"}`}
+                style={{ background: "#1E5E2A", boxShadow: "0 2px 12px rgba(30,94,42,0.35)" }}
+              >
+                {step.num}
+              </div>
 
-            <div className={`bg-gray-100 rounded-2xl border border-gray-200 aspect-[4/3]
-                             flex flex-col items-center justify-center gap-4 p-8
-                             ${step.reverse ? "md:order-2" : "md:order-1"}`}>
-              <span className="text-[60px] leading-none">{step.icon}</span>
-              <p className="font-semibold text-[14px] text-gray-600">{step.visualLabel}</p>
-              {step.badge && (
-                <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ background: "#F0F7F0" }}>
-                  <span></span>
-                  <span className="text-[12px] font-semibold" style={{ color: "#2E7D32" }}>{step.badge}</span>
+              <div className="bg-gray-100 rounded-2xl border border-gray-200 aspect-[4/3] overflow-hidden">
+                <div className="relative w-full h-full">
+                  <Image
+                    src={step.imageSrc}
+                    alt={step.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 90vw, 420px"
+                    priority={step.num === 1}
+                  />
                 </div>
-              )}
+              </div>
             </div>
 
             <div className={`${step.reverse ? "md:order-1" : "md:order-2"} pt-2`}>

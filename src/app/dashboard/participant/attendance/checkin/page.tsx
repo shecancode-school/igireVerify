@@ -26,9 +26,9 @@ function distanceInMeters(
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) *
+    Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -43,7 +43,7 @@ export default function CheckInPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  
+
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>("idle");
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -64,7 +64,7 @@ export default function CheckInPage() {
       try {
         setCameraStatus("idle");
         setCameraError(null);
-        
+
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             width: { ideal: 1280 },
@@ -87,7 +87,7 @@ export default function CheckInPage() {
         const cameraError = error instanceof Error ? error : new Error(String(error));
         console.error("Camera error:", cameraError);
         setCameraStatus("error");
-        
+
         if (cameraError.name === "NotAllowedError") {
           setCameraError("Camera permission denied. Please allow camera access.");
         } else if (cameraError.name === "NotFoundError") {
@@ -121,7 +121,7 @@ export default function CheckInPage() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
-        
+
         if (accuracy > MIN_GPS_ACCURACY) {
           setGpsStatus("error");
           setGpsError(
@@ -160,7 +160,7 @@ export default function CheckInPage() {
       },
       (error) => {
         setGpsStatus("error");
-        
+
         if (error.code === 1) {
           setGpsError("❌ Location permission denied. Please enable location access.");
         } else if (error.code === 2) {
@@ -218,13 +218,12 @@ export default function CheckInPage() {
         {circles.map((value, index) => (
           <div key={value} className="flex items-center gap-4">
             <div
-              className={`flex h-12 w-12 items-center justify-center rounded-full text-white font-bold text-lg transition-all ${
-                value < step
+              className={`flex h-12 w-12 items-center justify-center rounded-full text-white font-bold text-lg transition-all ${value < step
                   ? "bg-[#16A34A]"
                   : value === step
-                  ? "bg-[#14532D]"
-                  : "bg-gray-300"
-              }`}
+                    ? "bg-[#14532D]"
+                    : "bg-gray-300"
+                }`}
             >
               {value < step ? (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -235,9 +234,8 @@ export default function CheckInPage() {
               )}
             </div>
             {index < circles.length - 1 && (
-              <div className={`hidden sm:block w-20 h-1 rounded ${
-                value < step ? "bg-[#16A34A]" : "bg-gray-300"
-              }`} />
+              <div className={`hidden sm:block w-20 h-1 rounded ${value < step ? "bg-[#16A34A]" : "bg-gray-300"
+                }`} />
             )}
           </div>
         ))}
@@ -264,7 +262,7 @@ export default function CheckInPage() {
                   <p className="text-sm text-gray-700 mb-4">
                     You are at Igire Rwanda Organisation premises.
                   </p>
-                  
+
                   <div className="bg-white rounded-lg p-4 space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Time:</span>
@@ -322,8 +320,8 @@ export default function CheckInPage() {
               ) : (
                 <>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
                   </svg>
                   Verify Location
                 </>
@@ -355,8 +353,8 @@ export default function CheckInPage() {
               <div className="aspect-[4/3] bg-black rounded-xl overflow-hidden relative">
                 {cameraStatus === "captured" && capturedImage ? (
                   <Image
-                    src={capturedImage} 
-                    alt="Captured" 
+                    src={capturedImage}
+                    alt="Captured"
                     fill
                     className="w-full h-full object-cover"
                   />
@@ -383,8 +381,8 @@ export default function CheckInPage() {
                   <div className="absolute inset-0 flex items-center justify-center bg-black/80">
                     <div className="text-white text-center px-4">
                       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                        <line x1="1" y1="1" x2="23" y2="23"/>
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
                       </svg>
                       <p className="text-sm">{cameraError}</p>
                     </div>
@@ -455,7 +453,7 @@ export default function CheckInPage() {
           <h2 className="text-4xl font-black text-[#14532D] mb-4">
             Check-In Complete!
           </h2>
-          
+
           <p className="text-gray-700 mb-8">
             Your attendance has been recorded successfully.
           </p>
