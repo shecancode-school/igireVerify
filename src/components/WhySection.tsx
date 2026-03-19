@@ -1,136 +1,125 @@
-const features = [
-  {
-    icon: "map-pin",
-    title: "Easy Participation Tracking",
-    desc: "Simply submit photos with GPS and AI verification to record your participation.",
-  },
-  {
-    icon: "camera",
-    title: "Live Capture Camera",
-    desc: "Live Camera Capture real-time photo captured is required for every check-in.",
-  },
-  {
-    icon: "user-scan",
-    title: "AI Facial Verification",
-    desc: "AI face Verification with automated identity matching for secure, tamper‑proof attendance.",
-  },
-  {
-    icon: "badge-check",
-    title: "Digital Approvals",
-    desc: "Records must not be flagged or must be manually approved before they are counted.",
-  },
-  {
-    icon: "clock",
-    title: "Duration Tracking",
-    desc: "Time Window within designated session hours ensures accurate on-time presence.",
-  },
-  {
-    icon: "trending-up",
-    title: "Valid Statistics",
-    desc: "After all steps you will be validated and recorded — accurate data guaranteed.",
-  },
-];
+"use client";
+
+import { useMemo, useState } from "react";
+import {
+  Camera,
+  ChartNoAxesCombined,
+  Clock3,
+  MapPin,
+  ScanFace,
+  BadgeCheck,
+} from "lucide-react";
+
+type WhyCard = {
+  key: string;
+  title: string;
+  desc: string;
+  Icon: React.ComponentType<{ className?: string }>;
+};
 
 export default function WhySection() {
+  const cards: WhyCard[] = useMemo(
+    () => [
+      {
+        key: "tracking",
+        title: "Easy Participation Tracking",
+        desc: "Simply submit photos with GPS and AI verification to record your participation.",
+        Icon: MapPin,
+      },
+      {
+        key: "camera",
+        title: "Live Capture Camera",
+        desc: "Live Camera Capture real time photo captured required",
+        Icon: Camera,
+      },
+      {
+        key: "ai",
+        title: "AI Facial Verification",
+        desc: "AI face Verfication automated identity matching",
+        Icon: ScanFace,
+      },
+      {
+        key: "approvals",
+        title: "Digital Approvals",
+        desc: "records must be not flagged or manually approved",
+        Icon: BadgeCheck,
+      },
+      {
+        key: "duration",
+        title: "Duration Tracking",
+        desc: "Time Window within designated session hours",
+        Icon: Clock3,
+      },
+      {
+        key: "stats",
+        title: "Valid Statistics",
+        desc: "after all steps  you will be validated  and recorded",
+        Icon: ChartNoAxesCombined,
+      },
+    ],
+    []
+  );
+
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+
   return (
-    <section id="why" className="py-16 px-6 lg:px-14 bg-gray-50">
-      <h2
-        className="text-center font-black tracking-tight text-gray-900 mb-14"
-        style={{ fontSize: "clamp(28px, 4vw, 40px)" }}
-      >
-        Why use &nbsp;IgireVerify ?
-      </h2>
-
-      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {features.map((f) => (
-          <div
-            key={f.title}
-            className="bg-white border border-gray-200 rounded-2xl p-8 text-center
-                       hover:-translate-y-1 hover:shadow-xl transition-all duration-300"
-            style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
+    <section id="why" className="py-12 bg-gray-50">
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+        <div className="w-full">
+          <h2
+            className="text-center font-black tracking-tight text-gray-900 mb-10"
+            style={{ fontSize: "clamp(28px, 4vw, 38px)" }}
           >
-    
-            <div
-              className="w-[80px] h-[80px] rounded-full flex items-center justify-center
-                         mx-auto mb-6 transition-colors duration-300"
-              style={{ background: "#E8F5E9" }}
-            >
-              <FeatureIcon name={f.icon} />
-            </div>
+            Why use IgireVerify?
+          </h2>
 
-    
-            <h3
-              className="font-bold text-[17px] mb-3 leading-snug"
-              style={{ color: "#C47D0E" }}
-            >
-              {f.title}
-            </h3>
-
-        
-            <p className="text-[14px] leading-[1.7] text-gray-600">{f.desc}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {cards.map(({ key, title, desc, Icon }) => {
+              const isActive = key === activeKey;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setActiveKey((prev) => (prev === key ? null : key))}
+                  className={[
+                    "group w-full max-w-[380px] mx-auto text-left rounded-2xl border transition-colors duration-150",
+                    "px-10 py-14 min-h-[340px]",
+                    "shadow-[0_2px_0_rgba(0,0,0,0.06)]",
+                    isActive
+                      ? "bg-[#E0E0E0] border-[#CFCFCF]"
+                      : "bg-white border-[#E1E1E1] hover:bg-[#F4F4F4]",
+                  ].join(" ")}
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <Icon
+                      className={[
+                        "h-20 w-20 transition-colors duration-150",
+                        isActive ? "text-gray-600" : "text-[#2E7D32]",
+                      ].join(" ")}
+                    />
+                    <h3
+                      className={[
+                        "mt-6 font-black text-[18px] leading-tight transition-colors duration-150",
+                        isActive ? "text-gray-700" : "text-[#B87412]",
+                      ].join(" ")}
+                    >
+                      {title}
+                    </h3>
+                    <p
+                      className={[
+                        "mt-4 text-[14px] leading-[1.6] max-w-[320px] transition-colors duration-150",
+                        isActive ? "text-gray-600" : "text-gray-700",
+                      ].join(" ")}
+                    >
+                      {desc}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-        ))}
+        </div>
       </div>
     </section>
   );
-}
-
-
-function FeatureIcon({ name }: { name: string }) {
-  const iconColor = "#2E7D32";
-  const size = 40;
-
-  switch (name) {
-    case "map-pin":
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-          <circle cx="12" cy="10" r="3"/>
-        </svg>
-      );
-    
-    case "camera":
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-          <circle cx="12" cy="13" r="4"/>
-        </svg>
-      );
-    
-    case "user-scan":
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="8" r="3"/>
-          <path d="M4 20v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/>
-          <path d="M2 2h4v4M2 22h4v-4M22 2h-4v4M22 22h-4v-4"/>
-        </svg>
-      );
-    
-    case "badge-check":
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-          <polyline points="9 11 12 14 15 11"/>
-        </svg>
-      );
-    
-    case "clock":
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <polyline points="12 6 12 12 16 14"/>
-        </svg>
-      );
-    
-    case "trending-up":
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-          <polyline points="17 6 23 6 23 12"/>
-        </svg>
-      );
-    
-    default:
-      return null;
-  }
 }

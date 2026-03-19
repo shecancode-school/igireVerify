@@ -11,8 +11,8 @@ type CameraStatus = "idle" | "active" | "captured" | "error";
 
 const IGIRE_LAT = -1.9306;
 const IGIRE_LNG = 30.0746;
-const IGIRE_RADIUS_METERS = 25;
-const MIN_GPS_ACCURACY = 55;
+const IGIRE_RADIUS_METERS = 50;
+const MIN_GPS_ACCURACY = 58;
 
 function distanceInMeters(
   lat1: number,
@@ -219,10 +219,10 @@ export default function CheckInPage() {
           <div key={value} className="flex items-center gap-4">
             <div
               className={`flex h-12 w-12 items-center justify-center rounded-full text-white font-bold text-lg transition-all ${value < step
-                  ? "bg-[#16A34A]"
-                  : value === step
-                    ? "bg-[#14532D]"
-                    : "bg-gray-300"
+                ? "bg-[#16A34A]"
+                : value === step
+                  ? "bg-[#14532D]"
+                  : "bg-gray-300"
                 }`}
             >
               {value < step ? (

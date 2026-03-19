@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 export default function TopBar({ 
   userName = "Alice Uwera",
   programName = "Web fundamentals",
@@ -13,6 +17,12 @@ export default function TopBar({
   checkInWindow?: string;
   currentTime?: string;
 }) {
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const handleLogout = () => {
+    window.location.href = "/home";
+  };
+
   return (
     <div className="bg-white border-b border-gray-200">
       <div className="flex items-center justify-between px-12 py-3 gap-6">
@@ -64,31 +74,51 @@ export default function TopBar({
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="font-bold text-[#111111] text-sm">
-                {userName}
-              </p>
-              <p className="text-xs text-gray-700">
-                {programName}
-              </p>
-            </div>
+          <div className="relative">
+            <button 
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center gap-3"
+            >
+              <div className="text-right">
+                <p className="font-bold text-[#111111] text-sm">
+                  {userName}
+                </p>
+                <p className="text-xs text-gray-700">
+                  {programName}
+                </p>
+              </div>
 
-            <div className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center border border-gray-400">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#666"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </div>
+              <div className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center border border-gray-400">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#666"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </div>
+            </button>
+
+            {showProfileMenu && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border py-2 z-50">
+                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm font-medium text-gray-700">View Profile</button>
+                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm font-medium text-gray-700">Settings</button>
+                <hr className="my-2" />
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-3 text-left font-semibold text-white rounded-lg mx-2"
+                  style={{ background: "#C47D0E", width: "calc(100% - 16px)" }}
+                >
+                  Log Out →
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -40,7 +40,7 @@ export default function AttendanceLandingPage() {
 
         <main className="px-12 py-10 bg-white min-h-screen">
           <div className="max-w-4xl mx-auto">
-            
+
             {/* Header */}
             <h1 className="text-5xl font-black text-[#111111] mb-4">
               Take Attendance
@@ -53,7 +53,7 @@ export default function AttendanceLandingPage() {
             {/* Requirements Checklist */}
             <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-sm p-8 mb-10">
               <div className="space-y-5">
-                
+
                 {/* Requirement 1 */}
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#16A34A] flex items-center justify-center">
@@ -107,7 +107,7 @@ export default function AttendanceLandingPage() {
 
             {/* Action Buttons */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-              
+
               {/* Check-In Button */}
               <button
                 onClick={handleCheckIn}
@@ -121,7 +121,7 @@ export default function AttendanceLandingPage() {
               <button
                 onClick={handleCheckOut}
                 className="h-20 rounded-2xl font-bold text-xl border-4 transition-all hover:bg-orange-50 active:scale-[0.98]"
-                style={{ 
+                style={{
                   borderColor: "#C47D0E",
                   color: "#C47D0E"
                 }}
@@ -132,14 +132,11 @@ export default function AttendanceLandingPage() {
             </div>
 
             {/* Footer Notice */}
-            <p className="text-center text-gray-600 text-sm mb-8">
+            <p className="text-center text-gray-600 text-sm mb-8 text-[20px]">
               All Check-In and Check-Out are logged and auditable.
             </p>
 
-            {/* Copyright Footer */}
-            <div className="text-center text-sm text-gray-500">
-              © 2026 Igire Rwanda Organisation - All Actions are auditable
-            </div>
+
 
           </div>
         </main>
