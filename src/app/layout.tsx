@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "Secure facial recognition-based attendance tracking system",
 };
 
+import { Toaster } from "@/components/ui/sooner";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,6 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <Toaster />
       </body>
     </html>
   );

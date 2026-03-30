@@ -8,7 +8,7 @@ export default function AttendanceManagementHub() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const handleLogout = () => {
-    window.location.href = "/home";
+    window.location.href = "/api/auth/logout";
   };
 
   return (

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 type Step = 1 | 2 | 3;
 type GpsStatus = "idle" | "checking" | "verified" | "error";
@@ -14,12 +15,7 @@ const IGIRE_LNG = 30.0746;
 const IGIRE_RADIUS_METERS = 50;
 const MIN_GPS_ACCURACY = 58;
 
-function distanceInMeters(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-) {
+function distanceInMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371000;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
@@ -33,12 +29,13 @@ function distanceInMeters(
   return R * c;
 }
 
-export default function CheckInPage() {
+export default function CheckOutPage() {
   const [step, setStep] = useState<Step>(1);
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>("idle");
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [gpsInfo, setGpsInfo] = useState<string | null>(null);
-  const [checkInTime, setCheckInTime] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uiMessage, setUiMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -53,10 +50,14 @@ export default function CheckInPage() {
     programName: "Web fundamentals",
     isOnline: true,
     sessionDate: "Today: Friday, 6 Feb 2026",
-    checkInWindow: "08:00 - 08:30",
-    currentTime: "08:52",
+    checkOutWindow: "16:00 - 17:00",
+    currentTime: "16:45",
   };
 
+  // TODO: Replace with real API call later
+  const [hasCheckedInToday, setHasCheckedInToday] = useState(true);
+
+  // Camera setup
   useEffect(() => {
     if (step !== 2) return;
 
@@ -66,16 +67,11 @@ export default function CheckInPage() {
         setCameraError(null);
 
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: "user"
-          },
-          audio: false
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+          audio: false,
         });
 
         streamRef.current = stream;
-
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
@@ -83,35 +79,24 @@ export default function CheckInPage() {
             setCameraStatus("active");
           };
         }
-      } catch (error: unknown) {
-        const cameraError = error instanceof Error ? error : new Error(String(error));
-        console.error("Camera error:", cameraError);
+      } catch (error) {
+        console.error("Camera error:", error);
         setCameraStatus("error");
-
-        if (cameraError.name === "NotAllowedError") {
-          setCameraError("Camera permission denied. Please allow camera access.");
-        } else if (cameraError.name === "NotFoundError") {
-          setCameraError("No camera found on your device.");
-        } else {
-          setCameraError("Failed to access camera. Please try again.");
-        }
+        setCameraError("Failed to access camera. Please allow permission.");
       }
     }
 
     startCamera();
 
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-      }
+      streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, [step]);
 
-  function handleVerifyLocation() {
+  const handleVerifyLocation = () => {
     if (!navigator.geolocation) {
       setGpsStatus("error");
-      setGpsError("❌ Geolocation is not supported on this device.");
+      setGpsError("Geolocation is not supported.");
       return;
     }
 
@@ -124,391 +109,241 @@ export default function CheckInPage() {
 
         if (accuracy > MIN_GPS_ACCURACY) {
           setGpsStatus("error");
-          setGpsError(
-            `❌ GPS accuracy too low (${Math.round(accuracy)}m). Required: ≤${MIN_GPS_ACCURACY}m. Please go outside for better GPS signal.`
-          );
+          setGpsError(`GPS accuracy too low (${Math.round(accuracy)}m).`);
           return;
         }
 
-        const distance = distanceInMeters(
-          latitude,
-          longitude,
-          IGIRE_LAT,
-          IGIRE_LNG
-        );
-
-        console.log("GPS Debug:", {
-          userLat: latitude,
-          userLng: longitude,
-          distance: Math.round(distance),
-          accuracy: Math.round(accuracy)
-        });
-
-        setGpsInfo(
-          `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}, Accuracy: ${Math.round(accuracy)}m`
-        );
+        const distance = distanceInMeters(latitude, longitude, IGIRE_LAT, IGIRE_LNG);
+        setGpsInfo(`Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}, Accuracy: ${Math.round(accuracy)}m`);
 
         if (distance <= IGIRE_RADIUS_METERS) {
           setGpsStatus("verified");
-          setCheckInTime(new Date().toLocaleString());
         } else {
           setGpsStatus("error");
-          setGpsError(
-            `❌ You are ${Math.round(distance)} meters away. You must be within ${IGIRE_RADIUS_METERS}m to check in.`
-          );
+          setGpsError(`You are ${Math.round(distance)}m away from premises.`);
         }
       },
-      (error) => {
+      () => {
         setGpsStatus("error");
-
-        if (error.code === 1) {
-          setGpsError("❌ Location permission denied. Please enable location access.");
-        } else if (error.code === 2) {
-          setGpsError("❌ Location unavailable. Please check your device settings.");
-        } else {
-          setGpsError("❌ Location request timed out. Please try again.");
-        }
+        setGpsError("Failed to get location. Please enable GPS.");
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000 }
     );
-  }
+  };
 
-  function handleGpsContinue() {
-    setStep(2);
-  }
+  const handleGpsContinue = () => setStep(2);
 
-  function handleCapturePhoto() {
+  const handleCapturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (ctx) ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const imageData = canvas.toDataURL("image/jpeg", 0.9);
+    const imageData = canvas.toDataURL("image/jpeg", 0.85);
     setCapturedImage(imageData);
     setCameraStatus("captured");
 
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-  }
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+  };
 
-  function handleRetakePhoto() {
+  const handleRetakePhoto = () => {
     setCapturedImage(null);
     setCameraStatus("idle");
-  }
+  };
 
-  function handleCameraContinue() {
-    setStep(3);
-  }
+  const handleSubmitCheckOut = async () => {
+    if (!capturedImage) return;
+    if (!hasCheckedInToday) {
+      setUiMessage({ type: "error", text: "You must complete check-in today before checking out." });
+      return;
+    }
 
-  function renderStepper() {
-    const circles = [1, 2, 3] as Step[];
+    setIsSubmitting(true);
+    setUiMessage(null);
 
-    return (
-      <div className="flex items-center justify-center gap-4 mb-10">
-        {circles.map((value, index) => (
-          <div key={value} className="flex items-center gap-4">
-            <div
-              className={`flex h-12 w-12 items-center justify-center rounded-full text-white font-bold text-lg transition-all ${value < step
-                ? "bg-[#16A34A]"
-                : value === step
-                  ? "bg-[#14532D]"
-                  : "bg-gray-300"
-                }`}
-            >
-              {value < step ? (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              ) : (
-                value
-              )}
-            </div>
-            {index < circles.length - 1 && (
-              <div className={`hidden sm:block w-20 h-1 rounded ${value < step ? "bg-[#16A34A]" : "bg-gray-300"
-                }`} />
-            )}
+    try {
+      const photoUrl = await uploadToCloudinary(capturedImage, "igire/attendance");
+
+      const response = await fetch("/api/attendance/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userName: userData.userName,
+          programName: userData.programName,
+          checkOutTime: new Date().toISOString(),
+          gpsInfo: gpsInfo || "GPS recorded",
+          photoUrl,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to save");
+
+      setUiMessage({ type: "success", text: "Check-out recorded successfully." });
+      setStep(3);
+    } catch (err) {
+      console.error(err);
+      setUiMessage({ type: "error", text: "Failed to save check-out. Please try again." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const renderStepper = () => (
+    <div className="flex items-center justify-center gap-4 mb-10">
+      {[1, 2, 3].map((value, index) => (
+        <div key={value} className="flex items-center gap-4">
+          <div
+            className={`flex h-12 w-12 items-center justify-center rounded-full text-white font-bold text-lg transition-all ${
+              value < step ? "bg-[#16A34A]" : value === step ? "bg-[#14532D]" : "bg-gray-300"
+            }`}
+          >
+            {value < step ? "✓" : value}
           </div>
-        ))}
-      </div>
-    );
-  }
+          {index < 2 && (
+            <div className={`hidden sm:block w-20 h-1 rounded ${value < step ? "bg-[#16A34A]" : "bg-gray-300"}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
 
-  function renderStepContent() {
+  const renderStepContent = () => {
     if (step === 1) {
       if (gpsStatus === "verified") {
         return (
-          <section className="max-w-2xl mx-auto">
-            <div className="bg-[#E3F6E5] rounded-2xl border-2 border-[#16A34A] shadow-sm p-8">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[#16A34A] flex items-center justify-center">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-2xl font-black text-[#14532D] mb-2">
-                    ✓ Location Verified
-                  </h2>
-                  <p className="text-sm text-gray-700 mb-4">
-                    You are at Igire Rwanda Organisation premises.
-                  </p>
-
-                  <div className="bg-white rounded-lg p-4 space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Time:</span>
-                      <span className="font-semibold">{checkInTime}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">GPS:</span>
-                      <span className="font-mono text-xs">{gpsInfo}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-[#E3F6E5] rounded-2xl border-2 border-[#16A34A] p-8 text-center">
+              <h2 className="text-2xl font-bold text-[#14532D] mb-4">Location Verified</h2>
+              <p className="mb-6">You are at Igire Rwanda Organisation premises.</p>
               <button
-                type="button"
                 onClick={handleGpsContinue}
-                className="w-full mt-4 h-12 px-8 rounded-lg text-white font-semibold transition-all hover:opacity-90"
+                className="w-full h-12 rounded-xl text-white font-semibold"
                 style={{ background: "#14532D" }}
               >
-                Continue to Camera →
+                Continue to Camera
               </button>
             </div>
-          </section>
+          </div>
         );
       }
 
       return (
-        <section className="max-w-2xl mx-auto">
-          <h2 className="text-3xl font-bold text-[#111111] mb-3">
-            Step 1: GPS Verification
-          </h2>
-          <p className="text-gray-600 mb-8">
-            Confirm you are at Igire Rwanda Organisation premises.
-          </p>
-
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-900 font-medium">
-                📍 You must be within {IGIRE_RADIUS_METERS} meters of the classroom
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleVerifyLocation}
-              disabled={gpsStatus === "checking"}
-              className="w-full h-14 px-8 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3"
-              style={{ background: "#14532D" }}
-            >
-              {gpsStatus === "checking" ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Checking Location...
-                </>
-              ) : (
-                <>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
-                  Verify Location
-                </>
-              )}
-            </button>
-
-            {gpsStatus === "error" && gpsError && (
-              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600 font-medium whitespace-pre-line">{gpsError}</p>
-              </div>
-            )}
-          </div>
-        </section>
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold mb-6">Step 1: GPS Verification (Check-out)</h2>
+          <button
+            onClick={handleVerifyLocation}
+            disabled={gpsStatus === "checking"}
+            className="w-full h-14 rounded-xl text-white font-semibold disabled:opacity-70"
+            style={{ background: "#14532D" }}
+          >
+            {gpsStatus === "checking" ? "Checking Location..." : "Verify My Location"}
+          </button>
+          {gpsError && <p className="mt-6 text-red-600 text-center">{gpsError}</p>}
+        </div>
       );
     }
 
     if (step === 2) {
       return (
-        <section className="max-w-2xl mx-auto">
-          <h2 className="text-3xl font-bold text-[#111111] mb-3">
-            Step 2: Live Camera Capture
-          </h2>
-          <p className="text-gray-600 mb-8">
-            Position your face in the frame for verification.
-          </p>
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold mb-6">Step 2: Take Photo for Check-out</h2>
 
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-            <div className="relative w-full max-w-md mx-auto mb-6">
-              <div className="aspect-[4/3] bg-black rounded-xl overflow-hidden relative">
-                {cameraStatus === "captured" && capturedImage ? (
-                  <Image
-                    src={capturedImage}
-                    alt="Captured"
-                    fill
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <video
-                    ref={videoRef}
-                    className="w-full h-full object-cover"
-                    playsInline
-                    muted
-                    autoPlay
-                  />
-                )}
-
-                {cameraStatus === "idle" && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                    <div className="text-white text-center">
-                      <div className="w-12 h-12 mx-auto mb-3 border-4 border-white border-t-transparent rounded-full animate-spin" />
-                      <p>Starting camera...</p>
-                    </div>
-                  </div>
-                )}
-
-                {cameraStatus === "error" && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-                    <div className="text-white text-center px-4">
-                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                      <p className="text-sm">{cameraError}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {cameraStatus === "active" && (
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-60 border-4 border-white/50 rounded-full" />
-                </div>
-              )}
-            </div>
-
-            {cameraStatus === "error" && cameraError && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600 font-medium">{cameraError}</p>
-              </div>
+          <div className="relative aspect-video bg-black rounded-2xl overflow-hidden mb-8 shadow-md">
+            {cameraStatus === "captured" && capturedImage ? (
+              <Image src={capturedImage} alt="Captured" fill className="object-cover" />
+            ) : (
+              <video
+                ref={videoRef}
+                className="w-full h-full object-cover"
+                autoPlay
+                playsInline
+                muted
+              />
             )}
 
-            <div className="flex gap-4">
-              {cameraStatus === "captured" ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleRetakePhoto}
-                    className="flex-1 h-12 px-6 rounded-lg border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-all"
-                  >
-                    Retake Photo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCameraContinue}
-                    className="flex-1 h-12 px-6 rounded-lg text-white font-semibold transition-all hover:opacity-90"
-                    style={{ background: "#14532D" }}
-                  >
-                    Continue →
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleCapturePhoto}
-                  disabled={cameraStatus !== "active"}
-                  className="w-full h-12 px-8 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  style={{ background: "#14532D" }}
-                >
-                  📸 Capture Photo
-                </button>
-              )}
-            </div>
-
-            <canvas ref={canvasRef} className="hidden" />
+            {cameraStatus === "active" && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-52 h-64 border-4 border-white/60 rounded-full" />
+              </div>
+            )}
           </div>
-        </section>
+
+          <div className="flex gap-4">
+            {cameraStatus === "captured" ? (
+              <>
+                <button
+                  onClick={handleRetakePhoto}
+                  className="flex-1 h-14 border-2 border-gray-300 rounded-xl font-semibold hover:bg-gray-50"
+                >
+                  Retake Photo
+                </button>
+                <button
+                  onClick={handleSubmitCheckOut}
+                  disabled={isSubmitting}
+                  className="flex-1 h-14 bg-[#14532D] text-white rounded-xl font-semibold disabled:opacity-70"
+                >
+                  {isSubmitting ? "Saving..." : "Submit Check-out"}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleCapturePhoto}
+                disabled={cameraStatus !== "active"}
+                className="w-full h-14 bg-[#14532D] text-white rounded-xl font-semibold disabled:opacity-70"
+              >
+                Capture Photo
+              </button>
+            )}
+          </div>
+
+          {cameraError && <p className="mt-4 text-red-600 text-center">{cameraError}</p>}
+          <canvas ref={canvasRef} className="hidden" />
+        </div>
       );
     }
 
     return (
-      <section className="max-w-2xl mx-auto">
-        <div className="bg-[#E3F6E5] rounded-2xl border-2 border-[#16A34A] shadow-lg p-10 text-center">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[#16A34A] flex items-center justify-center">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </div>
-
-          <h2 className="text-4xl font-black text-[#14532D] mb-4">
-            Check-In Complete!
-          </h2>
-
-          <p className="text-gray-700 mb-8">
-            Your attendance has been recorded successfully.
-          </p>
-
-          <div className="bg-white rounded-xl p-6 mb-8 text-left space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Time:</span>
-              <span className="font-semibold">{checkInTime}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Location:</span>
-              <span className="font-mono text-xs">{gpsInfo}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Photo:</span>
-              <span className="font-semibold text-green-600">✓ Captured</span>
-            </div>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p className="text-sm font-medium text-blue-900">
-              📅 Please return at 4:00 PM for check-out
-            </p>
-          </div>
-
+      <div className="max-w-2xl mx-auto text-center">
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-12">
+          <h2 className="text-4xl font-bold text-green-700 mb-4">Check-out Complete</h2>
+          <p className="text-lg text-gray-700 mb-8">Your attendance for today has been successfully recorded.</p>
           <button
-            onClick={() => window.location.href = '/dashboard/participant'}
-            className="w-full h-12 px-8 rounded-lg text-white font-semibold transition-all hover:opacity-90"
-            style={{ background: "#14532D" }}
+            onClick={() => window.location.href = "/dashboard/participant"}
+            className="px-10 py-4 bg-[#14532D] text-white rounded-xl font-semibold"
           >
             Return to Dashboard
           </button>
         </div>
-      </section>
+      </div>
     );
-  }
+  };
 
   return (
     <div className="min-h-screen bg-white flex">
       <Sidebar />
-
       <div className="flex-1 ml-[120px]">
-        <TopBar
-          userName={userData.userName}
-          programName={userData.programName}
-          isOnline={userData.isOnline}
-          sessionDate={userData.sessionDate}
-          checkInWindow={userData.checkInWindow}
-          currentTime={userData.currentTime}
-        />
+        <TopBar {...userData} />
 
         <main className="px-12 py-10 bg-[#F5F5F5] min-h-screen">
           <div className="max-w-5xl mx-auto">
             {renderStepper()}
             {renderStepContent()}
+
+            {uiMessage && (
+              <div className={`mt-6 p-4 rounded-xl text-center ${
+                uiMessage.type === "success" 
+                  ? "bg-green-50 border border-green-200 text-green-700" 
+                  : "bg-red-50 border border-red-200 text-red-700"
+              }`}>
+                {uiMessage.text}
+              </div>
+            )}
           </div>
         </main>
       </div>

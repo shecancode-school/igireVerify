@@ -1,16 +1,17 @@
-"use client";
-
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
 import ProgramCard from "@/components/dashboard/ProgramCard";
 import AttendanceStats from "@/components/dashboard/AttendanceStats";
 import AttendanceHistory from "@/components/dashboard/AttendanceHistory";
 import AttendanceChart from "@/components/dashboard/AttendanceChart";
+import { getAuthClaimsFromCookies, requireAuthOrRedirect } from "@/lib/auth";
 
-export default function ParticipantDashboard() {
+export default async function ParticipantDashboard() {
+  const claims = await requireAuthOrRedirect("participant");
+
   const userData = {
-    userName: "Alice Uwera",
-    programName: "Web fundamentals",
+    userName: claims.name,
+    programName: "Web fundamentals", // TODO: get from user data
     isOnline: true,
     sessionDate: "Today: Friday, 6 Feb 2026",
     checkInWindow: "08:00 - 08:30",

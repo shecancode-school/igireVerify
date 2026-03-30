@@ -19,7 +19,12 @@ export default function TopBar({
 }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
     window.location.href = "/home";
   };
 

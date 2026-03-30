@@ -82,13 +82,14 @@ export default function CheckInPage() {
             setCameraStatus("active");
           };
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Camera error:", error);
         setCameraStatus("error");
-        
-        if (error.name === "NotAllowedError") {
+
+        const err = error as { name?: string };
+        if (err?.name === "NotAllowedError") {
           setCameraError("Camera permission denied. Please allow camera access.");
-        } else if (error.name === "NotFoundError") {
+        } else if (err?.name === "NotFoundError") {
           setCameraError("No camera found on your device.");
         } else {
           setCameraError("Failed to access camera. Please try again.");
@@ -109,7 +110,7 @@ export default function CheckInPage() {
   function handleVerifyLocation() {
     if (!navigator.geolocation) {
       setGpsStatus("error");
-      setGpsError("❌ Geolocation is not supported on this device.");
+      setGpsError("Geolocation is not supported on this device.");
       return;
     }
 
@@ -123,7 +124,7 @@ export default function CheckInPage() {
         if (accuracy > MIN_GPS_ACCURACY) {
           setGpsStatus("error");
           setGpsError(
-            `❌ GPS accuracy too low (${Math.round(accuracy)}m). Required: ≤${MIN_GPS_ACCURACY}m. Please go outside for better GPS signal.`
+            `GPS accuracy too low (${Math.round(accuracy)}m). Required: ≤${MIN_GPS_ACCURACY}m. Please go outside for better GPS signal.`
           );
           return;
         }
@@ -152,7 +153,7 @@ export default function CheckInPage() {
         } else {
           setGpsStatus("error");
           setGpsError(
-            `❌ You are ${Math.round(distance)} meters away. You must be within ${IGIRE_RADIUS_METERS}m to check in.`
+            `You are ${Math.round(distance)} meters away. You must be within ${IGIRE_RADIUS_METERS}m to check in.`
           );
         }
       },
@@ -160,11 +161,11 @@ export default function CheckInPage() {
         setGpsStatus("error");
         
         if (error.code === 1) {
-          setGpsError("❌ Location permission denied. Please enable location access.");
+          setGpsError("Location permission denied. Please enable location access.");
         } else if (error.code === 2) {
-          setGpsError("❌ Location unavailable. Please check your device settings.");
+          setGpsError("Location unavailable. Please check your device settings.");
         } else {
-          setGpsError("❌ Location request timed out. Please try again.");
+          setGpsError("Location request timed out. Please try again.");
         }
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
