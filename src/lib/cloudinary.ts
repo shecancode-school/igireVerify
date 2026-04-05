@@ -1,6 +1,5 @@
-// src/lib/cloudinary.ts
 export async function uploadToCloudinary(
-  dataUrl: string, 
+  data: File | string,
   folder: string = "attendance"
 ): Promise<string> {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -10,7 +9,7 @@ export async function uploadToCloudinary(
   }
 
   const formData = new FormData();
-  formData.append("file", dataUrl);
+  formData.append("file", data);
   formData.append("upload_preset", "igire_attendance");
   formData.append("folder", folder);
 
@@ -27,6 +26,11 @@ export async function uploadToCloudinary(
     throw new Error(`Cloudinary upload failed: ${errorText}`);
   }
 
-  const data = await response.json();
-  return data.secure_url; // This is the permanent Cloudinary URL
+  const json = (await response.json()) as { secure_url?: string; error?: any };
+
+  if (!json.secure_url) {
+    throw new Error(`Cloudinary upload response invalid: ${JSON.stringify(json)}`);
+  }
+
+  return json.secure_url; 
 }

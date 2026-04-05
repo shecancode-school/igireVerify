@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function TopBar({ 
-  userName = "Alice Uwera",
-  programName = "Web fundamentals",
+  userName: initialUserName,
+  programName: initialProgramName,
   isOnline = true,
   sessionDate = "Today: Friday, 6 Feb 2026",
   checkInWindow = "08:00 - 08:30",
@@ -17,7 +17,53 @@ export default function TopBar({
   checkInWindow?: string;
   currentTime?: string;
 }) {
+  const [userName, setUserName] = useState(initialUserName || "Loading...");
+  const [programName, setProgramName] = useState(initialProgramName || "Loading...");
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [liveDate, setLiveDate] = useState(sessionDate);
+  const [liveTime, setLiveTime] = useState(currentTime);
+  const [networkStatus, setNetworkStatus] = useState(true);
+
+  useEffect(() => {
+    // Network status listeners
+    setNetworkStatus(navigator.onLine);
+    const handleOnline = () => setNetworkStatus(true);
+    const handleOffline = () => setNetworkStatus(false);
+    
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    const updateTime = () => {
+      const now = new Date();
+      setLiveDate(`Today: ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`);
+      setLiveTime(now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 60000); // updates every minute
+
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("/api/auth/me");
+        if (response.ok) {
+          const data = await response.json();
+          setUserName(data.name || data.userName || "Unknown User");
+          if (data.programName) setProgramName(data.programName);
+          if (data.profilePhotoUrl) setProfilePhotoUrl(data.profilePhotoUrl);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user in TopBar:", error);
+      }
+    };
+    fetchUser();
+    
+    window.addEventListener("profileUpdated", fetchUser);
+    return () => {
+      window.removeEventListener("profileUpdated", fetchUser);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -34,7 +80,7 @@ export default function TopBar({
         {/* Left: date / window / time */}
         <div className="flex items-center gap-4 text-xs md:text-sm whitespace-nowrap">
           <span className="font-medium text-gray-700 whitespace-nowrap">
-            {sessionDate}
+            {liveDate}
           </span>
 
           <span className="h-4 w-px bg-gray-300" />
@@ -51,7 +97,7 @@ export default function TopBar({
           <div className="flex items-center gap-1 whitespace-nowrap">
             <span className="text-gray-600">Current Time:</span>
             <span className="font-semibold text-[#2E7D32]">
-              {currentTime}
+              {liveTime}
             </span>
           </div>
         </div>
@@ -64,18 +110,31 @@ export default function TopBar({
               height="18"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#2E7D32"
+              stroke={networkStatus ? "#2E7D32" : "#9E9E9E"}
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
+              className={`transition-colors duration-300 ${!networkStatus && 'opacity-70'}`}
             >
-              <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-              <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-              <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-              <circle cx="12" cy="20" r="1" fill="#2E7D32" />
+              {networkStatus ? (
+                <>
+                  <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                  <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                  <circle cx="12" cy="20" r="1" fill="#2E7D32" />
+                </>
+              ) : (
+                <>
+                  <line x1="2" y1="2" x2="22" y2="22" />
+                  <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                  <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                  <circle cx="12" cy="20" r="1" fill="#9E9E9E" />
+                </>
+              )}
             </svg>
-            <span className="text-sm font-semibold text-[#111111]">
-              {isOnline ? "Online" : "Offline"}
+            <span className={`text-sm font-semibold transition-colors duration-300 ${networkStatus ? 'text-[#111111]' : 'text-gray-500'}`}>
+              {networkStatus ? "Online" : "Offline"}
             </span>
           </div>
 
@@ -93,26 +152,35 @@ export default function TopBar({
                 </p>
               </div>
 
-              <div className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center border border-gray-400">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#666"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
+              <div className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center border border-gray-400 overflow-hidden">
+                {profilePhotoUrl ? (
+                  <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#666"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                )}
               </div>
             </button>
 
             {showProfileMenu && (
               <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border py-2 z-50">
-                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm font-medium text-gray-700">View Profile</button>
+                <button
+                  onClick={() => window.location.href = "/dashboard/profile"}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm font-medium text-gray-700"
+                >
+                  View Profile
+                </button>
                 <button className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm font-medium text-gray-700">Settings</button>
                 <hr className="my-2" />
                 <button

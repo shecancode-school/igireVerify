@@ -30,6 +30,7 @@ function jwtSecret(): string {
 }
 
 export function getDashboardPath(claims: Pick<AuthClaims, "role" | "position">): string {
+  if (claims.role === "admin") return "/dashboard/admin";
   if (claims.role === "participant") return "/dashboard/participant";
   if (claims.position === "HR") return "/dashboard/hr";
   return "/dashboard/staff";

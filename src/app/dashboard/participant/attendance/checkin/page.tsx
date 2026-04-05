@@ -5,6 +5,7 @@ import Image from "next/image";
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { useSocket, joinProgramRoom } from "@/lib/socket";
 
 type Step = 1 | 2 | 3;
 type GpsStatus = "idle" | "checking" | "verified" | "error";
@@ -15,21 +16,60 @@ const IGIRE_LNG = 30.0746;
 const IGIRE_RADIUS_METERS = 50;
 const MIN_GPS_ACCURACY = 58;
 
+interface UserData {
+  userName: string;
+  programName: string;
+  programId: string;
+  userId: string;
+  isOnline: boolean;
+  sessionDate: string;
+  checkInWindow: string;
+  currentTime: string;
+}
+
 function distanceInMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371000;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLng / 2) *
-    Math.sin(dLng / 2);
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
 
-export default function CheckOutPage() {
+export default function CheckInPage() {
+  // This would be passed from server component or fetched via API
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const socket = useSocket();
+
+  useEffect(() => {
+    if (socket && userData) {
+      joinProgramRoom(userData.programId, socket);
+    }
+  }, [socket, userData]);
+
+  useEffect(() => {
+    // Fetch user data - in a real app this would come from props or context
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          setUserData(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
   const [step, setStep] = useState<Step>(1);
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>("idle");
   const [gpsError, setGpsError] = useState<string | null>(null);
@@ -45,19 +85,7 @@ export default function CheckOutPage() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  const userData = {
-    userName: "Alice Uwera",
-    programName: "Web fundamentals",
-    isOnline: true,
-    sessionDate: "Today: Friday, 6 Feb 2026",
-    checkOutWindow: "16:00 - 17:00",
-    currentTime: "16:45",
-  };
-
-  // TODO: Replace with real API call later
-  const [hasCheckedInToday, setHasCheckedInToday] = useState(true);
-
-  // Camera setup
+  // Camera setup hook is unconditional and placed before early return
   useEffect(() => {
     if (step !== 2) return;
 
@@ -82,7 +110,7 @@ export default function CheckOutPage() {
       } catch (error) {
         console.error("Camera error:", error);
         setCameraStatus("error");
-        setCameraError("Failed to access camera. Please allow permission.");
+        setCameraError("Failed to access camera. Please allow camera permission.");
       }
     }
 
@@ -92,6 +120,20 @@ export default function CheckOutPage() {
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, [step]);
+
+  if (loading || !userData) {
+    return (
+      <div className="min-h-screen bg-[#F5F5F5] flex">
+        <Sidebar />
+        <div className="flex-1 ml-[120px] flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E7D32] mx-auto mb-4"></div>
+            <p>Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleVerifyLocation = () => {
     if (!navigator.geolocation) {
@@ -120,7 +162,7 @@ export default function CheckOutPage() {
           setGpsStatus("verified");
         } else {
           setGpsStatus("error");
-          setGpsError(`You are ${Math.round(distance)}m away from premises.`);
+          setGpsError(`Distance: ${Math.round(distance)}m away.`);
         }
       },
       () => {
@@ -157,12 +199,8 @@ export default function CheckOutPage() {
     setCameraStatus("idle");
   };
 
-  const handleSubmitCheckOut = async () => {
-    if (!capturedImage) return;
-    if (!hasCheckedInToday) {
-      setUiMessage({ type: "error", text: "You must complete check-in today before checking out." });
-      return;
-    }
+  const handleSubmitCheckIn = async () => {
+    if (!capturedImage || !userData) return;
 
     setIsSubmitting(true);
     setUiMessage(null);
@@ -170,25 +208,32 @@ export default function CheckOutPage() {
     try {
       const photoUrl = await uploadToCloudinary(capturedImage, "igire/attendance");
 
-      const response = await fetch("/api/attendance/checkout", {
+      const response = await fetch("/api/attendance/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userName: userData.userName,
           programName: userData.programName,
-          checkOutTime: new Date().toISOString(),
+          userId: userData.userId,
+          role: 'participant',
+          checkInTime: new Date().toISOString(),
           gpsInfo: gpsInfo || "GPS recorded",
           photoUrl,
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to save");
+      const data = await response.json();
 
-      setUiMessage({ type: "success", text: "Check-out recorded successfully." });
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to save");
+      }
+
+      setUiMessage({ type: "success", text: `Check-in recorded successfully. Status: ${data.status}` });
       setStep(3);
-    } catch (err) {
-      console.error(err);
-      setUiMessage({ type: "error", text: "Failed to save check-out. Please try again." });
+    } catch (errorCast) {
+      const message = errorCast instanceof Error ? errorCast.message : "Failed to save check-in. Please try again.";
+      console.error(message);
+      setUiMessage({ type: "error", text: message });
     } finally {
       setIsSubmitting(false);
     }
@@ -196,16 +241,18 @@ export default function CheckOutPage() {
 
   const renderStepper = () => (
     <div className="flex items-center justify-center gap-4 mb-10">
-      {[1, 2, 3].map((value, index) => (
+      {[1, 2, 3].map((value) => (
         <div key={value} className="flex items-center gap-4">
           <div
             className={`flex h-12 w-12 items-center justify-center rounded-full text-white font-bold text-lg transition-all ${
-              value < step ? "bg-[#16A34A]" : value === step ? "bg-[#14532D]" : "bg-gray-300"
+              value <= step
+                ? "bg-[#16A34A]"
+                : "bg-gray-300"
             }`}
           >
-            {value < step ? "✓" : value}
+            {value < step || (value === 3 && step === 3) ? "✓" : value}
           </div>
-          {index < 2 && (
+          {value < 3 && (
             <div className={`hidden sm:block w-20 h-1 rounded ${value < step ? "bg-[#16A34A]" : "bg-gray-300"}`} />
           )}
         </div>
@@ -220,7 +267,7 @@ export default function CheckOutPage() {
           <div className="max-w-2xl mx-auto">
             <div className="bg-[#E3F6E5] rounded-2xl border-2 border-[#16A34A] p-8 text-center">
               <h2 className="text-2xl font-bold text-[#14532D] mb-4">Location Verified</h2>
-              <p className="mb-6">You are at Igire Rwanda Organisation premises.</p>
+              <p className="mb-6 text-gray-700">You are at Igire Rwanda Organisation premises.</p>
               <button
                 onClick={handleGpsContinue}
                 className="w-full h-12 rounded-xl text-white font-semibold"
@@ -235,16 +282,39 @@ export default function CheckOutPage() {
 
       return (
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl font-bold mb-6">Step 1: GPS Verification (Check-out)</h2>
+          <h2 className="text-3xl font-bold mb-6">Step 1: GPS Verification</h2>
           <button
             onClick={handleVerifyLocation}
             disabled={gpsStatus === "checking"}
-            className="w-full h-14 rounded-xl text-white font-semibold disabled:opacity-70"
+            className="w-full h-14 rounded-xl text-white font-semibold disabled:opacity-70 transition-all shadow-sm hover:shadow-md mt-4"
             style={{ background: "#14532D" }}
           >
-            {gpsStatus === "checking" ? "Checking Location..." : "Verify My Location"}
+            {gpsStatus === "checking" ? "Verifying GPS Coordinates..." : "Verify My Location"}
           </button>
-          {gpsError && <p className="mt-6 text-red-600 text-center">{gpsError}</p>}
+          
+          {gpsError && (
+            <div className="mt-8 bg-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-sm animate-in fade-in zoom-in duration-300">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="bg-red-100 p-2 rounded-full">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D32F2F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-red-700">Verification Failed</h3>
+              </div>
+              <p className="text-red-900 font-medium mb-2">
+                We detected that you are not physically present at the Igire Rwanda Organisation premises. 
+                <span className="font-bold"> ({gpsError})</span>
+              </p>
+              <div className="bg-white/60 p-4 rounded-xl mt-4">
+                <p className="text-sm text-red-800 font-semibold mb-1">Security Policy:</p>
+                <p className="text-sm text-red-700">
+                  Attendance can only be recorded when you are within the official geofenced headquarters radius. Remote check-ins are strictly prohibited. Please commute to the premises and try again.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -252,24 +322,18 @@ export default function CheckOutPage() {
     if (step === 2) {
       return (
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl font-bold mb-6">Step 2: Take Photo for Check-out</h2>
+          <h2 className="text-3xl font-bold mb-6">Step 2: Take Photo</h2>
 
           <div className="relative aspect-video bg-black rounded-2xl overflow-hidden mb-8 shadow-md">
             {cameraStatus === "captured" && capturedImage ? (
-              <Image src={capturedImage} alt="Captured" fill className="object-cover" />
+              <Image src={capturedImage} alt="Captured Photo" fill className="object-cover" />
             ) : (
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                autoPlay
-                playsInline
-                muted
-              />
+              <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
             )}
 
             {cameraStatus === "active" && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-52 h-64 border-4 border-white/60 rounded-full" />
+                <div className="w-56 h-72 border-4 border-white/70 rounded-full" />
               </div>
             )}
           </div>
@@ -277,18 +341,15 @@ export default function CheckOutPage() {
           <div className="flex gap-4">
             {cameraStatus === "captured" ? (
               <>
-                <button
-                  onClick={handleRetakePhoto}
-                  className="flex-1 h-14 border-2 border-gray-300 rounded-xl font-semibold hover:bg-gray-50"
-                >
+                <button onClick={handleRetakePhoto} className="flex-1 h-14 border-2 border-gray-300 rounded-xl font-semibold hover:bg-gray-50">
                   Retake Photo
                 </button>
                 <button
-                  onClick={handleSubmitCheckOut}
+                  onClick={handleSubmitCheckIn}
                   disabled={isSubmitting}
                   className="flex-1 h-14 bg-[#14532D] text-white rounded-xl font-semibold disabled:opacity-70"
                 >
-                  {isSubmitting ? "Saving..." : "Submit Check-out"}
+                  {isSubmitting ? "Saving..." : "Submit Check-in"}
                 </button>
               </>
             ) : (
@@ -308,18 +369,27 @@ export default function CheckOutPage() {
       );
     }
 
+    // Step 3 - Complete Screen
     return (
       <div className="max-w-2xl mx-auto text-center">
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-12">
-          <h2 className="text-4xl font-bold text-green-700 mb-4">Check-out Complete</h2>
-          <p className="text-lg text-gray-700 mb-8">Your attendance for today has been successfully recorded.</p>
+        <div className="bg-[#E3F6E5] rounded-3xl p-12 border border-[#16A34A]">
+          <h2 className="text-4xl font-bold text-[#14532D] mb-3">Check-in Complete</h2>
+          <p className="text-lg text-gray-700 mb-10">Your attendance and photo have been successfully recorded.</p>
           <button
             onClick={() => window.location.href = "/dashboard/participant"}
-            className="px-10 py-4 bg-[#14532D] text-white rounded-xl font-semibold"
+            className="px-10 py-4 bg-[#14532D] text-white rounded-2xl font-semibold text-lg hover:bg-[#0f3d23]"
           >
             Return to Dashboard
           </button>
         </div>
+
+        {uiMessage && (
+          <div className={`mt-8 p-4 rounded-2xl text-center ${
+            uiMessage.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
+          }`}>
+            {uiMessage.text}
+          </div>
+        )}
       </div>
     );
   };
@@ -334,16 +404,6 @@ export default function CheckOutPage() {
           <div className="max-w-5xl mx-auto">
             {renderStepper()}
             {renderStepContent()}
-
-            {uiMessage && (
-              <div className={`mt-6 p-4 rounded-xl text-center ${
-                uiMessage.type === "success" 
-                  ? "bg-green-50 border border-green-200 text-green-700" 
-                  : "bg-red-50 border border-red-200 text-red-700"
-              }`}>
-                {uiMessage.text}
-              </div>
-            )}
           </div>
         </main>
       </div>

@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 type FieldErrors = Record<string, string>;
+
+interface ProgramOption {
+  _id: string;
+  name: string;
+  code: string;
+}
 
 interface FormData {
   name: string;
@@ -55,6 +61,25 @@ export default function ParticipantRegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [programs, setPrograms] = useState<ProgramOption[]>([]);
+  const [loadingPrograms, setLoadingPrograms] = useState(true);
+
+  useEffect(() => {
+    async function loadPrograms() {
+      try {
+        const res = await fetch("/api/public/programs");
+        if (res.ok) {
+          const data = await res.json();
+          setPrograms(data);
+        }
+      } catch (err) {
+        console.error("Failed to load programs:", err);
+      } finally {
+        setLoadingPrograms(false);
+      }
+    }
+    loadPrograms();
+  }, []);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -206,10 +231,10 @@ export default function ParticipantRegisterPage() {
                   fieldErrors.programId ? "border-red-500" : "border-gray-300"
                 }`}
               >
-                <option value="">Select your program</option>
-                <option value="web-fundamentals">Web Fundamentals</option>
-                <option value="advanced-backend">Advanced Backend</option>
-                <option value="advanced-frontend">Advanced Frontend</option>
+                <option value="">{loadingPrograms ? "Loading programs..." : "Select your program"}</option>
+                {programs.map((program) => (
+                  <option key={program._id} value={program._id}>{program.name}</option>
+                ))}
               </select>
               {fieldErrors.programId && (
                 <p className="mt-1 text-sm text-red-600">{fieldErrors.programId}</p>

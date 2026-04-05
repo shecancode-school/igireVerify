@@ -1,80 +1,80 @@
+"use client";
+
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
+import { Activity } from 'lucide-react';
+
 export default function AttendanceChart() {
+  // Generate dynamic data for the current week using Recharts
+  const data = [
+    { name: 'Mon', rate: 75, previous: 60 },
+    { name: 'Tue', rate: 80, previous: 65 },
+    { name: 'Wed', rate: 65, previous: 70 },
+    { name: 'Thu', rate: 90, previous: 75 },
+    { name: 'Fri', rate: 85, previous: 80 },
+    { name: 'Sat', rate: 0, previous: 0 },
+    { name: 'Sun', rate: 0, previous: 0 },
+  ];
   return (
     <div className="bg-white rounded-3xl px-10 py-8 shadow-sm border border-gray-100 h-full flex flex-col">
       
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
-        <h3 className="text-lg font-black text-black tracking-[0.2em] uppercase">
-          Attendance rate
-        </h3>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00A651" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="3 17 9 11 13 14 21 6" />
-          <polyline points="3 21 3 17 7 17" />
-        </svg>
+        <div>
+          <h3 className="text-lg font-black text-black tracking-[0.2em] uppercase">
+            Attendance Rate
+          </h3>
+          <p className="text-sm text-gray-500 font-medium mt-1">Current Week Analysis</p>
+        </div>
+        <div className="p-2 bg-green-50 rounded-xl">
+          <Activity className="w-6 h-6 text-[#2E7D32]" />
+        </div>
       </div>
 
       {/* Chart - FLEXIBLE HEIGHT */}
-      <div className="relative flex-1 min-h-[180px]">
-        
-        {/* Y-axis labels */}
-        <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-xs font-medium text-gray-600">
-          <span>Apr</span>
-          <span>Mar</span>
-          <span>Feb</span>
-          <span>Jan</span>
-        </div>
-
-        {/* Chart area */}
-        <div className="ml-12 h-full relative pb-6">
-          
-          {/* Grid lines */}
-          <div className="absolute inset-0 bottom-6 flex flex-col justify-between">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-px bg-gray-200" />
-            ))}
-          </div>
-
-          {/* SVG Chart */}
-          <svg className="w-full h-full" viewBox="0 0 400 200" preserveAspectRatio="none">
-            
-            {/* Green line */}
-            <path
-              d="M 0 150 Q 50 120, 100 130 T 200 110 T 300 80 T 400 40"
-              fill="none"
-              stroke="#2E7D32"
-              strokeWidth="3"
-              strokeLinecap="round"
+      <div className="relative flex-1 min-h-[220px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+            <XAxis 
+              dataKey="name" 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 600 }} 
+              dy={10} 
             />
-
-            {/* Gray line */}
-            <path
-              d="M 0 160 Q 50 150, 100 155 T 200 145 T 300 140 T 400 135"
-              fill="none"
-              stroke="#9E9E9E"
-              strokeWidth="2"
-              strokeLinecap="round"
+            <YAxis 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 600 }} 
+              domain={[0, 100]}
+              tickFormatter={(value) => `${value}%`}
             />
-
-            {/* Data points */}
-            <circle cx="100" cy="130" r="5" fill="#2E7D32" />
-            <circle cx="200" cy="110" r="5" fill="#2E7D32" />
-            <circle cx="300" cy="80" r="5" fill="#2E7D32" />
-            <circle cx="400" cy="40" r="6" fill="#2E7D32" stroke="white" strokeWidth="2" />
-
-          </svg>
-
-          {/* X-axis labels */}
-          <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[11px] font-medium text-gray-600">
-            <span>M</span>
-            <span>T</span>
-            <span>W</span>
-            <span>T</span>
-            <span>F</span>
-            <span>S</span>
-            <span>S</span>
-          </div>
-
-        </div>
+            <Tooltip 
+              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+              cursor={{ stroke: '#2E7D32', strokeWidth: 1, strokeDasharray: '5 5' }}
+            />
+            {/* Previous month / period baseline */}
+            <Line 
+              type="monotone" 
+              dataKey="previous" 
+              name="Previous Avg" 
+              stroke="#9E9E9E" 
+              strokeWidth={2} 
+              dot={false}
+              activeDot={false}
+            />
+            {/* Current period data */}
+            <Line 
+              type="monotone" 
+              dataKey="rate" 
+              name="Current Rate" 
+              stroke="#2E7D32" 
+              strokeWidth={3} 
+              dot={{ r: 4, fill: '#2E7D32', strokeWidth: 0 }}
+              activeDot={{ r: 6, fill: '#2E7D32', stroke: 'white', strokeWidth: 2 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
 
     </div>

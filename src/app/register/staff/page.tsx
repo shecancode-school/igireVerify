@@ -6,7 +6,7 @@ import Link from "next/link";
 
 type FieldErrors = Record<string, string>;
 
-const STAFF_POSITIONS = ["HR", "Facilitator", "General Staff"] as const;
+const STAFF_POSITIONS = ["HR", "Facilitator"] as const;
 
 function validateName(name: string): string | null {
   if (!name.trim()) return "Full name is required";

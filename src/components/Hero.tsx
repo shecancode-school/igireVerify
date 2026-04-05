@@ -26,7 +26,7 @@ export default function Hero() {
         <div className="w-full flex justify-center lg:justify-end animate-fade-up-delay relative z-10">
           <div className="w-full max-w-[580px] relative overflow-hidden rounded-2xl shadow-lg">
             <Image
-              src="/image (1).jpg"
+              src="/image.jpg"
               alt="IgireVerify Demo"
               width={580}
               height={500}

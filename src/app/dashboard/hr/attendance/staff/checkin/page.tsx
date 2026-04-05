@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
 
@@ -153,9 +154,7 @@ export default function CheckInPage() {
           setCheckInTime(new Date().toLocaleString());
         } else {
           setGpsStatus("error");
-          setGpsError(
-            `You are ${Math.round(distance)} meters away. You must be within ${IGIRE_RADIUS_METERS}m to check in.`
-          );
+          setGpsError(`Distance: ${Math.round(distance)}m away.`);
         }
       },
       (error) => {
@@ -331,8 +330,26 @@ export default function CheckInPage() {
             </button>
 
             {gpsStatus === "error" && gpsError && (
-              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600 font-medium whitespace-pre-line">{gpsError}</p>
+              <div className="mt-8 bg-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-sm animate-in fade-in zoom-in duration-300">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="bg-red-100 p-2 rounded-full">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D32F2F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-red-700">Verification Failed</h3>
+                </div>
+                <p className="text-red-900 font-medium mb-2">
+                  We detected that you are not physically present at the Igire Rwanda Organisation premises. 
+                  <span className="font-bold"> ({gpsError})</span>
+                </p>
+                <div className="bg-white/60 p-4 rounded-xl mt-4">
+                  <p className="text-sm text-red-800 font-semibold mb-1">Security Policy:</p>
+                  <p className="text-sm text-red-700">
+                    Attendance can only be recorded when you are within the official geofenced headquarters radius. Remote attendance tracking is strictly prohibited. Please commute to the premises and try again.
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -354,10 +371,11 @@ export default function CheckInPage() {
             <div className="relative w-full max-w-md mx-auto mb-6">
               <div className="aspect-[4/3] bg-black rounded-xl overflow-hidden relative">
                 {cameraStatus === "captured" && capturedImage ? (
-                  <img 
+                  <Image 
                     src={capturedImage} 
                     alt="Captured" 
-                    className="w-full h-full object-cover"
+                    fill
+                    style={{ objectFit: 'cover' }}
                   />
                 ) : (
                   <video

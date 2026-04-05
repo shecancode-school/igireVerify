@@ -6,20 +6,20 @@ export default function AttendanceHistory() {
     const [activeTab, setActiveTab] = useState<"week" | "month">("week");
 
     const weekData = {
-        checkedIn: 4,
-        percentage: 96,
-        checkedOut: 4,
+        checkedIn: 0,
+        percentage: 0,
+        checkedOut: 0,
         aiVerified: "AI Verified",
-        aiPercentage: 100,
+        aiPercentage: 0,
         onTime: "On-Time"
     };
 
     const monthData = {
-        checkedIn: 15,
-        percentage: 94,
-        checkedOut: 15,
+        checkedIn: 0,
+        percentage: 0,
+        checkedOut: 0,
         aiVerified: "AI Verified",
-        aiPercentage: 98,
+        aiPercentage: 0,
         onTime: "On-Time"
     };
 

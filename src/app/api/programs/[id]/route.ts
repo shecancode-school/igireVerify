@@ -1,0 +1,146 @@
+import { NextResponse, NextRequest } from "next/server";
+import { ObjectId } from "mongodb";
+import { getDb } from "@/lib/mongodb";
+import { requireAuthOrRedirect } from "@/lib/auth";
+
+/**
+ * GET /api/programs/[id]
+ * Get program details
+ */
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const claims = await requireAuthOrRedirect();
+    console.log(`[PROGRAMS/:id] ${claims.role} ${claims.userId} is viewing program ${params.id}`);
+    const programId = params.id;
+
+    // Validate ObjectId format
+    if (!ObjectId.isValid(programId)) {
+      return NextResponse.json({ error: "Invalid program ID" }, { status: 400 });
+    }
+
+    const db = await getDb();
+    const programs = db.collection("programs");
+
+    const program = await programs.findOne({
+      _id: new ObjectId(programId),
+      isActive: true,
+    });
+
+    if (!program) {
+      return NextResponse.json({ error: "Program not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(program);
+  } catch (error) {
+    console.error("[PROGRAMS] GET/:id error:", error);
+    return NextResponse.json({ error: "Failed to fetch program" }, { status: 500 });
+  }
+}
+
+/**
+ * PUT /api/programs/[id]
+ * Update program (Admin only)
+ */
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const claims = await requireAuthOrRedirect();
+
+    if (claims.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const programId = params.id;
+    if (!ObjectId.isValid(programId)) {
+      return NextResponse.json({ error: "Invalid program ID" }, { status: 400 });
+    }
+
+    const body = await req.json();
+    const { name, schedule, facilitators, hrOfficer, isActive } = body;
+
+    const db = await getDb();
+    const programs = db.collection("programs");
+
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
+    if (name) updateData.name = name;
+    if (schedule) updateData.schedule = schedule;
+    if (facilitators)
+      updateData.facilitators = facilitators.map((id: string) => new ObjectId(id));
+    if (hrOfficer !== undefined) updateData.hrOfficer = hrOfficer ? new ObjectId(hrOfficer) : null;
+    if (isActive !== undefined) updateData.isActive = isActive;
+
+    const result = await programs.updateOne(
+      { _id: new ObjectId(programId) },
+      { $set: updateData }
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ error: "Program not found" }, { status: 404 });
+    }
+
+    console.log(`[PROGRAMS] Updated program ${programId}`);
+
+    const updated = await programs.findOne({ _id: new ObjectId(programId) });
+    return NextResponse.json({ ok: true, program: updated });
+  } catch (error) {
+    console.error("[PROGRAMS] PUT error:", error);
+    return NextResponse.json({ error: "Failed to update program" }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/programs/[id]
+ * Soft delete program (Admin only)
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const claims = await requireAuthOrRedirect();
+
+    // Only admin can delete programs
+    if (claims.role !== "admin") {
+      console.warn(`[PROGRAMS] Unauthorized program deletion attempt by ${claims.role} user ${claims.userId}`);
+      return NextResponse.json({ error: "Forbidden - Admin only" }, { status: 403 });
+    }
+
+    const programId = params.id;
+
+    // Validate ObjectId format
+    if (!ObjectId.isValid(programId)) {
+      return NextResponse.json({ error: "Invalid program ID" }, { status: 400 });
+    }
+
+    const db = await getDb();
+    const programs = db.collection("programs");
+
+    // Soft delete by setting isActive to false
+    const result = await programs.updateOne(
+      { _id: new ObjectId(programId) },
+      {
+        $set: {
+          isActive: false,
+          deletedAt: new Date(),
+          deletedBy: claims.userId
+        }
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ error: "Program not found" }, { status: 404 });
+    }
+
+    console.log(`[PROGRAMS] Soft deleted program ${programId} by admin ${claims.userId}`);
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("[PROGRAMS] DELETE error:", error);
+    return NextResponse.json({ error: "Failed to delete program" }, { status: 500 });
+  }
+}
