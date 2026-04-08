@@ -56,3 +56,10 @@ export const joinAdminRoom = (socket?: Socket | null) => {
     targetSocket.emit('join-admin');
   }
 };
+
+export const joinStaffMonitorRoom = (socket?: Socket | null) => {
+  const targetSocket = socket || (typeof window !== 'undefined' ? (window.__programSocket || window.__userSocket) : null);
+  if (targetSocket) {
+    targetSocket.emit('join-staff-monitor');
+  }
+};

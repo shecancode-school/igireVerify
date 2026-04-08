@@ -50,6 +50,11 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIo) => {
         console.log('Admin joined global dashboard room');
       });
 
+      socket.on('join-staff-monitor', () => {
+        socket.join('staff-monitor');
+        console.log('Staff joined global monitor room');
+      });
+
       socket.on('disconnect', () => {
         console.log('Client disconnected:', socket.id);
       });

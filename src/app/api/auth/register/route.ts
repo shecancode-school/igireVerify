@@ -16,10 +16,15 @@ export async function POST(req: NextRequest) {
     // Validate input using Zod schema
     const result = registerSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: "Validation failed"},
-        { status: 400 }
-      );
+      const first = result.error.flatten().fieldErrors;
+      const msg =
+        first.email?.[0] ||
+        first.programId?.[0] ||
+        first.password?.[0] ||
+        first.confirmPassword?.[0] ||
+        first.name?.[0] ||
+        "Validation failed";
+      return NextResponse.json({ error: msg }, { status: 400 });
     }
 
     const { name, email, password, role, programId, position } = result.data;

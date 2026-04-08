@@ -29,12 +29,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "User or Program not found" }, { status: 404 });
     }
 
-    // Get current month range
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-    // Get all attendance records for this user this month
     const userRecords = await attendance.find({
       userId,
       programId,
@@ -44,10 +42,8 @@ export async function GET(req: Request) {
       }
     }).toArray();
 
-    // Calculate stats
     const uniqueDaysAttended = new Set(userRecords.map(r => new Date(r.createdAt).toDateString())).size;
 
-    // Check today's status
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -66,8 +62,7 @@ export async function GET(req: Request) {
 
     const pendingAlerts = userRecords.filter(r => r.type === 'checkin' && r.status === 'late').length;
 
-    // --- Dynamic Missed Days Calculation ---
-    // Calculate expected days from enrollment date or start of month (whichever is later) until today
+    // Expected schedule days from enrollment (or month start) through today.
     const calcStart = user.enrollmentDate && new Date(user.enrollmentDate) > startOfMonth 
       ? new Date(user.enrollmentDate) 
       : startOfMonth;

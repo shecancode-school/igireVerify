@@ -43,7 +43,6 @@ export default function AttendanceHistory({ programId, userId }: HistoryProps) {
 
     const currentData = activeTab === "week" ? data?.week : data?.month;
 
-    // Derived AI verified data (simulated for now but dynamic count)
     const aiVerifiedCount = currentData?.uniqueDays || 0;
     const aiPercentage = currentData?.checkedIn > 0 ? Math.round((aiVerifiedCount / currentData.checkedIn) * 100) : 0;
     const overallPercentage = currentData?.uniqueDays > 0 ? 100 : 0; // Simplified
@@ -52,7 +51,6 @@ export default function AttendanceHistory({ programId, userId }: HistoryProps) {
     return (
         <div className="bg-[#E5E5E5] rounded-3xl p-7 shadow-sm">
 
-            {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-[#16A34A] rounded-full flex items-center justify-center">

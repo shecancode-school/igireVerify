@@ -39,7 +39,6 @@ function distanceInMeters(lat1: number, lng1: number, lat2: number, lng2: number
 }
 
 export default function CheckInPage() {
-  // This would be passed from server component or fetched via API
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -52,7 +51,6 @@ export default function CheckInPage() {
   }, [socket, userData]);
 
   useEffect(() => {
-    // Fetch user data - in a real app this would come from props or context
     const fetchUserData = async () => {
       try {
         const response = await fetch('/api/auth/me');
@@ -85,10 +83,7 @@ export default function CheckInPage() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // Camera setup hook is unconditional and placed before early return
-  // Camera setup hook - refined to prevent race conditions
   useEffect(() => {
-    // Only run when we are specifically on step 2 and the camera is not already active
     if (step !== 2 || cameraStatus !== "idle") return;
 
     let mounted = true;
@@ -132,13 +127,9 @@ export default function CheckInPage() {
 
     return () => {
       mounted = false;
-      // ONLY stop the stream if we are actually changing steps away from Step 2
-      // or if the component is unmounting. 
-      // We do NOT want to stop it just because cameraStatus changed to "active".
     };
   }, [step, cameraStatus]);
 
-  // Separate effect for cleanup when leaving step 2
   useEffect(() => {
     return () => {
       if (step !== 2) {
@@ -233,7 +224,6 @@ export default function CheckInPage() {
     setUiMessage(null);
 
     try {
-      // Step 1: Pre-flight validation — check rules BEFORE uploading photos
       const preflightRes = await fetch("/api/attendance/preflight", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -255,7 +245,6 @@ export default function CheckInPage() {
         throw new Error(preflightData.error || "Attendance rules could not be verified. Please try again.");
       }
 
-      // Step 2: Rules passed — now upload photo to Cloudinary
       let photoUrl = "";
       try {
         photoUrl = await uploadToCloudinary(capturedImage, "igire/attendance");
@@ -264,7 +253,6 @@ export default function CheckInPage() {
         throw new Error("Unable to securely store your photo. Please check your internet connection and try again.");
       }
 
-      // Step 3: Record attendance
       const response = await fetch("/api/attendance/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -318,7 +306,13 @@ export default function CheckInPage() {
               : "bg-gray-300"
               }`}
           >
-            {value < step || (value === 3 && step === 3) ? "✓" : value}
+            {value < step || (value === 3 && step === 3) ? (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            ) : (
+              value
+            )}
           </div>
           {value < 3 && (
             <div className={`hidden sm:block w-20 h-1 rounded ${value < step ? "bg-[#16A34A]" : "bg-gray-300"}`} />
@@ -436,7 +430,6 @@ export default function CheckInPage() {
       );
     }
 
-    // Step 3 - Complete Screen
     return (
       <div className="max-w-2xl mx-auto text-center">
         <div className="bg-[#E3F6E5] rounded-3xl p-12 border border-[#16A34A]">

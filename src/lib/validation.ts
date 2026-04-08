@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// ========== PASSWORD VALIDATION ==========
 export const passwordSchema = z
   .string()
   .min(12, "Password must be at least 12 characters")
@@ -9,7 +8,6 @@ export const passwordSchema = z
   .regex(/[0-9]/, "Password must contain a number")
   .regex(/[^a-zA-Z0-9]/, "Password must contain at least one special character");
 
-// ========== AUTH VALIDATION ==========
 export const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").trim(),
   email: z.string().email("Invalid email").toLowerCase(),
@@ -21,15 +19,36 @@ export const registerSchema = z.object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
-});
+}).refine(
+  (data) => {
+    if (data.role !== "staff") return true;
+    const e = data.email.toLowerCase().trim();
+    const at = e.lastIndexOf("@");
+    if (at === -1) return false;
+    return e.slice(at + 1) === "igirerwanda.org";
+  },
+  {
+    message: "Staff accounts must use an @igirerwanda.org email address",
+    path: ["email"],
+  }
+).refine(
+  (data) => {
+    if (data.role !== "staff") return true;
+    const pid = (data.programId ?? "").toString().trim();
+    return pid.length === 0;
+  },
+  {
+    message: "Staff registration does not include a program",
+    path: ["programId"],
+  }
+);
 
 export const loginSchema = z.object({
   email: z.string().email("Invalid email").toLowerCase(),
   password: z.string().min(1, "Password required"),
 });
 
-// ========== ADMIN CREATION (INTERNAL ONLY) ==========
-// Only for super admin use via secure endpoint
+/** Used only by the secured create-admin API (requires ADMIN_SECRET_KEY). */
 export const createAdminSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").trim(),
   email: z.string().email("Invalid email").toLowerCase(),
@@ -41,7 +60,6 @@ export const createAdminSchema = z.object({
   path: ["confirmPassword"],
 });
 
-// ========== ATTENDANCE VALIDATION ==========
 export const gpsLocationSchema = z.object({
   latitude: z.number().min(-90).max(90, "Invalid latitude"),
   longitude: z.number().min(-180).max(180, "Invalid longitude"),
@@ -77,7 +95,6 @@ export const manualAttendanceSchema = z.object({
   notes: z.string().max(500, "Notes must be under 500 characters").optional(),
 });
 
-// ========== PROGRAM VALIDATION ==========
 export const programScheduleSchema = z.object({
   checkInStart: z.string().regex(/^\d{2}:\d{2}$/, "Invalid time format (HH:MM)"),
   checkInEnd: z.string().regex(/^\d{2}:\d{2}$/, "Invalid time format (HH:MM)"),
@@ -103,7 +120,6 @@ export const createProgramSchema = z.object({
   path: ["endDate"],
 });
 
-// ========== USER MANAGEMENT VALIDATION ==========
 export const createUserSchema = z.object({
   name: z.string().min(2, "Name required").trim(),
   email: z.string().email("Invalid email").toLowerCase(),
@@ -121,7 +137,6 @@ export const updateUserSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-// Export types
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CheckInInput = z.infer<typeof checkInSchema>;
