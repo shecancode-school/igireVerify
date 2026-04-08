@@ -10,6 +10,7 @@ export const setSocketServer = (socketServer: ServerIO) => {
 export type AttendanceUpdatePayload = {
   type: 'checkin' | 'checkout';
   userId: string;
+  programId: string;
   userName: string;
   programName: string;
   status?: string;
@@ -19,8 +20,13 @@ export type AttendanceUpdatePayload = {
 
 export const emitAttendanceUpdate = (programId: string, attendanceData: AttendanceUpdatePayload) => {
   if (io) {
+    // Emit to specific program room (for staff monitoring that program)
     io.to(`program-${programId}`).emit('attendance-update', attendanceData);
-    console.log(`Emitted attendance update to program-${programId}:`, attendanceData);
+    
+    // Emit to admin room (for global admin overview)
+    io.to('admin-dashboard').emit('attendance-update', attendanceData);
+    
+    console.log(`Emitted attendance update to program-${programId} and admin-dashboard:`, attendanceData);
   } else {
     console.warn('Socket.io server not initialized');
   }

@@ -1,0 +1,27 @@
+[
+  {
+    "id": "69d190713dc402bd16ed346c",
+    "name": "advanced backend",
+    "code": "2026"
+  },
+  {
+    "id": "69d4eec4de15dc9846b54b19",
+    "name": "Web fundamentals",
+    "code": "web123"
+  },
+  {
+    "id": "69d505a47919648069f38d4e",
+    "name": "Web Fundamentals",
+    "code": "web-fundamentals"
+  },
+  {
+    "id": "69d505a47919648069f38d4f",
+    "name": "Advanced Frontend",
+    "code": "advanced-frontend"
+  },
+  {
+    "id": "69d505a47919648069f38d50",
+    "name": "Advanced Backend",
+    "code": "advanced-backend"
+  }
+]

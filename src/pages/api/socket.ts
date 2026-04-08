@@ -45,6 +45,11 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIo) => {
         console.log(`User joined program room: ${programId}`);
       });
 
+      socket.on('join-admin', () => {
+        socket.join('admin-dashboard');
+        console.log('Admin joined global dashboard room');
+      });
+
       socket.on('disconnect', () => {
         console.log('Client disconnected:', socket.id);
       });

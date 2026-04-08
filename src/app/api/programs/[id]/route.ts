@@ -9,12 +9,13 @@ import { requireAuthOrRedirect } from "@/lib/auth";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const claims = await requireAuthOrRedirect();
-    console.log(`[PROGRAMS/:id] ${claims.role} ${claims.userId} is viewing program ${params.id}`);
-    const programId = params.id;
+    const { id } = await params;
+    console.log(`[PROGRAMS/:id] ${claims.role} ${claims.userId} is viewing program ${id}`);
+    const programId = id;
 
     // Validate ObjectId format
     if (!ObjectId.isValid(programId)) {
@@ -46,7 +47,7 @@ export async function GET(
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const claims = await requireAuthOrRedirect();
@@ -55,19 +56,23 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const programId = params.id;
+    const { id: programId } = await params;
     if (!ObjectId.isValid(programId)) {
       return NextResponse.json({ error: "Invalid program ID" }, { status: 400 });
     }
 
     const body = await req.json();
-    const { name, schedule, facilitators, hrOfficer, isActive } = body;
+    const { name, code, description, startDate, endDate, schedule, facilitators, hrOfficer, isActive } = body;
 
     const db = await getDb();
     const programs = db.collection("programs");
 
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (name) updateData.name = name;
+    if (code) updateData.code = code.toLowerCase();
+    if (description !== undefined) updateData.description = description;
+    if (startDate) updateData.startDate = new Date(startDate);
+    if (endDate) updateData.endDate = new Date(endDate);
     if (schedule) updateData.schedule = schedule;
     if (facilitators)
       updateData.facilitators = facilitators.map((id: string) => new ObjectId(id));
@@ -95,11 +100,11 @@ export async function PUT(
 
 /**
  * DELETE /api/programs/[id]
- * Soft delete program (Admin only)
+ * Permanent delete program (Admin only)
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const claims = await requireAuthOrRedirect();
@@ -110,7 +115,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden - Admin only" }, { status: 403 });
     }
 
-    const programId = params.id;
+    const { id: programId } = await params;
 
     // Validate ObjectId format
     if (!ObjectId.isValid(programId)) {
@@ -120,23 +125,16 @@ export async function DELETE(
     const db = await getDb();
     const programs = db.collection("programs");
 
-    // Soft delete by setting isActive to false
-    const result = await programs.updateOne(
-      { _id: new ObjectId(programId) },
-      {
-        $set: {
-          isActive: false,
-          deletedAt: new Date(),
-          deletedBy: claims.userId
-        }
-      }
-    );
+    // Permanent delete
+    const result = await programs.deleteOne({
+      _id: new ObjectId(programId)
+    });
 
-    if (result.matchedCount === 0) {
+    if (result.deletedCount === 0) {
       return NextResponse.json({ error: "Program not found" }, { status: 404 });
     }
 
-    console.log(`[PROGRAMS] Soft deleted program ${programId} by admin ${claims.userId}`);
+    console.log(`[PROGRAMS] Permanently deleted program ${programId} by admin ${claims.userId}`);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

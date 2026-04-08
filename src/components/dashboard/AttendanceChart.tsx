@@ -1,19 +1,48 @@
 "use client";
 
+import { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { Activity } from 'lucide-react';
+import { useSocket } from '@/lib/socket';
 
-export default function AttendanceChart() {
-  // Generate dynamic data for the current week using Recharts
-  const data = [
-    { name: 'Mon', rate: 75, previous: 60 },
-    { name: 'Tue', rate: 80, previous: 65 },
-    { name: 'Wed', rate: 65, previous: 70 },
-    { name: 'Thu', rate: 90, previous: 75 },
-    { name: 'Fri', rate: 85, previous: 80 },
-    { name: 'Sat', rate: 0, previous: 0 },
-    { name: 'Sun', rate: 0, previous: 0 },
-  ];
+interface ChartProps {
+  programId: string;
+  userId: string;
+}
+
+export default function AttendanceChart({ programId, userId }: ChartProps) {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const socket = useSocket();
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch(`/api/attendance/user-chart?userId=${userId}&programId=${programId}`);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      }
+    } catch (error) {
+      console.error("Chart fetch failed", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userId && programId) fetchData();
+  }, [userId, programId]);
+
+  // Handle real-time updates
+  useEffect(() => {
+    if (!socket) return;
+    const handleUpdate = () => fetchData();
+    socket.on('attendance-update', handleUpdate);
+    return () => { socket.off('attendance-update', handleUpdate); };
+  }, [socket]);
+
+  if (loading) return <div className="h-full bg-white rounded-3xl p-8 animate-pulse flex items-center justify-center">Loading Chart...</div>;
+
   return (
     <div className="bg-white rounded-3xl px-10 py-8 shadow-sm border border-gray-100 h-full flex flex-col">
       

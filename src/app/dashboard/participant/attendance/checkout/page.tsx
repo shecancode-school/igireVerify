@@ -74,39 +74,64 @@ export default function CheckOutPage() {
     fetchUserData();
   }, []);
 
-  // Camera setup
+  // Camera setup hook - refined to prevent race conditions
   useEffect(() => {
-    if (step !== 2) return;
+    // Only run when we are specifically on step 2 and the camera is not already active
+    if (step !== 2 || cameraStatus !== "idle") return;
+
+    let mounted = true;
+    let localStream: MediaStream | null = null;
 
     async function startCamera() {
       try {
-        setCameraStatus("idle");
         setCameraError(null);
-
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
           audio: false,
         });
 
+        if (!mounted) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+
+        localStream = stream;
         streamRef.current = stream;
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
-            videoRef.current?.play();
-            setCameraStatus("active");
+             if (videoRef.current && mounted) {
+               videoRef.current.play().catch(e => console.error("Video play failed:", e));
+               setCameraStatus("active");
+             }
           };
         }
       } catch (error) {
-        console.error("Camera error:", error);
-        setCameraStatus("error");
-        setCameraError("Failed to access camera. Please allow camera permission.");
+        if (mounted) {
+          console.error("Camera access failed:", error);
+          setCameraStatus("error");
+          setCameraError("Camera access denied or unavailable. Please check permissions.");
+        }
       }
     }
 
     startCamera();
 
     return () => {
-      streamRef.current?.getTracks().forEach((track) => track.stop());
+      mounted = false;
+      // ONLY stop the stream if we are actually changing steps away from Step 2
+      // or if the component is unmounting. 
+    };
+  }, [step, cameraStatus]);
+
+  // Separate effect for cleanup when leaving step 2
+  useEffect(() => {
+    return () => {
+      if (step !== 2) {
+        streamRef.current?.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+      }
     };
   }, [step]);
 
@@ -181,8 +206,38 @@ export default function CheckOutPage() {
     setUiMessage(null);
 
     try {
-      const photoUrl = await uploadToCloudinary(capturedImage, "igire/attendance");
+      // Step 1: Pre-flight validation — check rules BEFORE uploading photos
+      const preflightRes = await fetch("/api/attendance/preflight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userData.userId,
+          programId: userData.programId,
+          type: "checkout",
+          role: userData.role || "participant",
+        }),
+      });
 
+      if (!preflightRes.ok) {
+        let preflightData;
+        try {
+          preflightData = await preflightRes.json();
+        } catch {
+          throw new Error("Connection issue detected. Please check your internet connection and try again.");
+        }
+        throw new Error(preflightData.error || "Attendance rules could not be verified. Please try again.");
+      }
+
+      // Step 2: Rules passed — now upload photo to Cloudinary
+      let photoUrl = "";
+      try {
+        photoUrl = await uploadToCloudinary(capturedImage, "igire/attendance");
+      } catch (storageErr) {
+        console.error("[STORAGE_FAILURE]", storageErr);
+        throw new Error("Unable to securely store your photo. Please check your internet connection and try again.");
+      }
+
+      // Step 3: Record attendance
       const response = await fetch("/api/attendance/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -202,18 +257,29 @@ export default function CheckOutPage() {
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || "Failed to save");
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          throw new Error("Connection issue detected. Please check your internet connection and try again.");
+        }
+        throw new Error(errorData.error || "Failed to record check-out.");
       }
 
+      const data = await response.json();
       setUiMessage({ type: "success", text: `Check-out recorded successfully. Status: ${data.status}` });
       setStep(3);
+
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to save check-out. Please try again.";
-      console.error(message);
-      setUiMessage({ type: "error", text: message });
+      const message = err instanceof Error ? err.message : "An unexpected error occurred.";
+
+      const finalMessage = message.includes("Failed to fetch")
+        ? "Network connection issue detected. Please ensure you have a stable internet connection and try again."
+        : message;
+
+      console.error("[CHECKOUT_PHASE_ERROR]", finalMessage);
+      setUiMessage({ type: "error", text: finalMessage });
     } finally {
       setIsSubmitting(false);
     }
@@ -282,13 +348,12 @@ export default function CheckOutPage() {
                 <h3 className="text-xl font-bold text-red-700">Verification Failed</h3>
               </div>
               <p className="text-red-900 font-medium mb-2">
-                We detected that you are not physically present at the Igire Rwanda Organisation premises. 
-                <span className="font-bold"> ({gpsError})</span>
+                You are not currently at Igire Rwanda Organisation premises. Please be physically present to record attendance.
               </p>
               <div className="bg-white/60 p-4 rounded-xl mt-4">
                 <p className="text-sm text-red-800 font-semibold mb-1">Security Policy:</p>
                 <p className="text-sm text-red-700">
-                  Attendance can only be recorded when you are within the official geofenced headquarters radius. Remote check-outs are strictly prohibited. Please commute to the premises and try again.
+                  Attendance can only be recorded when you are within the official geofenced headquarters radius. Please commute to the premises and try again.
                 </p>
               </div>
             </div>
@@ -356,31 +421,19 @@ export default function CheckOutPage() {
       );
     }
 
-    // Step 3 - Success Screen
+    // Step 3 - Complete Screen
     return (
       <div className="max-w-2xl mx-auto text-center">
         <div className="bg-[#E3F6E5] rounded-3xl p-12 border border-[#16A34A]">
-          <h2 className="text-4xl font-bold text-[#14532D] mb-3">Check-out Complete</h2>
-          <p className="text-lg text-gray-700 mb-10">
-            Your check-out has been successfully recorded.
-          </p>
+          <h2 className="text-4xl font-bold text-[#14532D] mb-3">Session Complete</h2>
+          <p className="text-lg text-gray-700 mb-10">Your check-out has been successfully recorded. You are now free to leave.</p>
           <button
             onClick={() => window.location.href = "/dashboard/participant"}
-            className="px-10 py-4 bg-[#14532D] text-white rounded-2xl font-semibold text-lg hover:bg-[#0f3d23] transition-colors"
+            className="px-10 py-4 bg-[#14532D] text-white rounded-2xl font-semibold text-lg hover:bg-[#0f3d23]"
           >
             Return to Dashboard
           </button>
         </div>
-
-        {uiMessage && (
-          <div className={`mt-8 p-4 rounded-2xl text-center ${
-            uiMessage.type === "success"
-              ? "bg-green-50 text-green-700 border border-green-200"
-              : "bg-red-50 text-red-700 border border-red-200"
-          }`}>
-            {uiMessage.text}
-          </div>
-        )}
       </div>
     );
   };
@@ -403,6 +456,27 @@ export default function CheckOutPage() {
             <div className="max-w-5xl mx-auto">
               {renderStepper()}
               {renderStepContent()}
+
+              {/* Global notification — visible on ALL steps */}
+              {uiMessage && (
+                <div className={`mt-8 max-w-2xl mx-auto p-6 rounded-2xl text-center font-medium border animate-in fade-in slide-in-from-bottom-4 duration-500 ${
+                  uiMessage.type === "success"
+                    ? "bg-green-50 border-green-200 text-green-800"
+                    : "bg-red-50 border-red-200 text-red-800"
+                }`}>
+                  <div className="flex items-center justify-center gap-3 mb-1">
+                    {uiMessage.type === "success" ? (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    ) : (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    )}
+                    <span className="text-lg">{uiMessage.text}</span>
+                  </div>
+                  {uiMessage.type === "error" && (
+                    <p className="text-sm opacity-80 mt-1">Please try again or visit the Help Desk if you need assistance.</p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </main>

@@ -8,7 +8,7 @@ import Navbar from "@/components/Navbar";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1); // 1 = email, 2 = password
+  const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

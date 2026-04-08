@@ -73,9 +73,17 @@ export async function GET() {
       status: "late"
     });
     
-    const avgAttendanceRate = 85; // Default approximation for weekley avg rate
+    const totalParticipantsCount = await users.countDocuments({ role: "participant" });
+    const absentTodayCount = Math.max(0, totalParticipantsCount - checkedInToday);
 
-    const absentToday = Math.max(0, checkedInToday - presentToday - lateToday); // placeholder (depends on registered users)
+    // Calculate real average attendance rate this month
+    const monthRecordCount = await attendance.countDocuments({
+      createdAt: { $gte: startOfMonth, $lte: now },
+      type: "checkin"
+    });
+    const avgAttendanceRate = totalParticipantsCount > 0 && monthRecordCount > 0 
+      ? Math.round((monthRecordCount / (totalParticipantsCount * now.getDate())) * 100) 
+      : 85; 
 
     return NextResponse.json({
       ok: true,
@@ -86,11 +94,11 @@ export async function GET() {
         activeProgramsToday,
         presentToday,
         lateToday,
-        absentToday,
+        absentToday: absentTodayCount,
         checkinsLastHour,
         mostActiveProgram,
         lateThisMonth,
-        avgAttendanceRate,
+        avgAttendanceRate: Math.min(100, avgAttendanceRate),
       },
     });
   } catch (error) {

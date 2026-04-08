@@ -1,25 +1,23 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 type FieldErrors = Record<string, string>;
 
-const STAFF_POSITIONS = ["HR", "Facilitator"] as const;
-
 function validateName(name: string): string | null {
   if (!name.trim()) return "Full name is required";
   if (name.length < 2) return "Full name must be at least 2 characters";
   if (name.length > 100) return "Full name is too long";
-  const nameRegex = /^[a-zA-Z\\s'-]+$/;
+  const nameRegex = /^[a-zA-Z\s'-]+$/;
   if (!nameRegex.test(name)) return "Name can only contain letters, spaces, hyphens, and apostrophes";
   return null;
 }
 
 function validateEmail(email: string): string | null {
   if (!email.trim()) return "Email is required";
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(email)) return "Invalid email format";
   if (email.length > 254) return "Email is too long";
   return null;
@@ -35,16 +33,41 @@ function validatePassword(password: string): string | null {
   return null;
 }
 
+interface ProgramOption {
+  _id: string;
+  name: string;
+}
+
 export default function StaffRegisterPage() {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    position: "",
     password: "",
     confirmPassword: "",
+    programId: "",
   });
+
+  const [programs, setPrograms] = useState<ProgramOption[]>([]);
+  const [loadingPrograms, setLoadingPrograms] = useState(true);
+
+  useEffect(() => {
+    async function loadPrograms() {
+      try {
+        const res = await fetch("/api/public/programs");
+        if (res.ok) {
+          const data = await res.json();
+          setPrograms(data);
+        }
+      } catch (err) {
+        console.error("Failed to load programs:", err);
+      } finally {
+        setLoadingPrograms(false);
+      }
+    }
+    loadPrograms();
+  }, []);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -74,8 +97,8 @@ export default function StaffRegisterPage() {
       errors.confirmPassword = "Passwords do not match";
     }
 
-    if (!formData.position) {
-      errors.position = "Please select your staff position";
+    if (!formData.programId) {
+      errors.programId = "Please select a program";
     }
 
     setFieldErrors(errors);
@@ -99,9 +122,9 @@ export default function StaffRegisterPage() {
           role: "staff",
           name: formData.name.trim(),
           email: formData.email.toLowerCase().trim(),
-          position: formData.position,
           password: formData.password,
           confirmPassword: formData.confirmPassword,
+          programId: formData.programId,
         }),
       });
 
@@ -183,25 +206,23 @@ export default function StaffRegisterPage() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Staff Position *
+                Program *
               </label>
               <select
-                name="position"
-                value={formData.position}
+                name="programId"
+                value={formData.programId}
                 onChange={handleChange}
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent ${
-                  fieldErrors.position ? "border-red-500" : "border-gray-300"
+                  fieldErrors.programId ? "border-red-500" : "border-gray-300"
                 }`}
               >
-                <option value="">Select your position</option>
-                {STAFF_POSITIONS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
+                <option value="">{loadingPrograms ? "Loading programs..." : "Select your program"}</option>
+                {programs.map((p) => (
+                  <option key={p._id} value={p._id}>{p.name}</option>
                 ))}
               </select>
-              {fieldErrors.position && (
-                <p className="mt-1 text-sm text-red-600">{fieldErrors.position}</p>
+              {fieldErrors.programId && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.programId}</p>
               )}
             </div>
 

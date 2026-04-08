@@ -2,12 +2,12 @@ import { NextResponse, NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
 import { requireAuthOrRedirect } from "@/lib/auth";
+import { isSameDay, format } from "date-fns";
 
 /**
  * GET /api/admin/attendance
  * Get attendance records for a specific date or date range
- * Query params: date (YYYY-MM-DD), startDate, endDate
- * Admin only
+ * Dynamic view including Absent participants
  */
 export async function GET(req: NextRequest) {
   try {
@@ -17,107 +17,91 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const date = searchParams.get('date');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
+    const dateQuery = searchParams.get('date');
     const programId = searchParams.get('programId');
 
     const db = await getDb();
-    const attendance = db.collection("attendance");
-    const users = db.collection("users");
-    const programs = db.collection("programs");
+    const attendanceCol = db.collection("attendance");
+    const usersCol = db.collection("users");
+    const programsCol = db.collection("programs");
 
-    const query: any = {};
+    // Determine target date
+    const targetDate = dateQuery ? new Date(dateQuery) : new Date();
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
 
-    if (date) {
-      // Single date query
-      const targetDate = new Date(date);
-      const startOfDay = new Date(targetDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(targetDate);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      query.checkInTime = { $gte: startOfDay, $lte: endOfDay };
-    } else if (startDate && endDate) {
-      // Date range query
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-
-      query.checkInTime = { $gte: start, $lte: end };
-    } else {
-      // Default to today
-      const now = new Date();
-      const startOfDay = new Date(now);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(now);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      query.checkInTime = { $gte: startOfDay, $lte: endOfDay };
+    // 1. Fetch relevant users
+    const userQuery: any = { role: { $in: ["participant", "staff"] } };
+    if (programId && ObjectId.isValid(programId)) {
+      userQuery.programId = new ObjectId(programId);
     }
+    const users = await usersCol.find(userQuery).toArray();
 
-    if (programId) {
-      const programUsers = await users.find({ programId }).project({ _id: 1 }).toArray();
-      const userIds = programUsers.map(u => u._id.toHexString());
-      query.userId = { $in: userIds };
-    }
-
-    // Get attendance records
-    const attendanceRecords = await attendance
-      .find(query)
-      .sort({ checkInTime: -1 })
-      .toArray();
-
-    // Get unique user IDs
-    const userIds = [...new Set(attendanceRecords.map(record => record.userId))];
-
-    // Get user details
-    const userList = await users.find({
-      _id: { $in: userIds.map(id => new ObjectId(id)) }
+    // 2. Fetch attendance records for this day
+    const attendanceRecords = await attendanceCol.find({
+      checkInTime: { $gte: startOfDay, $lte: endOfDay }
     }).toArray();
 
-    const userMap = new Map(userList.map(user => [user._id.toString(), user]));
+    // 3. Fetch programs for context
+    const programs = await programsCol.find({ isActive: true }).toArray();
+    const programMap = new Map(programs.map(p => [p._id.toString(), p]));
 
-    // Get program details if needed
-    const programIds = [...new Set(userList.map(user => user.programId).filter(Boolean))];
-    const programList = programIds.length > 0 ?
-      await programs.find({
-        _id: { $in: programIds.map(id => new ObjectId(id)) },
-        isActive: true
-      }).toArray() : [];
+    // 4. Merge Users and Attendance
+    const dayName = format(targetDate, 'EEEE');
+    const enrichedResults = users.map(user => {
+      const program = user.programId ? programMap.get(user.programId.toString()) : null;
+      const record = attendanceRecords.find(r => r.userId === user._id.toString());
+      
+      const workingDays = program?.schedule?.days || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+      const isWorkingDay = workingDays.includes(dayName);
 
-    const programMap = new Map(programList.map(program => [program._id.toString(), program]));
+      if (record) {
+        return {
+          _id: record._id,
+          userId: user._id,
+          userName: user.name,
+          userEmail: user.email,
+          profilePhotoUrl: user.profilePhotoUrl || null,
+          programName: program?.name || 'No Program',
+          checkInTime: record.checkInTime,
+          checkOutTime: record.checkOutTime,
+          status: record.status.charAt(0).toUpperCase() + record.status.slice(1).replace('-', ' '),
+          location: record.location || 'Unknown',
+        };
+      } else if (isWorkingDay) {
+        // Only show as absent if it's a working day and it's not in the future
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const status = targetDate <= today ? 'Absent' : 'Scheduled';
+        
+        return {
+          _id: `absent-${user._id}`,
+          userId: user._id,
+          userName: user.name,
+          userEmail: user.email,
+          profilePhotoUrl: user.profilePhotoUrl || null,
+          programName: program?.name || 'No Program',
+          checkInTime: null,
+          checkOutTime: null,
+          status: status,
+          location: '-',
+        };
+      }
+      return null;
+    }).filter(Boolean);
 
-    // Enrich attendance records
-    const enrichedRecords = attendanceRecords.map(record => {
-      const user = userMap.get(record.userId);
-      const program = user?.programId ? programMap.get(user.programId.toString()) : null;
-
-      return {
-        _id: record._id,
-        userId: record.userId,
-        userName: user?.name || 'Unknown User',
-        userEmail: user?.email || '',
-        profilePhotoUrl: user?.profilePhotoUrl || null,
-        programName: program?.name || 'No Program',
-        checkInTime: record.checkInTime,
-        checkOutTime: record.checkOutTime,
-        status: record.status,
-        location: record.location,
-        createdAt: record.createdAt,
-      };
-    });
-
-    console.log(`[ADMIN/ATTENDANCE] Retrieved ${enrichedRecords.length} attendance records`);
+    console.log(`[ADMIN/ATTENDANCE] Retrieved ${enrichedResults.length} combined records`);
 
     return NextResponse.json({
-      records: enrichedRecords,
-      date: date || new Date().toISOString().split('T')[0],
-      total: enrichedRecords.length
+      records: enrichedResults,
+      date: dateQuery || format(new Date(), 'yyyy-MM-dd'),
+      total: enrichedResults.length
     });
+
   } catch (error) {
     console.error("[ADMIN/ATTENDANCE] GET error:", error);
-    return NextResponse.json({ error: "Failed to fetch attendance records" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch attendance monitoring data" }, { status: 500 });
   }
 }

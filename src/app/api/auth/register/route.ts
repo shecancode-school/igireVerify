@@ -42,6 +42,17 @@ export async function POST(req: NextRequest) {
       if (/^[0-9a-fA-F]{24}$/.test(programLookupValue)) {
         // Valid ObjectId format
         resolvedProgramId = new ObjectId(programLookupValue);
+        
+        // Final check: Does this program exist?
+        const programs = db.collection("programs");
+        const programExists = await programs.findOne({ _id: resolvedProgramId, isActive: true });
+        
+        if (!programExists) {
+          return NextResponse.json(
+            { error: "Selected program no longer exists or is inactive" },
+            { status: 400 }
+          );
+        }
       } else {
         // Try to find program by code or name in database
         const programs = db.collection("programs");
@@ -56,10 +67,11 @@ export async function POST(req: NextRequest) {
         if (program) {
           resolvedProgramId = program._id;
         } else {
-          // If program not found in DB, store code as-is
-          // This allows registration to proceed even if programs aren't seeded
-          console.warn(`[REGISTER] Program "${programId}" not found in DB, storing as string`);
-          resolvedProgramId = programLookupValue;
+          // STRICT RULE: No fallback to string. Must exist in DB.
+          return NextResponse.json(
+            { error: "Selected program is invalid" },
+            { status: 400 }
+          );
         }
       }
     }

@@ -32,6 +32,7 @@ import {
 } from 'recharts';
 import AdminSidebar from '@/components/dashboard/AdminSidebar';
 import AdminTopBar from '@/components/dashboard/AdminTopBar';
+import { useSocket, joinAdminRoom } from '@/lib/socket';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -143,6 +144,25 @@ export default function AdminDashboard() {
   const [liveDate, setLiveDate] = useState("");
   const [liveTime, setLiveTime] = useState("Loading...");
 
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [isLoading, setIsLoading] = useState(true);
+  const socket = useSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+    
+    joinAdminRoom(socket);
+    
+    const handleUpdate = () => {
+      console.log("Admin Dashboard: Real-time update received");
+      fetchInitialData();
+    };
+
+    socket.on('attendance-update', handleUpdate);
+    return () => { socket.off('attendance-update', handleUpdate); };
+  }, [socket]);
+
   useEffect(() => {
     // Timer Effect
     const updateTime = () => {
@@ -153,18 +173,10 @@ export default function AdminDashboard() {
     updateTime();
     const timer = setInterval(updateTime, 1000);
 
-    const fetchDashboardData = async () => {
-      fetchInitialData();
-    };
-
-    fetchDashboardData();
+    fetchInitialData();
 
     return () => clearInterval(timer);
   }, []);
-
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState('Admin User');
   const [userRole, setUserRole] = useState('admin');
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
@@ -217,11 +229,16 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (activeTab === 'attendance') {
       fetchAttendanceData();
+    } else if (activeTab === 'users') {
+      fetchUsers();
     }
   }, [selectedDate, activeTab, attendanceProgramFilter]);
 
   const fetchInitialData = async () => {
     try {
+      // Trigger absentee maintenance before fetching stats
+      fetch('/api/attendance/maintenance/absentees').catch(err => console.error("Maintenance failed:", err));
+
       const [userRes, statsRes, programsRes, chartRes, activityRes] = await Promise.all([
         fetch('/api/auth/me'),
         fetch('/api/admin/stats'),
@@ -296,8 +313,15 @@ export default function AdminDashboard() {
     setFormError(null);
     try {
       const method = editingProgram ? 'PUT' : 'POST';
-      const url = editingProgram ? `/api/programs/${editingProgram._id}` : '/api/programs';
+      const idStr = editingProgram?._id?.toString() || editingProgram?._id;
+      
+      // Safety check: ensure ID is valid for PUT
+      if (editingProgram && (!idStr || idStr.length < 24)) {
+        setFormError("Critical Error: Program ID is invalid. Please refresh the page.");
+        return;
+      }
 
+      const url = editingProgram ? `/api/programs/${idStr}` : '/api/programs';
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -339,7 +363,8 @@ export default function AdminDashboard() {
       });
 
       if (response.ok) {
-        setPrograms(programs.filter(p => p._id !== programId));
+        const idToDelete = programId.toString();
+        setPrograms(programs.filter(p => p._id.toString() !== idToDelete));
       }
     } catch (error) {
       console.error('Failed to delete program:', error);
@@ -487,16 +512,19 @@ export default function AdminDashboard() {
                 hookData.cell.styles.fontStyle = 'bold';
              }
           },
+          
           didDrawPage: (hookData) => {
-            // Watermark
+      
             doc.setTextColor(200, 200, 200);
             doc.setFontSize(40);
             doc.saveGraphicsState();
-            doc.setGState(new doc.GState({ opacity: 0.1 }));
+            
+            // @ts-ignore - GState constructor is available at runtime but missing from types
+            doc.setGState(new (doc as any).GState({ opacity: 0.1 }));
             doc.text('Confidential - Igire Verify', 40, 150, { angle: 45 });
             doc.restoreGraphicsState();
 
-            // Footer
+          
             const pageSize = doc.internal.pageSize;
             const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
             doc.setFontSize(8);
@@ -921,10 +949,10 @@ export default function AdminDashboard() {
                                   setProgramForm({
                                     name: program.name,
                                     code: program.code,
-                                    description: '',
-                                    startDate: program.startDate.split('T')[0],
-                                    endDate: program.endDate.split('T')[0],
-                                    schedule: { ...defaultSchedule }
+                                    description: (program as any).description || '',
+                                    startDate: program.startDate ? program.startDate.split('T')[0] : '',
+                                    endDate: program.endDate ? program.endDate.split('T')[0] : '',
+                                    schedule: (program as any).schedule ? { ...(program as any).schedule } : { ...defaultSchedule }
                                   });
                                   setShowProgramModal(true);
                                 }}
@@ -995,50 +1023,62 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {filteredUsers
-                        .filter(user => !selectedProgram || user.programId === selectedProgram)
-                        .map((user) => (
-                        <tr key={user._id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm">
-                            <div className="flex items-center">
-                              {user.profilePhotoUrl ? (
-                                <img
-                                  src={user.profilePhotoUrl}
-                                  alt={user.name}
-                                  className="w-8 h-8 rounded-full mr-3"
-                                />
-                              ) : (
-                                <div className="w-8 h-8 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
-                                  <Users className="w-4 h-4 text-gray-600" />
-                                </div>
-                              )}
-                              <span className="text-gray-900 font-medium">{user.name}</span>
+                      {filteredUsers.filter(user => !selectedProgram || user.programId === selectedProgram).length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">
+                            <div className="flex flex-col items-center">
+                              <Users className="w-10 h-10 text-gray-200 mb-2" />
+                              <p className="font-medium">No users found</p>
+                              <p className="text-xs">Try adjusting your search or program filter.</p>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
-                          <td className="px-6 py-4 text-sm text-gray-600 capitalize">{user.role}</td>
-                          <td className="px-6 py-4 text-sm">
-                            <select
-                              value={user.programId || ''}
-                              onChange={(e) => handleUserProgramUpdate(user._id, e.target.value || null)}
-                              className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent"
-                            >
-                              <option value="">No Program</option>
-                              {programs.map(program => (
-                                <option key={program._id} value={program._id}>{program.name}</option>
-                              ))}
-                            </select>
-                          </td>
-                          <td className="px-6 py-4 text-sm">
-                            <button
-                              onClick={() => handleDeleteUser(user._id, user.name)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredUsers
+                          .filter(user => !selectedProgram || user.programId === selectedProgram)
+                          .map((user) => (
+                          <tr key={user._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm">
+                              <div className="flex items-center">
+                                {user.profilePhotoUrl ? (
+                                  <img
+                                    src={user.profilePhotoUrl}
+                                    alt={user.name}
+                                    className="w-8 h-8 rounded-full mr-3"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
+                                    <Users className="w-4 h-4 text-gray-600" />
+                                  </div>
+                                )}
+                                <span className="text-gray-900 font-medium">{user.name}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600 capitalize">{user.role}</td>
+                            <td className="px-6 py-4 text-sm">
+                              <select
+                                value={user.programId || ''}
+                                onChange={(e) => handleUserProgramUpdate(user._id, e.target.value || null)}
+                                className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent outline-none"
+                              >
+                                <option value="">No Program</option>
+                                {programs.map(program => (
+                                  <option key={program._id} value={program._id}>{program.name}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-6 py-4 text-sm">
+                              <button
+                                onClick={() => handleDeleteUser(user._id, user.name)}
+                                className="text-red-600 hover:text-red-800 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1112,19 +1152,21 @@ export default function AdminDashboard() {
                               </div>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-600">{record.programName}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600">
-                              {format(new Date(record.checkInTime), 'HH:mm:ss')}
+                            <td className="px-6 py-4 text-sm text-gray-600 font-mono">
+                              {record.checkInTime ? format(new Date(record.checkInTime), 'HH:mm:ss') : '--:--:--'}
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-600">
-                              {record.checkOutTime ? format(new Date(record.checkOutTime), 'HH:mm:ss') : '-'}
+                            <td className="px-6 py-4 text-sm text-gray-600 font-mono">
+                              {record.checkOutTime ? format(new Date(record.checkOutTime), 'HH:mm:ss') : '--:--:--'}
                             </td>
                             <td className="px-6 py-4 text-sm">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                record.status === 'present'
-                                  ? 'bg-green-100 text-green-800'
-                                  : record.status === 'late'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-red-100 text-red-800'
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                record.status.toLowerCase() === 'on time' || record.status.toLowerCase() === 'present'
+                                  ? 'bg-green-100 text-green-700'
+                                  : record.status.toLowerCase() === 'late'
+                                  ? 'bg-orange-100 text-orange-700'
+                                  : record.status.toLowerCase() === 'absent'
+                                  ? 'bg-red-100 text-red-700 font-bold'
+                                  : 'bg-gray-100 text-gray-700'
                               }`}>
                                 {record.status}
                               </span>

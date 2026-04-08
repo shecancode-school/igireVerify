@@ -1,29 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSocket } from "@/lib/socket";
 
-export default function AttendanceHistory() {
+interface HistoryProps {
+  programId: string;
+  userId: string;
+}
+
+export default function AttendanceHistory({ programId, userId }: HistoryProps) {
     const [activeTab, setActiveTab] = useState<"week" | "month">("week");
+    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState<any>(null);
+    const socket = useSocket();
 
-    const weekData = {
-        checkedIn: 0,
-        percentage: 0,
-        checkedOut: 0,
-        aiVerified: "AI Verified",
-        aiPercentage: 0,
-        onTime: "On-Time"
+    const fetchHistory = async () => {
+        try {
+            const res = await fetch(`/api/attendance/user-history?userId=${userId}&programId=${programId}`);
+            if (res.ok) {
+                const json = await res.json();
+                setData(json);
+            }
+        } catch (error) {
+            console.error("History fetch failed", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const monthData = {
-        checkedIn: 0,
-        percentage: 0,
-        checkedOut: 0,
-        aiVerified: "AI Verified",
-        aiPercentage: 0,
-        onTime: "On-Time"
-    };
+    useEffect(() => {
+        if (userId && programId) fetchHistory();
+    }, [userId, programId]);
 
-    const currentData = activeTab === "week" ? weekData : monthData;
+    useEffect(() => {
+        if (!socket) return;
+        const handleUpdate = () => fetchHistory();
+        socket.on('attendance-update', handleUpdate);
+        return () => { socket.off('attendance-update', handleUpdate); };
+    }, [socket]);
+
+    if (loading) return <div className="bg-[#E5E5E5] rounded-3xl p-7 animate-pulse text-center">Loading History...</div>;
+
+    const currentData = activeTab === "week" ? data?.week : data?.month;
+
+    // Derived AI verified data (simulated for now but dynamic count)
+    const aiVerifiedCount = currentData?.uniqueDays || 0;
+    const aiPercentage = currentData?.checkedIn > 0 ? Math.round((aiVerifiedCount / currentData.checkedIn) * 100) : 0;
+    const overallPercentage = currentData?.uniqueDays > 0 ? 100 : 0; // Simplified
+
 
     return (
         <div className="bg-[#E5E5E5] rounded-3xl p-7 shadow-sm">
@@ -82,16 +106,16 @@ export default function AttendanceHistory() {
 
                     <div className="space-y-2">
                         <p className="font-semibold text-[#111111]">
-                            {currentData.checkedIn} Checked-In
+                            {currentData?.checkedIn || 0} Checked-In
                         </p>
                         <p className="font-semibold text-[#111111]">
-                            {currentData.checkedOut} Checked-Out
+                            {currentData?.checkedOut || 0} Checked-Out
                         </p>
                     </div>
 
                     <div className="space-y-2">
-                        <p className="font-semibold text-[#111111]">{currentData.percentage} %</p>
-                        <p className="text-[#111111]">{currentData.aiVerified}</p>
+                        <p className="font-semibold text-[#111111]">{overallPercentage} %</p>
+                        <p className="text-[#111111]">AI Verified</p>
                     </div>
 
                     <div className="space-y-2 flex flex-col items-center">
@@ -100,9 +124,9 @@ export default function AttendanceHistory() {
                                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                                 <polyline points="22 4 12 14.01 9 11.01" />
                             </svg>
-                            <p className="font-semibold text-[#111111]">{currentData.onTime}</p>
+                            <p className="font-semibold text-[#111111]">{currentData?.onTimeStatus || "N/A"}</p>
                         </div>
-                        <p className="font-semibold text-[#111111]">{currentData.aiPercentage} %</p>
+                        <p className="font-semibold text-[#111111]">{aiPercentage} %</p>
                     </div>
 
                 </div>

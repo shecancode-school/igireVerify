@@ -86,38 +86,65 @@ export default function CheckInPage() {
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   // Camera setup hook is unconditional and placed before early return
+  // Camera setup hook - refined to prevent race conditions
   useEffect(() => {
-    if (step !== 2) return;
+    // Only run when we are specifically on step 2 and the camera is not already active
+    if (step !== 2 || cameraStatus !== "idle") return;
+
+    let mounted = true;
+    let localStream: MediaStream | null = null;
 
     async function startCamera() {
       try {
-        setCameraStatus("idle");
         setCameraError(null);
-
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
           audio: false,
         });
 
+        if (!mounted) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+
+        localStream = stream;
         streamRef.current = stream;
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
-            videoRef.current?.play();
-            setCameraStatus("active");
+            if (videoRef.current && mounted) {
+              videoRef.current.play().catch(e => console.error("Video play failed:", e));
+              setCameraStatus("active");
+            }
           };
         }
       } catch (error) {
-        console.error("Camera error:", error);
-        setCameraStatus("error");
-        setCameraError("Failed to access camera. Please allow camera permission.");
+        if (mounted) {
+          console.error("Camera access failed:", error);
+          setCameraStatus("error");
+          setCameraError("Camera access denied or unavailable. Please check permissions.");
+        }
       }
     }
 
     startCamera();
 
     return () => {
-      streamRef.current?.getTracks().forEach((track) => track.stop());
+      mounted = false;
+      // ONLY stop the stream if we are actually changing steps away from Step 2
+      // or if the component is unmounting. 
+      // We do NOT want to stop it just because cameraStatus changed to "active".
+    };
+  }, [step, cameraStatus]);
+
+  // Separate effect for cleanup when leaving step 2
+  useEffect(() => {
+    return () => {
+      if (step !== 2) {
+        streamRef.current?.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+      }
     };
   }, [step]);
 
@@ -206,8 +233,38 @@ export default function CheckInPage() {
     setUiMessage(null);
 
     try {
-      const photoUrl = await uploadToCloudinary(capturedImage, "igire/attendance");
+      // Step 1: Pre-flight validation — check rules BEFORE uploading photos
+      const preflightRes = await fetch("/api/attendance/preflight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userData.userId,
+          programId: userData.programId,
+          type: "checkin",
+          role: "participant",
+        }),
+      });
 
+      if (!preflightRes.ok) {
+        let preflightData;
+        try {
+          preflightData = await preflightRes.json();
+        } catch {
+          throw new Error("Connection issue detected. Please check your internet connection and try again.");
+        }
+        throw new Error(preflightData.error || "Attendance rules could not be verified. Please try again.");
+      }
+
+      // Step 2: Rules passed — now upload photo to Cloudinary
+      let photoUrl = "";
+      try {
+        photoUrl = await uploadToCloudinary(capturedImage, "igire/attendance");
+      } catch (storageErr) {
+        console.error("[STORAGE_FAILURE]", storageErr);
+        throw new Error("Unable to securely store your photo. Please check your internet connection and try again.");
+      }
+
+      // Step 3: Record attendance
       const response = await fetch("/api/attendance/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -215,6 +272,7 @@ export default function CheckInPage() {
           userName: userData.userName,
           programName: userData.programName,
           userId: userData.userId,
+          programId: userData.programId,
           role: 'participant',
           checkInTime: new Date().toISOString(),
           gpsInfo: gpsInfo || "GPS recorded",
@@ -222,18 +280,29 @@ export default function CheckInPage() {
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || "Failed to save");
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          throw new Error("Connection issue detected. Please check your internet connection and try again.");
+        }
+        throw new Error(errorData.error || "Failed to record attendance.");
       }
 
+      const data = await response.json();
       setUiMessage({ type: "success", text: `Check-in recorded successfully. Status: ${data.status}` });
       setStep(3);
+
     } catch (errorCast) {
-      const message = errorCast instanceof Error ? errorCast.message : "Failed to save check-in. Please try again.";
-      console.error(message);
-      setUiMessage({ type: "error", text: message });
+      const message = errorCast instanceof Error ? errorCast.message : "An unexpected error occurred.";
+
+      const finalMessage = message.includes("Failed to fetch")
+        ? "Network connection issue detected. Please ensure you have a stable internet connection and try again."
+        : message;
+
+      console.error("[CHECKIN_PHASE_ERROR]", finalMessage);
+      setUiMessage({ type: "error", text: finalMessage });
     } finally {
       setIsSubmitting(false);
     }
@@ -244,11 +313,10 @@ export default function CheckInPage() {
       {[1, 2, 3].map((value) => (
         <div key={value} className="flex items-center gap-4">
           <div
-            className={`flex h-12 w-12 items-center justify-center rounded-full text-white font-bold text-lg transition-all ${
-              value <= step
-                ? "bg-[#16A34A]"
-                : "bg-gray-300"
-            }`}
+            className={`flex h-12 w-12 items-center justify-center rounded-full text-white font-bold text-lg transition-all ${value <= step
+              ? "bg-[#16A34A]"
+              : "bg-gray-300"
+              }`}
           >
             {value < step || (value === 3 && step === 3) ? "✓" : value}
           </div>
@@ -291,7 +359,7 @@ export default function CheckInPage() {
           >
             {gpsStatus === "checking" ? "Verifying GPS Coordinates..." : "Verify My Location"}
           </button>
-          
+
           {gpsError && (
             <div className="mt-8 bg-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-sm animate-in fade-in zoom-in duration-300">
               <div className="flex items-center gap-3 mb-3">
@@ -304,13 +372,12 @@ export default function CheckInPage() {
                 <h3 className="text-xl font-bold text-red-700">Verification Failed</h3>
               </div>
               <p className="text-red-900 font-medium mb-2">
-                We detected that you are not physically present at the Igire Rwanda Organisation premises. 
-                <span className="font-bold"> ({gpsError})</span>
+                You are not currently at Igire Rwanda Organisation premises. Please be physically present to record attendance.
               </p>
               <div className="bg-white/60 p-4 rounded-xl mt-4">
                 <p className="text-sm text-red-800 font-semibold mb-1">Security Policy:</p>
                 <p className="text-sm text-red-700">
-                  Attendance can only be recorded when you are within the official geofenced headquarters radius. Remote check-ins are strictly prohibited. Please commute to the premises and try again.
+                  Attendance can only be recorded when you are within the official geofenced headquarters radius. Please commute to the premises and try again.
                 </p>
               </div>
             </div>
@@ -382,14 +449,6 @@ export default function CheckInPage() {
             Return to Dashboard
           </button>
         </div>
-
-        {uiMessage && (
-          <div className={`mt-8 p-4 rounded-2xl text-center ${
-            uiMessage.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
-          }`}>
-            {uiMessage.text}
-          </div>
-        )}
       </div>
     );
   };
@@ -404,6 +463,27 @@ export default function CheckInPage() {
           <div className="max-w-5xl mx-auto">
             {renderStepper()}
             {renderStepContent()}
+
+            {/* Global notification — visible on ALL steps */}
+            {uiMessage && (
+              <div className={`mt-8 max-w-2xl mx-auto p-6 rounded-2xl text-center font-medium border animate-in fade-in slide-in-from-bottom-4 duration-500 ${
+                uiMessage.type === "success"
+                  ? "bg-green-50 border-green-200 text-green-800"
+                  : "bg-red-50 border-red-200 text-red-800"
+              }`}>
+                <div className="flex items-center justify-center gap-3 mb-1">
+                  {uiMessage.type === "success" ? (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  ) : (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  )}
+                  <span className="text-lg">{uiMessage.text}</span>
+                </div>
+                {uiMessage.type === "error" && (
+                  <p className="text-sm opacity-80 mt-1">Please try again or visit the Help Desk if you need assistance.</p>
+                )}
+              </div>
+            )}
           </div>
         </main>
       </div>

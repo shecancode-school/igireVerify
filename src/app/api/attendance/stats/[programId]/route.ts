@@ -11,11 +11,11 @@ import { requireAuthOrRedirect } from "@/lib/auth";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { programId: string } }
+  { params }: { params: Promise<{ programId: string }> }
 ) {
   try {
     const claims = await requireAuthOrRedirect();
-    const programId = params.programId;
+    const { programId } = await params;
     const { searchParams } = new URL(req.url);
 
     // Validate ObjectId format

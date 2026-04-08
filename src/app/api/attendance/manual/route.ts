@@ -118,6 +118,7 @@ export async function POST(req: NextRequest) {
     emitAttendanceUpdate(programId, {
       type: "checkin",
       userId,
+      programId,
       userName: user.name,
       programName: program.name,
       status: checkInStatus,
@@ -131,6 +132,7 @@ export async function POST(req: NextRequest) {
         emitAttendanceUpdate(programId, {
           type: "checkin",
           userId,
+          programId,
           userName: user.name,
           programName: program.name,
           status: checkInStatus,

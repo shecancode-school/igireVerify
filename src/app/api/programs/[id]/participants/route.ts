@@ -10,11 +10,11 @@ import { requireAuthOrRedirect } from "@/lib/auth";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const claims = await requireAuthOrRedirect();
-    const programId = params.id;
+    const { id: programId } = await params;
 
     if (!ObjectId.isValid(programId)) {
       return NextResponse.json({ error: "Invalid program ID" }, { status: 400 });

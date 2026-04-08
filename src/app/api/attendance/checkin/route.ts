@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
-import { getAttendanceStatus, isValidAttendanceDay } from "@/lib/attendance-rules";
+import { getAttendanceStatus, isValidAttendanceDay, STAFF_RULES, getAttendanceWindowMessage } from "@/lib/attendance-rules";
 import { emitAttendanceUpdate } from "@/lib/socket-server";
 import { checkInSchema } from "@/lib/validation";
 
@@ -17,9 +17,11 @@ export async function POST(req: Request) {
     // Validate input
     const result = checkInSchema.safeParse(body);
     if (!result.success) {
-      console.warn("[CHECKIN] Validation failed:", result.error.issues);
+      const issues = result.error.issues;
+      const isPhotoMissing = issues.some(i => i.path.includes('photoUrl'));
+      
       return NextResponse.json(
-        { error: "Validation failed", issues: result.error.issues },
+        { error: isPhotoMissing ? "Please capture a photo before submitting your attendance." : "Missing required information. Please ensure all steps are completed." },
         { status: 400 }
       );
     }
@@ -37,30 +39,33 @@ export async function POST(req: Request) {
     const now = new Date();
     const checkInDateTime = new Date(checkInTime);
 
-    // Get program to fetch schedule
-    const program = await programs.findOne({
-      _id: new ObjectId(programId),
-      isActive: true,
-    });
+    let schedule;
+    let program;
 
-    if (!program) {
-      console.warn(`[CHECKIN] Program not found: ${programId}`);
-      return NextResponse.json({ error: "Program not found" }, { status: 404 });
+    if (role === 'staff') {
+      schedule = STAFF_RULES;
+    } else {
+      // Validate programId format before conversion
+      if (!/^[0-9a-fA-F]{24}$/.test(programId)) {
+        return NextResponse.json({ error: "Invalid program selected for participant" }, { status: 400 });
+      }
+
+      program = await programs.findOne({
+        _id: new ObjectId(programId),
+        isActive: true,
+      });
+
+      if (!program) {
+        console.warn(`[CHECKIN] Program not found: ${programId}`);
+        return NextResponse.json({ error: "Program not found" }, { status: 404 });
+      }
+      schedule = program.schedule;
     }
 
-    // Validate attendance day
-    const programCode = program.code;
-    if (!isValidAttendanceDay(programCode, checkInDateTime)) {
-      console.warn(
-        `[CHECKIN] Invalid attendance day for ${programCode} on ${checkInDateTime.toDateString()}`
-      );
-      const validDays = program.schedule.days.join(", ");
-      return NextResponse.json(
-        {
-          error: `Check-in not allowed today. Valid days: ${validDays}`,
-        },
-        { status: 400 }
-      );
+    // Validate attendance window and day
+    const windowMessage = getAttendanceWindowMessage('checkin', schedule, checkInDateTime);
+    if (windowMessage) {
+      return NextResponse.json({ error: windowMessage }, { status: 400 });
     }
 
     // Check if already checked in today
@@ -69,9 +74,12 @@ export async function POST(req: Request) {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    // Helper to safely create ObjectId
+    const toObjectId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id as any;
+
     const existingCheckIn = await attendance.findOne({
       userId: new ObjectId(userId),
-      programId: new ObjectId(programId),
+      programId: toObjectId(programId),
       type: "checkin",
       checkInTime: {
         $gte: today,
@@ -80,15 +88,14 @@ export async function POST(req: Request) {
     });
 
     if (existingCheckIn) {
-      console.warn(`[CHECKIN] User ${userId} already checked in today`);
       return NextResponse.json(
-        { error: "Already checked in today" },
+        { error: "You have already checked in for today." },
         { status: 400 }
       );
     }
 
     // Determine check-in status
-    const status = getAttendanceStatus(checkInDateTime, program.schedule);
+    const status = getAttendanceStatus(checkInDateTime, schedule);
 
     const record = {
       userId: new ObjectId(userId),
@@ -104,10 +111,11 @@ export async function POST(req: Request) {
       checkInMethod: "AUTO",
       createdAt: now,
       updatedAt: now,
-      date: today, // Date component for filtering
+      date: today,
     };
 
     const insertResult = await attendance.insertOne(record);
+
 
     // Verify insertion
     const verification = await attendance.findOne({ _id: insertResult.insertedId });
@@ -123,8 +131,9 @@ export async function POST(req: Request) {
     emitAttendanceUpdate(programId, {
       type: "checkin",
       userId,
+      programId,
       userName,
-      programName,
+      programName: program?.name || programName,
       status,
       timestamp: checkInDateTime.toISOString(),
     });
@@ -135,20 +144,22 @@ export async function POST(req: Request) {
       emitAttendanceUpdate(userId, {
         type: "checkin",
         userId,
+        programId,
         userName,
-        programName,
+        programName: program?.name || programName,
         status,
         timestamp: checkInDateTime.toISOString(),
       });
     }
 
-    // Emit to HR officer if assigned
-    if (program.hrOfficer) {
+    // Emit to HR officer if assigned (only for participants with programs)
+    if (program && program.hrOfficer) {
       emitAttendanceUpdate(program.hrOfficer.toString(), {
         type: "checkin",
         userId,
+        programId,
         userName,
-        programName,
+        programName: program.name,
         status,
         timestamp: checkInDateTime.toISOString(),
       });

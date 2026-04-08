@@ -3,11 +3,6 @@ import { NextResponse } from "next/server";
 import { getAuthClaimsFromCookies } from "@/lib/auth";
 import { getDb } from "@/lib/mongodb";
 
-const PROGRAM_NAMES: Record<string, string> = {
-  'web-fundamentals': 'Web Fundamentals',
-  'advanced-frontend': 'Advanced Frontend',
-  'advanced-backend': 'Advanced Backend'
-};
 
 export async function GET() {
   try {
@@ -25,12 +20,29 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const programName = user.programId ? PROGRAM_NAMES[user.programId] || user.programId : 'Web Fundamentals';
+    let programName = "N/A";
+    let programId = user.programId?.toString() || "";
+
+    if (user.role === 'staff') {
+      programName = 'Attendance Monitor';
+      programId = 'staff-mon';
+    } else if (user.role === 'admin') {
+      programName = 'System Administrator';
+      programId = 'admin-sys';
+    } else if (user.programId) {
+      const programs = db.collection("programs");
+      const programObj = await programs.findOne({ _id: user.programId });
+      if (programObj) {
+        programName = programObj.name;
+      } else {
+        programName = user.programId.toString();
+      }
+    }
 
     return NextResponse.json({
       userName: user.name,
       programName,
-      programId: user.programId || 'web-fundamentals',
+      programId,
       userId: user._id.toString(),
       role: user.role,
       email: user.email,

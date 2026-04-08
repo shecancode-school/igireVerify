@@ -17,7 +17,7 @@ export const registerSchema = z.object({
   confirmPassword: z.string(),
   role: z.enum(["participant", "staff"]),
   programId: z.string().optional(),
-  position: z.enum(["HR", "Facilitator"]).optional(),
+  position: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -50,7 +50,7 @@ export const gpsLocationSchema = z.object({
 
 export const checkInSchema = z.object({
   userId: z.string().regex(/^[0-9a-f]{24}$/, "Invalid user ID"),
-  programId: z.string().regex(/^[0-9a-f]{24}$/, "Invalid program ID"),
+  programId: z.string().regex(/^([0-9a-f]{24}|staff-mon)$/, "Invalid program ID"),
   userName: z.string().min(1),
   programName: z.string().min(1),
   checkInTime: z.coerce.date(),
@@ -61,7 +61,7 @@ export const checkInSchema = z.object({
 
 export const checkOutSchema = z.object({
   userId: z.string().regex(/^[0-9a-f]{24}$/, "Invalid user ID"),
-  programId: z.string().regex(/^[0-9a-f]{24}$/, "Invalid program ID"),
+  programId: z.string().regex(/^([0-9a-f]{24}|staff-mon)$/, "Invalid program ID"),
   checkOutTime: z.coerce.date(),
   photoUrl: z.string().url("Invalid photo URL"),
   gpsLocation: gpsLocationSchema.optional(),

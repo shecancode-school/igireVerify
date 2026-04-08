@@ -1,21 +1,35 @@
-// src/app/api/attendance/user-stats/route.ts
 import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
-    const programId = searchParams.get('programId');
+    const userIdStr = searchParams.get('userId');
+    const programIdStr = searchParams.get('programId');
 
-    if (!userId || !programId) {
+    if (!userIdStr || !programIdStr) {
       return NextResponse.json({ error: "User ID and Program ID are required" }, { status: 400 });
     }
 
+    const userId = new ObjectId(userIdStr);
+    const programId = new ObjectId(programIdStr);
+
     const db = await getDb();
     const attendance = db.collection("attendance");
+    const users = db.collection("users");
+    const programs = db.collection("programs");
 
-    // Get current month
+    const [user, program] = await Promise.all([
+      users.findOne({ _id: userId }),
+      programs.findOne({ _id: programId })
+    ]);
+
+    if (!user || !program) {
+      return NextResponse.json({ error: "User or Program not found" }, { status: 404 });
+    }
+
+    // Get current month range
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
@@ -23,7 +37,7 @@ export async function GET(req: Request) {
     // Get all attendance records for this user this month
     const userRecords = await attendance.find({
       userId,
-      programName: programId,
+      programId,
       createdAt: {
         $gte: startOfMonth,
         $lt: endOfMonth
@@ -31,8 +45,7 @@ export async function GET(req: Request) {
     }).toArray();
 
     // Calculate stats
-    const uniqueDays = new Set(userRecords.map(r => new Date(r.createdAt).toDateString()));
-    const daysAttended = uniqueDays.size;
+    const uniqueDaysAttended = new Set(userRecords.map(r => new Date(r.createdAt).toDateString())).size;
 
     // Check today's status
     const today = new Date();
@@ -51,16 +64,37 @@ export async function GET(req: Request) {
       todaysStatus = 'checked-in';
     }
 
-    // For now, set pending alerts to late arrivals this month
     const pendingAlerts = userRecords.filter(r => r.type === 'checkin' && r.status === 'late').length;
 
-    // Calculate missed days (simplified - would need enrollment data)
-    const missedDays = 0; // TODO: Calculate based on expected vs actual attendance
+    // --- Dynamic Missed Days Calculation ---
+    // Calculate expected days from enrollment date or start of month (whichever is later) until today
+    const calcStart = user.enrollmentDate && new Date(user.enrollmentDate) > startOfMonth 
+      ? new Date(user.enrollmentDate) 
+      : startOfMonth;
+    
+    let expectedDays = 0;
+    let tempDate = new Date(calcStart);
+    tempDate.setHours(0, 0, 0, 0);
+    
+    const countUntil = new Date(now);
+    countUntil.setHours(0, 0, 0, 0);
+
+    const programDays = program.schedule?.days || ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+    while (tempDate <= countUntil) {
+      const dayName = tempDate.toLocaleDateString('en-US', { weekday: 'long' });
+      if (programDays.includes(dayName)) {
+        expectedDays++;
+      }
+      tempDate.setDate(tempDate.getDate() + 1);
+    }
+
+    const missedDays = Math.max(0, expectedDays - uniqueDaysAttended);
 
     return NextResponse.json({
       ok: true,
       stats: {
-        daysAttended,
+        daysAttended: uniqueDaysAttended,
         pendingAlerts,
         missedDays,
         todaysStatus

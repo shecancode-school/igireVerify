@@ -1,4 +1,3 @@
-// src/app/api/auth/login/route.ts
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { NextResponse, NextRequest } from "next/server";
@@ -11,15 +10,11 @@ if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not defined in .env.local");
 }
 
-/**
- * POST /api/auth/login
- * Authenticate user and return JWT token
- */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Validate input
+    
     const result = loginSchema.safeParse(body);
     if (!result.success) {
       return NextResponse.json(
@@ -30,13 +25,13 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = result.data;
 
-    // Normalize email for lookup
+    
     const normalizedEmail = email.toLowerCase().trim();
 
     const db = await getDb();
     const users = db.collection("users");
 
-    // Find user by normalized email; treat missing isActive as active (backward compatibility)
+
     const user = await users.findOne({
       email: normalizedEmail,
       $or: [{ isActive: true }, { isActive: { $exists: false } }],
@@ -46,7 +41,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    // Check for lockout
     if (user.lockUntil && user.lockUntil > new Date()) {
       const remainingTime = Math.ceil((user.lockUntil.getTime() - new Date().getTime()) / 60000);
       return NextResponse.json({ 
@@ -54,23 +48,22 @@ export async function POST(req: NextRequest) {
       }, { status: 429 });
     }
 
-    // Verify password
+
     const isMatch = await bcrypt.compare(password, user.passwordHash || "");
 
     if (!isMatch) {
-      // Increment failed attempts
       const failedAttempts = (user.failedLoginAttempts || 0) + 1;
       let updateDoc: any = { failedLoginAttempts: failedAttempts };
 
       if (failedAttempts >= 5) {
-        updateDoc.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+        updateDoc.lockUntil = new Date(Date.now() + 15 * 60 * 1000); 
       }
 
       await users.updateOne({ _id: user._id }, { $set: updateDoc });
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    // Reset lockout and update last login
+  
     await users.updateOne(
       { _id: user._id },
       { 
@@ -79,7 +72,7 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    // Create JWT payload
+    
     const payload = {
       userId: user._id.toString(),
       role: user.role,
@@ -90,14 +83,12 @@ export async function POST(req: NextRequest) {
 
     const token = jwt.sign(payload, JWT_SECRET as string, { expiresIn: "7d" });
 
-    // Determine redirect URL based on role
+  
     const redirectTo =
       user.role === "admin"
         ? "/dashboard/admin"
         : user.role === "staff"
-          ? user.position === "HR"
-            ? "/dashboard/hr"
-            : "/dashboard/staff"
+          ? "/dashboard/staff"
           : "/dashboard/participant";
 
     const response = NextResponse.json(
@@ -114,12 +105,12 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
 
-    // Set JWT cookie
+
     response.cookies.set("auth_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
+      maxAge: 7 * 24 * 60 * 60, 
       path: "/",
     });
 

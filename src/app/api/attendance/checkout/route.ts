@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
-import { STAFF_RULES, isWithinCheckOutWindow } from "@/lib/attendance-rules";
+import { STAFF_RULES, getAttendanceWindowMessage, isWithinCheckOutWindow } from "@/lib/attendance-rules";
 import { emitAttendanceUpdate } from "@/lib/socket-server";
 import { checkOutSchema } from "@/lib/validation";
 
@@ -17,9 +17,8 @@ export async function POST(req: Request) {
     // Validate input
     const result = checkOutSchema.safeParse(body);
     if (!result.success) {
-      console.warn("[CHECKOUT] Validation failed:", result.error.issues);
       return NextResponse.json(
-        { error: "Validation failed", issues: result.error.issues },
+        { error: "Missing required information. Please ensure all steps are completed." },
         { status: 400 }
       );
     }
@@ -36,58 +35,74 @@ export async function POST(req: Request) {
 
     const now = new Date();
     const checkOutDateTime = new Date(checkOutTime);
+    let schedule;
+    let program;
 
-    // Get program to fetch rules
-    const program = await programs.findOne({
-      _id: new ObjectId(programId),
-      isActive: true,
-    });
-    if (!program) {
-      console.warn(`[CHECKOUT] Program not found: ${programId}`);
-      return NextResponse.json({ error: "Program not found" }, { status: 404 });
+    if (role === 'staff') {
+      schedule = STAFF_RULES;
+    } else {
+      // Validate programId format before conversion
+      if (!/^[0-9a-fA-F]{24}$/.test(programId)) {
+        return NextResponse.json({ error: "Invalid program selected" }, { status: 400 });
+      }
+
+      program = await programs.findOne({
+        _id: new ObjectId(programId),
+        isActive: true,
+      });
+
+      if (!program) {
+        console.warn(`[CHECKOUT] Program not found: ${programId}`);
+        return NextResponse.json({ error: "Program not found" }, { status: 404 });
+      }
+      schedule = program.schedule;
     }
 
-    const rules = role === "staff" ? STAFF_RULES : program.schedule;
+    // Validate attendance window and day
+    const windowMessage = getAttendanceWindowMessage('checkout', schedule, checkOutDateTime);
+    if (windowMessage) {
+      return NextResponse.json({ error: windowMessage }, { status: 400 });
+    }
 
-    // Check if within checkout window
-    const withinWindow = isWithinCheckOutWindow(rules, checkOutDateTime);
-
-    // Find today's check-in record
+    // Find the matching check-in for today
     const today = new Date(checkOutDateTime);
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    // Helper to safely create ObjectId
+    const toObjectId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id as any;
+
     const checkInRecord = await attendance.findOne({
       userId: new ObjectId(userId),
-      programId: new ObjectId(programId),
+      programId: toObjectId(programId),
       type: "checkin",
-      checkInTime: { $gte: today, $lt: tomorrow },
+      checkInTime: {
+        $gte: today.toISOString(),
+        $lt: tomorrow.toISOString(),
+      },
     });
 
     if (!checkInRecord) {
-      console.warn(`[CHECKOUT] No check-in found for user ${userId}`);
-      return NextResponse.json(
-        {
-          error: "No check-in found for today. Check out not allowed.",
-        },
-        { status: 400 }
-      );
+      return NextResponse.json({ 
+        error: "You must complete your check-in first before you can check out. Please ensure you have checked in for today's session." 
+      }, { status: 400 });
     }
 
     // Check if already checked out
     if (checkInRecord.checkOutTime) {
       console.warn(`[CHECKOUT] User ${userId} already checked out today`);
       return NextResponse.json(
-        { error: "Already checked out today" },
+        { error: "You have already completed your check-out for today. No further action is needed." },
         { status: 400 }
       );
     }
 
     // Determine checkout status
+    const withinWindow = isWithinCheckOutWindow(schedule, checkOutDateTime);
     const checkOutStatus = withinWindow ? "on-time" : "early";
 
-    // Update attendance record
+    // Update the record with check-out data
     const updateResult = await attendance.updateOne(
       { _id: checkInRecord._id },
       {
@@ -96,7 +111,7 @@ export async function POST(req: Request) {
           checkOutStatus,
           checkOutPhotoUrl: photoUrl,
           checkOutGpsLocation: gpsLocation,
-          checkOutMethod: "AUTO",
+          type: "completed", // Transition from checkin to completed
           updatedAt: now,
         },
       }
@@ -113,8 +128,9 @@ export async function POST(req: Request) {
     emitAttendanceUpdate(programId, {
       type: "checkout",
       userId,
+      programId,
       userName: user?.name || "Unknown",
-      programName: program.name,
+      programName: program?.name || "Attendance Monitor",
       status: checkOutStatus,
       withinCheckOutWindow: withinWindow,
       timestamp: new Date().toISOString(),

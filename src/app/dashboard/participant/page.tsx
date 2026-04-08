@@ -7,34 +7,41 @@ import AttendanceChart from "@/components/dashboard/AttendanceChart";
 import { requireAuthOrRedirect } from "@/lib/auth";
 import { getDb } from "@/lib/mongodb";
 
-const PROGRAM_NAMES: Record<string, string> = {
-  'web-fundamentals': 'Web Fundamentals',
-  'advanced-frontend': 'Advanced Frontend',
-  'advanced-backend': 'Advanced Backend'
-};
-
 export default async function ParticipantDashboard() {
   const claims = await requireAuthOrRedirect("participant");
 
   // Fetch user data from database to get program
   const db = await getDb();
   const users = db.collection("users");
+  const programs = db.collection("programs");
+  
   const user = await users.findOne({ email: claims.email });
+  
+  let programName = "No Program Assigned";
+  let checkInWindow = "N/A";
+  let programId = user?.programId || "";
 
-  const programName = user?.programId ? PROGRAM_NAMES[user.programId] || user.programId : 'Web Fundamentals';
+  if (user?.programId) {
+    const program = await programs.findOne({ _id: user.programId });
+    if (program) {
+      programName = program.name;
+      if (program.schedule) {
+        checkInWindow = `${program.schedule.checkInStart} - ${program.schedule.checkInEnd}`;
+      }
+    } else {
+        programName = "Program Not Found";
+    }
+  }
 
   const userData = {
     userName: claims.name,
     programName,
-    programId: user?.programId || 'web-fundamentals',
+    programId: programId.toString(),
     userId: user?._id.toString(),
     isOnline: true,
     sessionDate: `Today: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`,
-    checkInWindow: "08:00 - 08:30", // TODO: Get from attendance rules
+    checkInWindow,
     currentTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-    daysAttended: 15,
-    pendingAlerts: 2,
-    missedDays: 1,
   };
 
   return (
@@ -65,7 +72,10 @@ export default async function ParticipantDashboard() {
             
             {/* Attendance Chart - Takes 7 columns */}
             <div className="col-span-7">
-              <AttendanceChart />
+              <AttendanceChart 
+                programId={userData.programId}
+                userId={userData.userId || ""}
+              />
             </div>
           </div>
 
@@ -73,14 +83,17 @@ export default async function ParticipantDashboard() {
           <div className="mb-8">
             <AttendanceStats
               programId={userData.programId}
-              userId={userData.userId}
+              userId={userData.userId || ""}
             />
           </div>
 
           {/* Row 3: Attendance History - Takes only LEFT half */}
           <div className="grid grid-cols-12 gap-6">
             <div className="col-span-7">
-              <AttendanceHistory />
+              <AttendanceHistory 
+                programId={userData.programId}
+                userId={userData.userId || ""}
+              />
             </div>
             {/* Right side is FREE SPACE */}
           </div>

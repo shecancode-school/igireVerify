@@ -2,15 +2,6 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 
-/**
- * DEBUG ENDPOINT - For development only
- * Verify what's stored in DB and test password matching
- * 
- * Usage:
- * GET /api/auth/debug?email=testinglife@gmail.com&password=TestPass1218!
- * 
- * Returns stored user data + password verification result + diagnostics
- */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const email = searchParams.get("email");
@@ -30,7 +21,6 @@ export async function GET(req: Request) {
     const db = await getDb();
     const users = db.collection("users");
 
-    // Find user by email (normalized same way as login/register)
     const normalizedEmail = email.toLowerCase().trim();
     const user = await users.findOne({ email: normalizedEmail });
 
@@ -47,14 +37,13 @@ export async function GET(req: Request) {
       );
     }
 
-    // Validate hash format
     const isValidBcryptHash = 
       user.passwordHash && 
       (user.passwordHash.startsWith('$2a$') || 
        user.passwordHash.startsWith('$2b$') || 
        user.passwordHash.startsWith('$2y$'));
 
-    // Test password verification
+
     let passwordMatches = false;
     let compareError = null;
     try {

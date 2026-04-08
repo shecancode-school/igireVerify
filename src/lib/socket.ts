@@ -49,3 +49,10 @@ export const joinDashboardRoom = (userId: string, socket?: Socket | null) => {
     targetSocket.emit('join-dashboard', userId);
   }
 };
+
+export const joinAdminRoom = (socket?: Socket | null) => {
+  const targetSocket = socket || (typeof window !== 'undefined' ? (window.__programSocket || window.__userSocket) : null);
+  if (targetSocket) {
+    targetSocket.emit('join-admin');
+  }
+};
