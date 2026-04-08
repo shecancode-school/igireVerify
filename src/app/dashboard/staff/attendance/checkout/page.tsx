@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import Sidebar from "@/components/dashboard/Sidebar";
+import StaffSidebar from "@/components/dashboard/staff/StaffSidebar";
 import TopBar from "@/components/dashboard/TopBar";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 
@@ -21,6 +21,10 @@ interface UserData {
   programId: string;
   userId: string;
   role: string;
+  isOnline: boolean;
+  sessionDate: string;
+  checkInWindow: string;
+  currentTime: string;
 }
 
 function distanceInMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
@@ -61,7 +65,15 @@ export default function CheckOutPage() {
         const response = await fetch("/api/auth/me");
         if (response.ok) {
           const data = await response.json();
-          setUserData(data);
+          const now = new Date();
+          setUserData({
+            ...data,
+            role: data.role || "participant",
+            isOnline: true,
+            sessionDate: `Today: ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`,
+            currentTime: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+            checkInWindow: data.checkInWindow || "N/A",
+          });
         }
       } catch (error) {
         console.error("Failed to fetch user data:", error);
@@ -424,7 +436,7 @@ export default function CheckOutPage() {
           <h2 className="text-4xl font-bold text-[#14532D] mb-3">Session Complete</h2>
           <p className="text-lg text-gray-700 mb-10">Your check-out has been successfully recorded. You are now free to leave.</p>
           <button
-            onClick={() => window.location.href = "/dashboard/participant"}
+            onClick={() => (window.location.href = "/dashboard/staff")}
             className="px-10 py-4 bg-[#14532D] text-white rounded-2xl font-semibold text-lg hover:bg-[#0f3d23]"
           >
             Return to Dashboard
@@ -436,9 +448,9 @@ export default function CheckOutPage() {
 
   return (
     <div className="min-h-screen bg-white flex">
-      <Sidebar />
+      <StaffSidebar />
       <div className="flex-1 ml-[120px]">
-        <TopBar />
+        {userData ? <TopBar {...userData} /> : <TopBar userName="" programName="" />}
 
         <main className="px-12 py-10 bg-[#F5F5F5] min-h-screen">
           {loading || !userData ? (

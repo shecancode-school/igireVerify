@@ -140,7 +140,6 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [reports, setReports] = useState<any[]>([]);
 
-  // Ticking Time State
   const [liveDate, setLiveDate] = useState("");
   const [liveTime, setLiveTime] = useState("Loading...");
 
@@ -164,7 +163,6 @@ export default function AdminDashboard() {
   }, [socket]);
 
   useEffect(() => {
-    // Timer Effect
     const updateTime = () => {
       const now = new Date();
       setLiveDate(format(now, 'EEEE, d MMMM yyyy'));
@@ -181,7 +179,6 @@ export default function AdminDashboard() {
   const [userRole, setUserRole] = useState('admin');
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
 
-  // Programs management state
   const [showProgramModal, setShowProgramModal] = useState(false);
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const defaultSchedule = {
@@ -203,11 +200,9 @@ export default function AdminDashboard() {
   });
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Users management state
   const [userSearch, setUserSearch] = useState('');
   const [selectedProgram, setSelectedProgram] = useState('');
 
-  // Delete Confirmation Modal State
   const [deleteDialog, setDeleteDialog] = useState<{
     isOpen: boolean;
     type: 'program' | 'user';
@@ -220,7 +215,6 @@ export default function AdminDashboard() {
     name: ''
   });
 
-  // Reports state
   const [reportStartDate, setReportStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [reportEndDate, setReportEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [reportProgramId, setReportProgramId] = useState('');
@@ -236,7 +230,6 @@ export default function AdminDashboard() {
 
   const fetchInitialData = async () => {
     try {
-      // Trigger absentee maintenance before fetching stats
       fetch('/api/attendance/maintenance/absentees').catch(err => console.error("Maintenance failed:", err));
 
       const [userRes, statsRes, programsRes, chartRes, activityRes] = await Promise.all([
@@ -314,8 +307,7 @@ export default function AdminDashboard() {
     try {
       const method = editingProgram ? 'PUT' : 'POST';
       const idStr = editingProgram?._id?.toString() || editingProgram?._id;
-      
-      // Safety check: ensure ID is valid for PUT
+
       if (editingProgram && (!idStr || idStr.length < 24)) {
         setFormError("Critical Error: Program ID is invalid. Please refresh the page.");
         return;
@@ -332,7 +324,6 @@ export default function AdminDashboard() {
         setShowProgramModal(false);
         setEditingProgram(null);
         setProgramForm({ name: '', code: '', description: '', startDate: '', endDate: '', schedule: { ...defaultSchedule } });
-        // Refresh programs
         const programsRes = await fetch('/api/programs');
         if (programsRes.ok) {
           setPrograms(await programsRes.json());
@@ -432,15 +423,13 @@ export default function AdminDashboard() {
       const records = resData.data || [];
       
       const fileNameStr = `Attendance-Report-${reportStartDate}-to-${reportEndDate}`;
-      
-      // Calculate Stats
+
       const totalParticipants = records.length;
       const present = records.filter((r: any) => r.status === 'Present').length;
       const late = records.filter((r: any) => r.status === 'Late').length;
       const absent = records.filter((r: any) => r.status === 'Absent').length;
       const attendanceRate = totalParticipants > 0 ? Math.round(((present + late) / totalParticipants) * 100) : 0;
 
-      // Table Data
       const tableHeaders = ['Date', 'Participant Name', 'Program', 'Check-in Time', 'Check-out Time', 'Status', 'Late By', 'Photo'];
       const tableRows = records.map((r: any) => [
         r.date, r.name, r.program, r.checkIn, r.checkOut, r.status, r.lateBy, r.photo
@@ -449,8 +438,7 @@ export default function AdminDashboard() {
       if (formatType === 'pdf') {
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.width;
-        
-        // --- HEADER ---
+
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(46, 125, 50); // #2E7D32
@@ -469,7 +457,6 @@ export default function AdminDashboard() {
         doc.text(`Date Range: ${reportStartDate} to ${reportEndDate}`, 14, 47);
         doc.text(`Generated on: ${format(new Date(), 'MMMM dd, yyyy \\a\\t hh:mm a')} by ${userName}`, 14, 53);
 
-        // --- SUMMARY CARDS ---
         doc.setDrawColor(200, 200, 200);
         doc.setFillColor(245, 245, 245);
         doc.roundedRect(14, 60, pageWidth - 28, 25, 3, 3, 'FD');
@@ -493,7 +480,6 @@ export default function AdminDashboard() {
         doc.setTextColor(0, 0, 0);
         doc.text(`Rate: ${attendanceRate}%`, 160, summaryY);
 
-        // --- TABLE ---
         autoTable(doc, {
           head: [tableHeaders],
           body: tableRows,
@@ -503,7 +489,6 @@ export default function AdminDashboard() {
           bodyStyles: { fontSize: 9 },
           alternateRowStyles: { fillColor: [250, 250, 250] },
           didParseCell: (hookData) => {
-             // Change color of Status column
              if (hookData.section === 'body' && hookData.column.index === 5) {
                 const statusStr = hookData.cell.raw as string;
                 if (statusStr === 'Present') hookData.cell.styles.textColor = [46, 125, 50];
@@ -556,11 +541,9 @@ export default function AdminDashboard() {
         ];
         
         const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-        // Set auto filter for the table area
-        const tableStartRow = 9; // 0-indexed, row 10 is headers
+        const tableStartRow = 9;
         worksheet['!autofilter'] = { ref: `A${tableStartRow + 1}:H${tableStartRow + 1 + totalParticipants}` };
-        
-        // Set column widths
+
         worksheet['!cols'] = [
            { wch: 12 }, { wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 8 }
         ];
@@ -569,7 +552,6 @@ export default function AdminDashboard() {
         XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance Report");
         XLSX.writeFile(workbook, `${fileNameStr}.xlsx`);
       } else {
-        // CSV / Google Sheets fallback
         const csvContent = [
           tableHeaders.join(','),
           ...tableRows.map((row: any) => row.map((field: any) => `"${field}"`).join(','))

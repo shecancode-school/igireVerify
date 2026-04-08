@@ -1,5 +1,6 @@
 // src/app/api/auth/me/route.ts
 import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 import { getAuthClaimsFromCookies } from "@/lib/auth";
 import { getDb } from "@/lib/mongodb";
 
@@ -23,9 +24,16 @@ export async function GET() {
     let programName = "N/A";
     let programId = user.programId?.toString() || "";
 
-    if (user.role === 'staff') {
-      programName = 'Attendance Monitor';
-      programId = 'staff-mon';
+    if (user.role === "staff") {
+      if (user.programId) {
+        const programs = db.collection("programs");
+        const programObj = await programs.findOne({ _id: user.programId });
+        programName = programObj?.name || "Assigned program";
+        programId = user.programId.toString();
+      } else {
+        programName = "Staff — ask Admin to assign a program";
+        programId = "staff-mon";
+      }
     } else if (user.role === 'admin') {
       programName = 'System Administrator';
       programId = 'admin-sys';
@@ -39,6 +47,18 @@ export async function GET() {
       }
     }
 
+    let checkInWindow = "N/A";
+    if (user.programId && ObjectId.isValid(String(user.programId))) {
+      const programDoc = await db
+        .collection("programs")
+        .findOne({ _id: user.programId as ObjectId });
+      if (programDoc?.schedule) {
+        checkInWindow = `${programDoc.schedule.checkInStart} - ${programDoc.schedule.checkInEnd}`;
+      }
+    } else if (user.role === "staff" && programId === "staff-mon") {
+      checkInWindow = "Staff default window";
+    }
+
     return NextResponse.json({
       userName: user.name,
       programName,
@@ -46,7 +66,8 @@ export async function GET() {
       userId: user._id.toString(),
       role: user.role,
       email: user.email,
-      profilePhotoUrl: user.profilePhotoUrl || null
+      profilePhotoUrl: user.profilePhotoUrl || null,
+      checkInWindow,
     });
 
   } catch (error) {

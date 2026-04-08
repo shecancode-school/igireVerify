@@ -257,7 +257,7 @@ export default function CheckInPage() {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-2xl font-black text-[#14532D] mb-2">
-                    ✓ Location Verified
+                    Location verified
                   </h2>
                   <p className="text-sm text-gray-700 mb-4">
                     You are at Igire Rwanda Organisation premises.
@@ -487,7 +487,7 @@ export default function CheckInPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Photo:</span>
-              <span className="font-semibold text-green-600">✓ Captured</span>
+              <span className="font-semibold text-green-600">Captured</span>
             </div>
           </div>
 

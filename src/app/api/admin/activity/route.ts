@@ -13,7 +13,6 @@ export async function GET() {
     const attendance = db.collection("attendance");
     const users = db.collection("users");
 
-    // Get today's attendance records, sorted by latest
     const now = new Date();
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
@@ -24,7 +23,6 @@ export async function GET() {
       .limit(20)
       .toArray();
 
-    // Get user names
     const userIds = records.map(r => r.userId);
     const userDocs = await users.find({ _id: { $in: userIds } }).toArray();
     const userMap = new Map(userDocs.map(u => [u._id.toString(), u.name]));

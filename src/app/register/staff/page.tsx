@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -20,6 +20,11 @@ function validateEmail(email: string): string | null {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(email)) return "Invalid email format";
   if (email.length > 254) return "Email is too long";
+  const lower = email.toLowerCase().trim();
+  const at = lower.lastIndexOf("@");
+  if (at === -1 || lower.slice(at + 1) !== "igirerwanda.org") {
+    return "Use your @igirerwanda.org work email";
+  }
   return null;
 }
 
@@ -33,11 +38,6 @@ function validatePassword(password: string): string | null {
   return null;
 }
 
-interface ProgramOption {
-  _id: string;
-  name: string;
-}
-
 export default function StaffRegisterPage() {
   const router = useRouter();
 
@@ -46,36 +46,13 @@ export default function StaffRegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    programId: "",
   });
-
-  const [programs, setPrograms] = useState<ProgramOption[]>([]);
-  const [loadingPrograms, setLoadingPrograms] = useState(true);
-
-  useEffect(() => {
-    async function loadPrograms() {
-      try {
-        const res = await fetch("/api/public/programs");
-        if (res.ok) {
-          const data = await res.json();
-          setPrograms(data);
-        }
-      } catch (err) {
-        console.error("Failed to load programs:", err);
-      } finally {
-        setLoadingPrograms(false);
-      }
-    }
-    loadPrograms();
-  }, []);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  function handleChange(
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) {
+  function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (fieldErrors[name]) setFieldErrors((prev) => ({ ...prev, [name]: "" }));
@@ -95,10 +72,6 @@ export default function StaffRegisterPage() {
 
     if (formData.password !== formData.confirmPassword) {
       errors.confirmPassword = "Passwords do not match";
-    }
-
-    if (!formData.programId) {
-      errors.programId = "Please select a program";
     }
 
     setFieldErrors(errors);
@@ -124,7 +97,6 @@ export default function StaffRegisterPage() {
           email: formData.email.toLowerCase().trim(),
           password: formData.password,
           confirmPassword: formData.confirmPassword,
-          programId: formData.programId,
         }),
       });
 
@@ -194,35 +166,13 @@ export default function StaffRegisterPage() {
                 onChange={handleChange}
                 required
                 maxLength={254}
-                placeholder="you@example.com"
+                placeholder="you@igirerwanda.org"
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent ${
                   fieldErrors.email ? "border-red-500" : "border-gray-300"
                 }`}
               />
               {fieldErrors.email && (
                 <p className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Program *
-              </label>
-              <select
-                name="programId"
-                value={formData.programId}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent ${
-                  fieldErrors.programId ? "border-red-500" : "border-gray-300"
-                }`}
-              >
-                <option value="">{loadingPrograms ? "Loading programs..." : "Select your program"}</option>
-                {programs.map((p) => (
-                  <option key={p._id} value={p._id}>{p.name}</option>
-                ))}
-              </select>
-              {fieldErrors.programId && (
-                <p className="mt-1 text-sm text-red-600">{fieldErrors.programId}</p>
               )}
             </div>
 
