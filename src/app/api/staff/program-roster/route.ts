@@ -55,7 +55,12 @@ export async function GET(req: NextRequest) {
     const records = await attendanceCol
       .find({
         programId: new ObjectId(programIdStr),
-        date: { $gte: day, $lt: next },
+        $or: [
+          { date: { $gte: day, $lt: next } },
+          { checkInTime: { $gte: day, $lt: next } },
+          { createdAt: { $gte: day, $lt: next } },
+        ],
+        type: { $in: ["checkin", "completed", "manual", "absent"] },
       })
       .toArray();
 
@@ -72,12 +77,43 @@ export async function GET(req: NextRequest) {
     };
 
     const roster = participants.map((u) => {
-      const rec = records.find((r) => sameUser(r, u._id));
-      let status: "not-checked-in" | "checked-in" | "checked-out" = "not-checked-in";
+      const userRecords = (records as Array<Record<string, unknown>>)
+        .filter((r) => sameUser(r, u._id))
+        .sort((a, b) => {
+          const rank = (x: Record<string, unknown>) => {
+            const t = typeof x.type === "string" ? x.type : "";
+            if ((t === "completed" || x.checkOutTime) && x.checkInTime) return 4;
+            if (t === "checkin" && x.checkInTime) return 3;
+            if (t === "manual") return 2;
+            if (t === "absent") return 1;
+            return 0;
+          };
+          const p = rank(b) - rank(a);
+          if (p !== 0) return p;
+          const bt = new Date((b.updatedAt as string | number | Date | undefined) || (b.createdAt as string | number | Date | undefined) || 0).getTime();
+          const at = new Date((a.updatedAt as string | number | Date | undefined) || (a.createdAt as string | number | Date | undefined) || 0).getTime();
+          return bt - at;
+        });
+      const rec = userRecords[0];
+      let status: "absent" | "not-checked-in" | "checked-in" | "checked-out" =
+        "not-checked-in";
       let checkIn = "—";
       let checkOut = "—";
 
       if (rec) {
+        if (rec.checkInStatus === "absent" || rec.type === "absent") {
+          status = "absent";
+          return {
+            userId: u._id.toString(),
+            name: u.name as string,
+            email: u.email as string,
+            checkIn: "—",
+            checkOut: "—",
+            status,
+            attendanceStatus: "absent",
+          };
+        }
+
         if (rec.checkInTime) {
           checkIn = new Date(rec.checkInTime as string).toLocaleTimeString("en-GB", {
             hour: "2-digit",

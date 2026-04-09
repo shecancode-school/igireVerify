@@ -13,6 +13,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
 
+    if (!ObjectId.isValid(userIdStr) || !ObjectId.isValid(programIdStr)) {
+      return NextResponse.json({ error: "Invalid user or program ID" }, { status: 400 });
+    }
+
     const userId = new ObjectId(userIdStr);
     const programId = new ObjectId(programIdStr);
     const db = await getDb();
@@ -22,22 +26,34 @@ export async function GET(req: Request) {
     const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
 
     // Fetch all attendance for this user for the current week
-    const records = await attendance.find({
-      userId,
-      programId,
-      createdAt: { $gte: weekStart, $lte: now }
-    }).toArray();
+    const records = await attendance
+      .find({
+        userId,
+        programId,
+        type: { $in: ["checkin", "completed", "manual", "absent"] },
+        $or: [
+          { date: { $gte: weekStart, $lte: now } },
+          { checkInTime: { $gte: weekStart, $lte: now } },
+          { createdAt: { $gte: weekStart, $lte: now } },
+        ],
+      })
+      .toArray();
 
     // Map to daily rates
     const data = [];
     for (let i = 0; i < 7; i++) {
       const dayDate = addDays(weekStart, i);
-      const dayRecords = records.filter(r => 
-        new Date(r.createdAt).toDateString() === dayDate.toDateString()
-      );
+      const dayRecords = records.filter((r) => {
+        const d = new Date((r.date as string) || (r.checkInTime as string) || (r.createdAt as string));
+        return d.toDateString() === dayDate.toDateString();
+      });
       
-      const hasCheckedIn = dayRecords.some(r => r.type === 'checkin');
-      const isLate = dayRecords.some(r => r.type === 'checkin' && r.status === 'late');
+      const hasCheckedIn = dayRecords.some(
+        (r) => (r.type === "checkin" || r.type === "completed" || r.type === "manual") && r.checkInStatus !== "absent"
+      );
+      const isLate = dayRecords.some(
+        (r) => (r.type === "checkin" || r.type === "completed" || r.type === "manual") && r.checkInStatus === "late"
+      );
       
       let rate = 0;
       if (hasCheckedIn) {

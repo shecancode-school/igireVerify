@@ -32,6 +32,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 type RangeKey = "today" | "week" | "month";
+type ManualStatus = "late" | "absent";
 
 interface Program {
   _id: string;
@@ -117,6 +118,14 @@ export default function StaffDashboardClient() {
   const [repEnd, setRepEnd] = useState(format(new Date(), "yyyy-MM-dd"));
   const [repProgram, setRepProgram] = useState<string>("all");
   const [repBusy, setRepBusy] = useState(false);
+  const [manualProgramId, setManualProgramId] = useState<string>("");
+  const [manualSearch, setManualSearch] = useState("");
+  const [manualParticipantId, setManualParticipantId] = useState("");
+  const [manualDate, setManualDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [manualStatus, setManualStatus] = useState<ManualStatus>("absent");
+  const [manualNotes, setManualNotes] = useState("");
+  const [manualBusy, setManualBusy] = useState(false);
+  const [manualMessage, setManualMessage] = useState("");
 
   const overviewQuery = useMemo(() => {
     const params = new URLSearchParams({ range });
@@ -170,6 +179,12 @@ export default function StaffDashboardClient() {
       setRosterProgramId(programs[0]._id);
     }
   }, [programs, rosterProgramId]);
+
+  useEffect(() => {
+    if (programs.length > 0 && !manualProgramId) {
+      setManualProgramId(programs[0]._id);
+    }
+  }, [programs, manualProgramId]);
 
   const loadActivity = useCallback(async () => {
     try {
@@ -340,14 +355,15 @@ export default function StaffDashboardClient() {
       doc.text(`${repStart} to ${repEnd}`, 14, 26);
       autoTable(doc, {
         startY: 32,
-        head: [["Date", "Name", "Program", "Status", "In", "Out"]],
-        body: data.map((r: { date: string; name: string; program: string; status: string; checkIn: string; checkOut: string }) => [
+        head: [["Date", "Name", "Program", "Status", "In", "Out", "Location"]],
+        body: data.map((r: { date: string; name: string; program: string; status: string; checkIn: string; checkOut: string; location?: string }) => [
           r.date,
           r.name,
           r.program,
           r.status,
           r.checkIn,
           r.checkOut,
+          r.location || "Unknown",
         ]),
         styles: { fontSize: 8 },
         headStyles: { fillColor: [46, 125, 50] },
@@ -357,6 +373,54 @@ export default function StaffDashboardClient() {
       console.error(e);
     } finally {
       setRepBusy(false);
+    }
+  }
+
+  const manualCandidates = useMemo(() => {
+    return participants.filter((p) => {
+      if (!manualProgramId) return false;
+      const inProgram = p.programId === manualProgramId;
+      if (!inProgram) return false;
+      if (!manualSearch.trim()) return true;
+      return p.userName.toLowerCase().includes(manualSearch.toLowerCase());
+    });
+  }, [participants, manualProgramId, manualSearch]);
+
+  async function submitManualAttendance() {
+    setManualMessage("");
+    if (!manualProgramId || !manualParticipantId) {
+      setManualMessage("Select a program and participant first.");
+      return;
+    }
+
+    setManualBusy(true);
+    try {
+      const res = await fetch("/api/attendance/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: manualParticipantId,
+          programId: manualProgramId,
+          date: manualDate,
+          checkInStatus: manualStatus,
+          notes: manualNotes.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setManualMessage(data.error || "Failed to save manual attendance.");
+        return;
+      }
+      setManualNotes("");
+      setManualSearch("");
+      setManualMessage("Manual attendance saved and dashboards updated.");
+      loadOverview();
+      if (activeTab === "live") loadActivity();
+      if (activeTab === "programs") loadRoster();
+    } catch {
+      setManualMessage("Network error while saving manual attendance.");
+    } finally {
+      setManualBusy(false);
     }
   }
 
@@ -735,6 +799,9 @@ export default function StaffDashboardClient() {
                           <td className="px-4 py-3 text-center">
                             <span
                               className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                r.status === "absent"
+                                  ? "bg-red-100 text-red-800"
+                                  : 
                                 r.status === "checked-out"
                                   ? "bg-green-100 text-green-800"
                                   : r.status === "checked-in"
@@ -742,7 +809,7 @@ export default function StaffDashboardClient() {
                                     : "bg-gray-100 text-gray-700"
                               }`}
                             >
-                              {r.status.replace("-", " ")}
+                              {r.status === "not-checked-in" ? "not checked in" : r.status.replace("-", " ")}
                             </span>
                           </td>
                         </tr>
@@ -828,7 +895,7 @@ export default function StaffDashboardClient() {
           )}
 
           {activeTab === "attendance" && (
-            <div className="space-y-6 max-w-xl">
+            <div className="space-y-6 max-w-3xl">
               <h1 className="text-2xl font-bold text-black">My attendance</h1>
               <p className="text-gray-600 text-sm">
                 Record your own check-in or check-out. Your program and schedule are set by Admin in your user profile.
@@ -846,6 +913,120 @@ export default function StaffDashboardClient() {
                 >
                   Check out
                 </Link>
+              </div>
+
+              <div className="bg-white rounded-3xl border border-gray-100 p-6 space-y-4">
+                <h2 className="text-lg font-bold text-black">Manual participant attendance</h2>
+                <p className="text-sm text-gray-600">
+                  Use this when a participant reports late or absent. This record updates staff/admin dashboards and reports.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500">Program</label>
+                    <select
+                      className="w-full mt-1 border rounded-xl px-3 py-2"
+                      value={manualProgramId}
+                      onChange={(e) => {
+                        setManualProgramId(e.target.value);
+                        setManualParticipantId("");
+                      }}
+                    >
+                      <option value="">Select program</option>
+                      {programs.map((p) => (
+                        <option key={p._id} value={p._id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500">Date</label>
+                    <input
+                      type="date"
+                      className="w-full mt-1 border rounded-xl px-3 py-2"
+                      value={manualDate}
+                      onChange={(e) => setManualDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500">Search participant</label>
+                  <div className="relative mt-1">
+                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={manualSearch}
+                      onChange={(e) => setManualSearch(e.target.value)}
+                      placeholder="Type participant name"
+                      className="w-full border rounded-xl pl-9 pr-3 py-2"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500">Participant</label>
+                  <select
+                    className="w-full mt-1 border rounded-xl px-3 py-2"
+                    value={manualParticipantId}
+                    onChange={(e) => setManualParticipantId(e.target.value)}
+                  >
+                    <option value="">Select participant</option>
+                    {manualCandidates.map((p) => (
+                      <option key={p.userId} value={p.userId}>
+                        {p.userName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500">Status</label>
+                  <div className="mt-2 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setManualStatus("absent")}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold border ${
+                        manualStatus === "absent"
+                          ? "bg-red-100 text-red-700 border-red-200"
+                          : "bg-white text-gray-700 border-gray-200"
+                      }`}
+                    >
+                      Absent
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setManualStatus("late")}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold border ${
+                        manualStatus === "late"
+                          ? "bg-amber-100 text-amber-700 border-amber-200"
+                          : "bg-white text-gray-700 border-gray-200"
+                      }`}
+                    >
+                      Late
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500">Notes (optional)</label>
+                  <textarea
+                    className="w-full mt-1 border rounded-xl px-3 py-2 min-h-24"
+                    maxLength={500}
+                    value={manualNotes}
+                    onChange={(e) => setManualNotes(e.target.value)}
+                    placeholder="Participant communicated illness, transport issue, etc."
+                  />
+                </div>
+                {manualMessage && (
+                  <p className="text-sm text-[#14532D] bg-[#ECFDF3] border border-[#BBF7D0] px-3 py-2 rounded-xl">
+                    {manualMessage}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  disabled={manualBusy}
+                  onClick={submitManualAttendance}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#14532D] text-white text-sm font-semibold disabled:opacity-50"
+                >
+                  {manualBusy ? "Saving..." : "Save manual attendance"}
+                </button>
               </div>
             </div>
           )}

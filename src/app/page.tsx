@@ -7,19 +7,14 @@ export default function RootPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user has seen welcome screen before
     const hasSeenWelcome = sessionStorage.getItem("hasSeenWelcome");
-
     if (!hasSeenWelcome) {
-      // First visit - show welcome screen
       router.push("/welcome");
     } else {
-      // Returning user - show homepage directly
       router.push("/home");
     }
   }, [router]);
-
-  // Show loading while redirecting
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="text-center">

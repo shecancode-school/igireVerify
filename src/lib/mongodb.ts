@@ -16,7 +16,7 @@ export async function getDb(): Promise<Db> {
   if (cachedDb) return cachedDb;
 
   const uri = requireEnv("MONGODB_URI");
-  const dbName = process.env.MONGODB_DB || "igireverify";
+  const dbName = process.env.MONGODB_DB || "IgireVerify";
 
   if (!cachedClient) {
     // faster fail for invalid config

@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -32,7 +33,7 @@ export default function LoginPage() {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "X-Requested-With": "XMLHttpRequest" // Try to bypass any proxy
+          "X-Requested-With": "XMLHttpRequest" 
         },
         body: JSON.stringify({
           email: email.toLowerCase().trim(),
@@ -45,10 +46,9 @@ export default function LoginPage() {
       if (contentType && contentType.includes("application/json")) {
         data = await response.json();
       } else {
-        // Handle non-JSON responses (like Console Ninja interception)
         const text = await response.text();
-        if (text.includes("PRO FEATURE")) {
-          setError("Development tool interference detected. Please disable Console Ninja extension or try a different browser.");
+        if (text.includes("PRO FEATURE") || text.trim().startsWith("<!")) {
+          setError("The login response was not valid JSON. Disable extensions that inject into pages or try a private/incognito window.");
           setLoading(false);
           return;
         }
@@ -164,15 +164,24 @@ export default function LoginPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    required
-                    autoFocus
-                    className="w-full px-0 py-4 text-xl bg-transparent border-0 border-b-2 border-gray-300 focus:border-gray-900 focus:outline-none placeholder-gray-400"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Password"
+                      required
+                      autoFocus
+                      className="w-full px-0 py-4 pr-14 text-xl bg-transparent border-0 border-b-2 border-gray-300 focus:border-gray-900 focus:outline-none placeholder-gray-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-600 hover:text-gray-900"
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex justify-between items-center">

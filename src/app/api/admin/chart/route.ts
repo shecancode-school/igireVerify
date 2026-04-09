@@ -26,14 +26,14 @@ export async function GET() {
 
       const [present, late] = await Promise.all([
         attendance.countDocuments({
-          type: "checkin",
+          type: { $in: ["checkin", "completed"] },
           createdAt: { $gte: startOfDay, $lt: endOfDay },
-          status: "on-time",
+          checkInStatus: "on-time",
         }),
         attendance.countDocuments({
-          type: "checkin",
+          type: { $in: ["checkin", "completed"] },
           createdAt: { $gte: startOfDay, $lt: endOfDay },
-          status: "late",
+          checkInStatus: "late",
         }),
       ]);
 

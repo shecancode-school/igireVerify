@@ -430,9 +430,9 @@ export default function AdminDashboard() {
       const absent = records.filter((r: any) => r.status === 'Absent').length;
       const attendanceRate = totalParticipants > 0 ? Math.round(((present + late) / totalParticipants) * 100) : 0;
 
-      const tableHeaders = ['Date', 'Participant Name', 'Program', 'Check-in Time', 'Check-out Time', 'Status', 'Late By', 'Photo'];
+      const tableHeaders = ['Date', 'Participant Name', 'Program', 'Check-in Time', 'Check-out Time', 'Status', 'Late By', 'Location', 'Photo'];
       const tableRows = records.map((r: any) => [
-        r.date, r.name, r.program, r.checkIn, r.checkOut, r.status, r.lateBy, r.photo
+        r.date, r.name, r.program, r.checkIn, r.checkOut, r.status, r.lateBy, r.location || 'Unknown', r.photo
       ]);
 
       if (formatType === 'pdf') {

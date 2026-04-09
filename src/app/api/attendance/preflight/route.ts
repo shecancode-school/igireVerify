@@ -74,7 +74,7 @@ export async function POST(req: Request) {
       const existingCheckIn = await attendance.findOne({
         userId: new ObjectId(userId),
         programId: toObjectId(programId),
-        type: "checkin",
+        type: { $in: ["checkin", "completed"] },
         checkInTime: { $gte: today, $lt: tomorrow },
       });
 
@@ -87,16 +87,30 @@ export async function POST(req: Request) {
     }
 
     if (type === "checkout") {
-      // Check that a check-in exists
-      const checkInRecord = await attendance.findOne({
-        userId: new ObjectId(userId),
-        programId: toObjectId(programId),
-        type: "checkin",
-        checkInTime: {
-          $gte: today.toISOString(),
-          $lt: tomorrow.toISOString(),
-        },
+      const userObjectId = new ObjectId(userId);
+      const programObjectId = toObjectId(programId);
+      const timeRange = { $gte: today, $lt: tomorrow };
+
+      // Some older/edited records can have inconsistent programId/date fields.
+      // We try strict match first, then safely fall back to user + day.
+      let checkInRecord = await attendance.findOne({
+        userId: userObjectId,
+        programId: programObjectId,
+        type: { $in: ["checkin", "completed"] },
+        checkInTime: timeRange,
       });
+
+      if (!checkInRecord) {
+        checkInRecord = await attendance
+          .find({
+            userId: userObjectId,
+            type: { $in: ["checkin", "completed"] },
+            $or: [{ checkInTime: timeRange }, { date: timeRange }, { createdAt: timeRange }],
+          })
+          .sort({ updatedAt: -1, createdAt: -1 })
+          .limit(1)
+          .next();
+      }
 
       if (!checkInRecord) {
         return NextResponse.json(
