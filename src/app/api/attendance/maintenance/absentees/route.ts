@@ -47,7 +47,13 @@ export async function GET() {
         // 3. Check if they have a check-in record for today
         const existingRecord = await attendance.findOne({
           userId: participant._id,
-          date: todayStart,
+          programId: program._id,
+          $or: [
+            { date: { $gte: todayStart, $lt: tomorrowStart } },
+            { checkInTime: { $gte: todayStart, $lt: tomorrowStart } },
+            { createdAt: { $gte: todayStart, $lt: tomorrowStart } },
+          ],
+          type: { $in: ["checkin", "completed", "manual", "absent"] },
         });
 
         if (!existingRecord) {

@@ -6,9 +6,17 @@ export async function uploadToCloudinary(
   folder: string = "attendance"
 ): Promise<string> {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset =
+    process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "igire_attendance";
 
   if (!cloudName) {
     throw new Error("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is not set in environment.");
+  }
+
+  if (!uploadPreset) {
+    throw new Error(
+      "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET is not set in environment."
+    );
   }
 
   const formData = new FormData();
@@ -29,7 +37,7 @@ export async function uploadToCloudinary(
     formData.append("file", data);
   }
 
-  formData.append("upload_preset", "igire_attendance");
+  formData.append("upload_preset", uploadPreset);
   formData.append("folder", folder);
 
   try {
@@ -44,10 +52,18 @@ export async function uploadToCloudinary(
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[CLOUDINARY_UPLOAD_ERROR]", errorText);
+      if (errorText.toLowerCase().includes("upload preset")) {
+        throw new Error(
+          `Cloudinary upload preset "${uploadPreset}" was not found for cloud "${cloudName}". Create this unsigned preset in Cloudinary or set NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET to an existing one.`
+        );
+      }
       throw new Error(`Upload failed: ${errorText}`);
     }
 
-    const json = (await response.json()) as { secure_url?: string; error?: any };
+    const json = (await response.json()) as {
+      secure_url?: string;
+      error?: { message?: string };
+    };
 
     if (!json.secure_url) {
       throw new Error("Invalid response from storage provider.");
@@ -56,6 +72,11 @@ export async function uploadToCloudinary(
     return json.secure_url;
   } catch (error) {
     console.error("[FETCH_CRITICAL_ERROR]", error);
-    throw new Error("Network connection error while uploading photo. Please try again.");
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(
+      "Network connection error while uploading photo. Please try again."
+    );
   }
 }

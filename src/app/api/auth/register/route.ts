@@ -4,6 +4,11 @@ import { NextResponse, NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
 import { registerSchema } from "@/lib/validation";
+import {
+  buildVerifyUrl,
+  createEmailVerificationToken,
+  sendWelcomeVerificationEmail,
+} from "@/lib/email";
 
 /**
  * POST /api/auth/register
@@ -99,6 +104,9 @@ export async function POST(req: NextRequest) {
 
     const now = new Date();
 
+    const verification = createEmailVerificationToken();
+    const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
     // Create user document with all required fields
     const userData = {
       name: name.trim(),
@@ -106,6 +114,9 @@ export async function POST(req: NextRequest) {
       passwordHash,
       role,
       isActive: true,
+      emailVerified: false,
+      emailVerificationToken: verification.hashed,
+      emailVerificationExpiresAt: verificationExpiry,
       createdAt: now,
       updatedAt: now,
       lastLogin: undefined,
@@ -126,14 +137,39 @@ export async function POST(req: NextRequest) {
     const insertResult = await users.insertOne(userData);
 
     // Verify insertion
-    const verification = await users.findOne({ _id: insertResult.insertedId });
-    if (!verification) {
+    const inserted = await users.findOne({ _id: insertResult.insertedId });
+    if (!inserted) {
       console.error("[REGISTER] Data not persisted after insertion");
       throw new Error("User creation failed - data not persisted");
     }
 
+    // Send verification email; rollback created account when delivery fails.
+    try {
+      const verifyUrl = buildVerifyUrl(verification.raw);
+      await sendWelcomeVerificationEmail({
+        to: normalizedEmail,
+        name: name.trim(),
+        verifyUrl,
+      });
+    } catch (emailError) {
+      await users.deleteOne({ _id: insertResult.insertedId });
+      console.error("[REGISTER] Verification email failed:", emailError);
+      return NextResponse.json(
+        {
+          error:
+            "Could not send verification email. Please confirm SMTP settings and try again.",
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { ok: true, message: "Account created successfully", userId: insertResult.insertedId },
+      {
+        ok: true,
+        message:
+          "Account created successfully. Please check your email to verify your account before login.",
+        userId: insertResult.insertedId,
+      },
       { status: 201 }
     );
   } catch (err) {

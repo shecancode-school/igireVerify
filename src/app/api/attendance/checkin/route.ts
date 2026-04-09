@@ -80,7 +80,7 @@ export async function POST(req: Request) {
     const existingCheckIn = await attendance.findOne({
       userId: new ObjectId(userId),
       programId: toObjectId(programId),
-      type: "checkin",
+      type: { $in: ["checkin", "completed"] },
       checkInTime: {
         $gte: today,
         $lt: tomorrow,
@@ -99,15 +99,17 @@ export async function POST(req: Request) {
 
     const record = {
       userId: new ObjectId(userId),
-      programId: new ObjectId(programId),
+      programId: toObjectId(programId),
       userName,
       programName,
       role: role || "participant",
       type: "checkin",
-      checkInTime: checkInDateTime.toISOString(),
+      checkInTime: checkInDateTime,
       checkInStatus: status,
       checkInPhotoUrl: photoUrl,
       checkInGpsLocation: gpsLocation,
+      // Check-in is only allowed after location verification near Igire premises.
+      locationLabel: "Igire Rwanda Organisation premises",
       checkInMethod: "AUTO",
       createdAt: now,
       updatedAt: now,

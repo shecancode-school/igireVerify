@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
 import { requireAuthOrRedirect } from "@/lib/auth";
-import { isSameDay, format } from "date-fns";
+import { format } from "date-fns";
 
 /**
  * GET /api/admin/attendance
@@ -40,9 +40,19 @@ export async function GET(req: NextRequest) {
     const users = await usersCol.find(userQuery).toArray();
 
     // 2. Fetch attendance records for this day
-    const attendanceRecords = await attendanceCol.find({
-      checkInTime: { $gte: startOfDay, $lte: endOfDay }
-    }).toArray();
+    // Note: checkInTime/checkOutTime are stored as ISO strings, so we filter using Date fields (createdAt).
+    const attendanceQuery: any = {
+      $or: [
+        { date: { $gte: startOfDay, $lte: endOfDay } },
+        { checkInTime: { $gte: startOfDay, $lte: endOfDay } },
+        { createdAt: { $gte: startOfDay, $lte: endOfDay } },
+      ],
+      type: { $in: ["checkin", "completed", "manual", "absent"] },
+    };
+    if (programId && ObjectId.isValid(programId)) {
+      attendanceQuery.programId = new ObjectId(programId);
+    }
+    const attendanceRecords = await attendanceCol.find(attendanceQuery).toArray();
 
     // 3. Fetch programs for context
     const programs = await programsCol.find({ isActive: true }).toArray();
@@ -50,14 +60,72 @@ export async function GET(req: NextRequest) {
 
     // 4. Merge Users and Attendance
     const dayName = format(targetDate, 'EEEE');
+
+    const getDisplayStatus = (checkInStatus?: unknown) => {
+      const raw = typeof checkInStatus === "string" ? checkInStatus : "";
+      if (raw === "late") return "Late";
+      if (raw === "absent") return "Absent";
+      // "on-time" => Present
+      if (raw === "on-time" || raw === "present") return "Present";
+      return "Present";
+    };
+
+    const formatGps = (gps: any) => {
+      if (
+        !gps ||
+        typeof gps.latitude !== "number" ||
+        typeof gps.longitude !== "number"
+      ) {
+        return null;
+      }
+      const accuracyPart =
+        typeof gps.accuracy === "number" ? ` (${gps.accuracy}m)` : "";
+      return `${gps.latitude.toFixed(4)}, ${gps.longitude.toFixed(4)}${accuracyPart}`;
+    };
+
+    const recordPriority = (r: { type?: unknown; checkOutTime?: unknown; checkInTime?: unknown }) => {
+      const type = typeof r.type === "string" ? r.type : "";
+      if ((type === "completed" || r.checkOutTime) && r.checkInTime) return 4;
+      if (type === "checkin" && r.checkInTime) return 3;
+      if (type === "manual") return 2;
+      if (type === "absent") return 1;
+      return 0;
+    };
+
     const enrichedResults = users.map(user => {
       const program = user.programId ? programMap.get(user.programId.toString()) : null;
-      const record = attendanceRecords.find(r => r.userId === user._id.toString());
+      const userRecords = attendanceRecords
+        .filter((r: any) => {
+          const rid = r?.userId?.toString ? r.userId.toString() : String(r?.userId);
+          return rid === user._id.toString();
+        })
+        .sort((a: any, b: any) => {
+          const p = recordPriority(b) - recordPriority(a);
+          if (p !== 0) return p;
+          const bt = new Date(b.updatedAt || b.createdAt || 0).getTime();
+          const at = new Date(a.updatedAt || a.createdAt || 0).getTime();
+          return bt - at;
+        });
+      const record = userRecords[0];
       
       const workingDays = program?.schedule?.days || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
       const isWorkingDay = workingDays.includes(dayName);
 
       if (record) {
+        const checkInStatus = record.checkInStatus ?? record.status;
+        const displayStatus = getDisplayStatus(checkInStatus);
+
+        const gpsLocation = record.checkInGpsLocation ?? record.checkOutGpsLocation;
+        const resolvedLocation =
+          record.locationLabel ||
+          formatGps(gpsLocation) ||
+          record.location;
+        const location =
+          resolvedLocation ||
+          (displayStatus === "Present" || displayStatus === "Late"
+            ? "Igire Rwanda Organisation premises"
+            : "Unknown");
+
         return {
           _id: record._id,
           userId: user._id,
@@ -65,10 +133,10 @@ export async function GET(req: NextRequest) {
           userEmail: user.email,
           profilePhotoUrl: user.profilePhotoUrl || null,
           programName: program?.name || 'No Program',
-          checkInTime: record.checkInTime,
-          checkOutTime: record.checkOutTime,
-          status: record.status.charAt(0).toUpperCase() + record.status.slice(1).replace('-', ' '),
-          location: record.location || 'Unknown',
+          checkInTime: record.checkInTime ?? null,
+          checkOutTime: record.checkOutTime ?? null,
+          status: displayStatus,
+          location,
         };
       } else if (isWorkingDay) {
         // Only show as absent if it's a working day and it's not in the future

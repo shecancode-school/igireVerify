@@ -79,6 +79,7 @@ export default function CheckInPage() {
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>("idle");
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [gpsInfo, setGpsInfo] = useState<string | null>(null);
+  const [gpsCoords, setGpsCoords] = useState<{ latitude: number; longitude: number; accuracy: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uiMessage, setUiMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -182,6 +183,7 @@ export default function CheckInPage() {
 
         const distance = distanceInMeters(latitude, longitude, IGIRE_LAT, IGIRE_LNG);
         setGpsInfo(`Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}, Accuracy: ${Math.round(accuracy)}m`);
+        setGpsCoords({ latitude, longitude, accuracy });
 
         if (distance <= IGIRE_RADIUS_METERS) {
           setGpsStatus("verified");
@@ -271,7 +273,7 @@ export default function CheckInPage() {
           programId: userData.programId,
           role: attendanceRole,
           checkInTime: new Date().toISOString(),
-          gpsInfo: gpsInfo || "GPS recorded",
+          gpsLocation: gpsCoords || undefined,
           photoUrl,
         }),
       });
@@ -291,11 +293,12 @@ export default function CheckInPage() {
       setStep(3);
 
     } catch (errorCast) {
-      const message = errorCast instanceof Error ? errorCast.message : "An unexpected error occurred.";
-
-      const finalMessage = message.includes("Failed to fetch")
-        ? "Network connection issue detected. Please ensure you have a stable internet connection and try again."
-        : message;
+      const message =
+        errorCast instanceof Error ? errorCast.message : "An unexpected error occurred.";
+      const finalMessage =
+        message.trim().length > 0
+          ? message
+          : "Network connection issue detected. Please ensure you have a stable internet connection and try again.";
 
       console.error("[CHECKIN_PHASE_ERROR]", finalMessage);
       setUiMessage({ type: "error", text: finalMessage });

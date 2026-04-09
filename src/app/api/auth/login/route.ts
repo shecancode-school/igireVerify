@@ -41,6 +41,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
+    if (user.emailVerified === false) {
+      return NextResponse.json(
+        {
+          error:
+            "Please verify your email before signing in. Check your inbox for the Igire Verify verification link.",
+        },
+        { status: 403 }
+      );
+    }
+
     if (user.lockUntil && user.lockUntil > new Date()) {
       const remainingTime = Math.ceil((user.lockUntil.getTime() - new Date().getTime()) / 60000);
       return NextResponse.json({ 

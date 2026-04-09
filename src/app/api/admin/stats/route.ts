@@ -32,20 +32,22 @@ export async function GET() {
         }),
       ]);
 
+    // After checkout, attendance.type becomes `completed` but checkInStatus remains (on-time/late/absent).
     const [presentToday, lateToday, checkedInToday] = await Promise.all([
       attendance.countDocuments({
-        type: "checkin",
+        type: { $in: ["checkin", "completed"] },
         createdAt: { $gte: startOfDay, $lt: endOfDay },
-        status: "on-time",
+        checkInStatus: "on-time",
       }),
       attendance.countDocuments({
-        type: "checkin",
+        type: { $in: ["checkin", "completed"] },
         createdAt: { $gte: startOfDay, $lt: endOfDay },
-        status: "late",
+        checkInStatus: "late",
       }),
       attendance.distinct("userId", {
-        type: "checkin",
+        type: { $in: ["checkin", "completed"] },
         createdAt: { $gte: startOfDay, $lt: endOfDay },
+        checkInStatus: { $in: ["on-time", "late"] },
       }).then((usersToday) => Array.isArray(usersToday) ? usersToday.length : 0),
     ]);
     
@@ -68,9 +70,9 @@ export async function GET() {
     // Late arrivals this month
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lateThisMonth = await attendance.countDocuments({
-      type: "checkin",
+      type: { $in: ["checkin", "completed"] },
       createdAt: { $gte: startOfMonth, $lte: now },
-      status: "late"
+      checkInStatus: "late"
     });
     
     const totalParticipantsCount = await users.countDocuments({ role: "participant" });
@@ -79,7 +81,7 @@ export async function GET() {
     // Calculate real average attendance rate this month
     const monthRecordCount = await attendance.countDocuments({
       createdAt: { $gte: startOfMonth, $lte: now },
-      type: "checkin"
+      type: { $in: ["checkin", "completed"] }
     });
     const avgAttendanceRate = totalParticipantsCount > 0 && monthRecordCount > 0 
       ? Math.round((monthRecordCount / (totalParticipantsCount * now.getDate())) * 100) 

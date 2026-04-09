@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
 import { requireAuthOrRedirect } from "@/lib/auth";
-import { eachDayOfInterval, format, isSameDay, parseISO } from "date-fns";
+import { eachDayOfInterval, format, isSameDay } from "date-fns";
 
 /**
  * GET /api/admin/reports
@@ -48,16 +48,45 @@ export async function GET(req: NextRequest) {
     }
     const programMap = new Map(programs.map(p => [p._id.toString(), p]));
 
-    const userQuery: any = { role: { $in: ["participant", "staff"] } };
+    const userQuery: any = { role: "participant" };
     if (programId && ObjectId.isValid(programId)) {
       userQuery.programId = new ObjectId(programId);
     }
     const users = await usersCol.find(userQuery).toArray();
 
-    // 3. Fetch all attendance records for the range to avoid multiple DB calls
-    const attendanceRecords = await attendanceCol.find({
-      checkInTime: { $gte: startDate, $lte: endDate }
-    }).toArray();
+    // 3. Fetch attendance records for the range based on attendance day.
+    const attendanceRecords = await attendanceCol
+      .find({
+        date: { $gte: startDate, $lte: endDate },
+      })
+      .toArray();
+
+    const sameUser = (record: any, userId: ObjectId): boolean => {
+      const rid = record?.userId;
+      if (!rid) return false;
+      if (typeof rid === "string") return rid === userId.toString();
+      if (typeof rid === "object" && "toString" in rid) {
+        return rid.toString() === userId.toString();
+      }
+      return false;
+    };
+
+    const formatGps = (gps: unknown) => {
+      const point = gps as
+        | { latitude?: unknown; longitude?: unknown; accuracy?: unknown }
+        | null
+        | undefined;
+      if (
+        !point ||
+        typeof point.latitude !== "number" ||
+        typeof point.longitude !== "number"
+      ) {
+        return null;
+      }
+      const accuracy =
+        typeof point.accuracy === "number" ? ` (${Math.round(point.accuracy)}m)` : "";
+      return `${point.latitude.toFixed(4)}, ${point.longitude.toFixed(4)}${accuracy}`;
+    };
 
     // 4. Generate Daily Report Data
     const reportData: any[] = [];
@@ -76,24 +105,43 @@ export async function GET(req: NextRequest) {
         if (!workingDays.includes(dayName)) continue;
 
         // Find attendance for this user on this day
-        const record = attendanceRecords.find(r => 
-          r.userId === user._id.toString() && isSameDay(new Date(r.checkInTime), date)
-        );
+        const record = attendanceRecords.find((r: any) => {
+          if (!sameUser(r, user._id)) return false;
+          const recordDate = r.date || r.checkInTime || r.createdAt;
+          if (!recordDate) return false;
+          return isSameDay(new Date(recordDate), date);
+        });
 
         const dateStr = format(date, 'MM/dd/yyyy');
         
         if (record) {
-          // Present or Late
-          const checkInTime = new Date(record.checkInTime);
-          const checkInStr = format(checkInTime, 'HH:mm');
+          const checkInTime = record.checkInTime ? new Date(record.checkInTime) : null;
+          const checkInStr = checkInTime ? format(checkInTime, 'HH:mm') : 'None';
           let checkOutStr = '--';
           if (record.checkOutTime) {
             checkOutStr = format(new Date(record.checkOutTime), 'HH:mm');
           }
 
+          const statusRaw =
+            record.checkInStatus || record.status || (record.type === "absent" ? "absent" : "on-time");
+
+          const statusDisplay =
+            statusRaw === "late"
+              ? "Late"
+              : statusRaw === "absent"
+                ? "Absent"
+                : "Present";
+          const gps = record.checkInGpsLocation || record.checkOutGpsLocation;
+          const location =
+            record.locationLabel ||
+            formatGps(gps) ||
+            (statusDisplay === "Present" || statusDisplay === "Late"
+              ? "Igire Rwanda Organisation premises"
+              : "Unknown");
+
           // Calculate Late By (dynamic)
           let lateBy = '-';
-          if (record.status === 'late' && program.schedule?.lateAfter) {
+          if (statusRaw === 'late' && checkInTime && program.schedule?.lateAfter) {
             const [h, m] = program.schedule.lateAfter.split(':').map(Number);
             const expected = new Date(checkInTime);
             expected.setHours(h, m, 0, 0);
@@ -112,8 +160,9 @@ export async function GET(req: NextRequest) {
             program: program.name,
             checkIn: checkInStr,
             checkOut: checkOutStr,
-            status: record.status.charAt(0).toUpperCase() + record.status.slice(1).replace('-', ' '),
+            status: statusDisplay,
             lateBy: lateBy,
+            location,
             photo: user.profilePhotoUrl ? '[View]' : '-'
           });
         } else {
@@ -131,6 +180,7 @@ export async function GET(req: NextRequest) {
                checkOut: '--',
                status: 'Absent',
                lateBy: '-',
+               location: "Unknown",
                photo: '-'
              });
           }
@@ -144,11 +194,11 @@ export async function GET(req: NextRequest) {
     }
 
     // CSV fallback (basic implementation)
-    const headers = ['Date', 'Name', 'Email', 'Program', 'Status', 'Check-in', 'Check-out', 'Late By'];
+    const headers = ['Date', 'Name', 'Email', 'Program', 'Status', 'Check-in', 'Check-out', 'Late By', 'Location'];
     const csvContent = [
       headers.join(','),
       ...reportData.map(r => [
-        r.date, r.name, r.email, r.program, r.status, r.checkIn, r.checkOut, r.lateBy
+        r.date, r.name, r.email, r.program, r.status, r.checkIn, r.checkOut, r.lateBy, r.location
       ].map(v => `"${v}"`).join(','))
     ].join('\n');
 

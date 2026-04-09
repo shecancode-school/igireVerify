@@ -26,5 +26,9 @@ export interface UserDocument {
   
   failedLoginAttempts?: number;
   lockUntil?: Date;
+
+  emailVerified?: boolean;
+  emailVerificationToken?: string;
+  emailVerificationExpiresAt?: Date;
 }
 

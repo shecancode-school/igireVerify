@@ -13,6 +13,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
 
+    if (!ObjectId.isValid(userIdStr) || !ObjectId.isValid(programIdStr)) {
+      return NextResponse.json({ error: "Invalid user or program ID" }, { status: 400 });
+    }
+
     const userId = new ObjectId(userIdStr);
     const programId = new ObjectId(programIdStr);
     const db = await getDb();
@@ -22,21 +26,36 @@ export async function GET(req: Request) {
 
     // Helper to get stats for a range
     async function getStatsForRange(start: Date, end: Date) {
-      const records = await attendance.find({
-        userId,
-        programId,
-        createdAt: { $gte: start, $lte: end }
-      }).toArray();
+      const records = await attendance
+        .find({
+          userId,
+          programId,
+          type: { $in: ["checkin", "completed", "manual", "absent"] },
+          $or: [
+            { date: { $gte: start, $lte: end } },
+            { checkInTime: { $gte: start, $lte: end } },
+            { createdAt: { $gte: start, $lte: end } },
+          ],
+        })
+        .toArray();
 
-      const checkins = records.filter(r => r.type === 'checkin');
-      const checkouts = records.filter(r => r.type === 'checkout');
-      const onTime = checkins.filter(r => r.status === 'on-time').length;
-      
-      const uniqueDays = new Set(checkins.map(r => new Date(r.createdAt).toDateString())).size;
+      const attended = records.filter(
+        (r) => r.type !== "absent" && r.checkInStatus !== "absent" && (r.checkInTime || r.type === "manual")
+      );
+      const checkedOut = records.filter((r) => r.type === "completed" || !!r.checkOutTime);
+      const onTime = records.filter(
+        (r) => (r.type === "checkin" || r.type === "completed" || r.type === "manual") && r.checkInStatus === "on-time"
+      ).length;
+
+      const uniqueDays = new Set(
+        attended.map((r) =>
+          new Date((r.date as string) || (r.checkInTime as string) || (r.createdAt as string)).toDateString()
+        )
+      ).size;
       
       return {
-        checkedIn: checkins.length,
-        checkedOut: checkouts.length,
+        checkedIn: attended.length,
+        checkedOut: checkedOut.length,
         onTimeCount: onTime,
         uniqueDays,
         onTimeStatus: onTime > 0 ? "On-Time" : "Needs Improvement",

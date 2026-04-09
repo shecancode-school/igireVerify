@@ -79,10 +79,12 @@ export async function GET(req: NextRequest) {
       $or: [{ isActive: true }, { isActive: { $exists: false } }],
     });
 
+    // After check-out the record type becomes `completed`, so we must include it.
+    // Absent/manual are also stored in the same `attendance` collection and use `date`.
     const attendanceMatch = {
       programId: { $in: programIds },
       date: { $gte: fromDate, $lte: toDate },
-      type: { $in: ["checkin", "manual"] },
+      type: { $in: ["checkin", "completed", "manual", "absent"] },
     };
 
     const statusAgg = await attendanceCol
@@ -104,8 +106,9 @@ export async function GET(req: NextRequest) {
 
     const presentToday = await attendanceCol.countDocuments({
       programId: { $in: programIds },
-      type: "checkin",
+      type: { $in: ["checkin", "completed"] },
       createdAt: { $gte: startToday, $lt: endToday },
+      checkInStatus: { $in: ["on-time", "late"] },
     });
 
     const programBreakdown = await Promise.all(
@@ -117,8 +120,9 @@ export async function GET(req: NextRequest) {
         });
         const checkInsToday = await attendanceCol.countDocuments({
           programId: p._id,
-          type: "checkin",
+          type: { $in: ["checkin", "completed"] },
           createdAt: { $gte: startToday, $lt: endToday },
+          checkInStatus: { $in: ["on-time", "late"] },
         });
         return {
           _id: p._id.toString(),

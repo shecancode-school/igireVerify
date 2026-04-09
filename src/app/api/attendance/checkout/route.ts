@@ -73,15 +73,28 @@ export async function POST(req: Request) {
     // Helper to safely create ObjectId
     const toObjectId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id as any;
 
-    const checkInRecord = await attendance.findOne({
-      userId: new ObjectId(userId),
-      programId: toObjectId(programId),
-      type: "checkin",
-      checkInTime: {
-        $gte: today.toISOString(),
-        $lt: tomorrow.toISOString(),
-      },
+    const userObjectId = new ObjectId(userId);
+    const programObjectId = toObjectId(programId);
+    const timeRange = { $gte: today, $lt: tomorrow };
+
+    let checkInRecord = await attendance.findOne({
+      userId: userObjectId,
+      programId: programObjectId,
+      type: { $in: ["checkin", "completed"] },
+      checkInTime: timeRange,
     });
+
+    if (!checkInRecord) {
+      checkInRecord = await attendance
+        .find({
+          userId: userObjectId,
+          type: { $in: ["checkin", "completed"] },
+          $or: [{ checkInTime: timeRange }, { date: timeRange }, { createdAt: timeRange }],
+        })
+        .sort({ updatedAt: -1, createdAt: -1 })
+        .limit(1)
+        .next();
+    }
 
     if (!checkInRecord) {
       return NextResponse.json({ 
@@ -107,10 +120,12 @@ export async function POST(req: Request) {
       { _id: checkInRecord._id },
       {
         $set: {
-          checkOutTime: checkOutDateTime.toISOString(),
+          checkOutTime: checkOutDateTime,
           checkOutStatus,
           checkOutPhotoUrl: photoUrl,
           checkOutGpsLocation: gpsLocation,
+          // Attendance flow already geofence-verifies Igire premises before checkout.
+          locationLabel: "Igire Rwanda Organisation premises",
           type: "completed", // Transition from checkin to completed
           updatedAt: now,
         },
@@ -122,7 +137,7 @@ export async function POST(req: Request) {
     }
 
     // Get user info for socket emit
-    const user = await users.findOne({ _id: new ObjectId(userId) });
+    const user = await users.findOne({ _id: userObjectId });
 
     // Emit real-time update
     emitAttendanceUpdate(programId, {

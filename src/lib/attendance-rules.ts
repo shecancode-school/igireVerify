@@ -54,6 +54,18 @@ export function formatTimeToHHMM(date: Date): string {
   return `${hours}:${minutes}`;
 }
 
+function toDisplayTime(value: string): string {
+  // Handle 24h values coming from <input type="time">, e.g. "20:25".
+  const m = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+  if (!m) return value;
+  const h = Number(m[1]);
+  const min = m[2];
+  if (!Number.isFinite(h) || h < 0 || h > 23) return value;
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12.toString().padStart(2, "0")}:${min} ${period}`;
+}
+
 export function getAttendanceWindowMessage(
   type: 'checkin' | 'checkout',
   rules: AttendanceRules,
@@ -69,18 +81,18 @@ export function getAttendanceWindowMessage(
 
   if (type === 'checkin') {
     if (timeStr < rules.checkInStart || timeStr > rules.checkInEnd) {
-      return `Check-in is only allowed between ${rules.checkInStart} AM and ${rules.checkInEnd} AM. Please return during the scheduled window.`;
+      return `Check-in is only allowed between ${toDisplayTime(rules.checkInStart)} and ${toDisplayTime(rules.checkInEnd)}. Please return during the scheduled window.`;
     }
   } else {
     // Checkout
     if (timeStr < rules.classStart) {
-      return `It's too early to check out. Session officially started at ${rules.classStart} AM.`;
+      return `It's too early to check out. Session officially started at ${toDisplayTime(rules.classStart)}.`;
     }
     if (timeStr < rules.checkOutStart) {
-      return `Check-out window hasn't opened yet. It starts at ${rules.checkOutStart} PM. Please stay until the session ends.`;
+      return `Check-out window hasn't opened yet. It starts at ${toDisplayTime(rules.checkOutStart)}. Please stay until the session ends.`;
     }
     if (timeStr > rules.checkOutEnd) {
-      return `Check-out is only allowed between ${rules.checkOutStart} PM and ${rules.checkOutEnd} PM. Please return during the scheduled window.`;
+      return `Check-out is only allowed between ${toDisplayTime(rules.checkOutStart)} and ${toDisplayTime(rules.checkOutEnd)}. Please return during the scheduled window.`;
     }
   }
 

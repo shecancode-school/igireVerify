@@ -275,11 +275,12 @@ export default function CheckOutPage() {
       setStep(3);
 
     } catch (err) {
-      const message = err instanceof Error ? err.message : "An unexpected error occurred.";
-
-      const finalMessage = message.includes("Failed to fetch")
-        ? "Network connection issue detected. Please ensure you have a stable internet connection and try again."
-        : message;
+      const message =
+        err instanceof Error ? err.message : "An unexpected error occurred.";
+      const finalMessage =
+        message.trim().length > 0
+          ? message
+          : "Network connection issue detected. Please ensure you have a stable internet connection and try again.";
 
       console.error("[CHECKOUT_PHASE_ERROR]", finalMessage);
       setUiMessage({ type: "error", text: finalMessage });

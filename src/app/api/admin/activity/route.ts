@@ -30,10 +30,20 @@ export async function GET() {
     const activity = records.map(record => ({
       id: record._id,
       userName: userMap.get(record.userId.toString()) || "Unknown",
-      type: record.type,
-      status: record.status,
+      // UI expects: type === 'checkin' => 'Checked in', otherwise => 'Checked out'
+      type: record.type === "checkin" ? "checkin" : "checkout",
+      // UI only shows LATE badge when status === 'late'
+      status:
+        record.checkInStatus === "late"
+          ? "late"
+          : record.checkInStatus === "absent"
+            ? "absent"
+            : record.checkInStatus === "on-time"
+              ? "on-time"
+              : record.status,
       programName: record.programName,
-      time: record.createdAt.toISOString(),
+      // Prefer updatedAt for checkout events; createdAt for checkins
+      time: (record.type === "checkin" ? record.createdAt : (record.updatedAt || record.createdAt)).toISOString(),
     }));
 
     return NextResponse.json({ ok: true, activity });

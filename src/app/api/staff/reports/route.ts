@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       if (formatType === "json") {
         return NextResponse.json({ data: [] });
       }
-      return new NextResponse("Date,Name,Email,Program,Status,Check-in,Check-out,Late By\n", {
+      return new NextResponse("Date,Name,Email,Program,Status,Check-in,Check-out,Late By,Location\n", {
         headers: {
           "Content-Type": "text/csv",
           "Content-Disposition": `attachment; filename="igire-staff-report.csv"`,
@@ -72,9 +72,10 @@ export async function GET(req: NextRequest) {
 
     const users = await usersCol.find(userQuery).toArray();
 
+    // Report should follow the attendance day, not insertion time.
     const attendanceRecords = await attendanceCol
       .find({
-        checkInTime: { $gte: startDate, $lte: endDate },
+        date: { $gte: startDate, $lte: endDate },
       })
       .toArray();
 
@@ -90,6 +91,23 @@ export async function GET(req: NextRequest) {
         return (rid as ObjectId).toString() === uid;
       }
       return false;
+    };
+
+    const formatGps = (gps: unknown) => {
+      const point = gps as
+        | { latitude?: unknown; longitude?: unknown; accuracy?: unknown }
+        | null
+        | undefined;
+      if (
+        !point ||
+        typeof point.latitude !== "number" ||
+        typeof point.longitude !== "number"
+      ) {
+        return null;
+      }
+      const accuracy =
+        typeof point.accuracy === "number" ? ` (${Math.round(point.accuracy)}m)` : "";
+      return `${point.latitude.toFixed(4)}, ${point.longitude.toFixed(4)}${accuracy}`;
     };
 
     for (const date of datesInRange) {
@@ -110,24 +128,31 @@ export async function GET(req: NextRequest) {
         ];
         if (!workingDays.includes(dayName)) continue;
 
-        const record = attendanceRecords.find(
-          (r) => sameUser(r, user._id) && isSameDay(new Date(r.checkInTime as string), date)
-        );
+        const record = attendanceRecords.find((r: any) => {
+          if (!sameUser(r, user._id)) return false;
+          const recordDate = r.date || r.checkInTime || r.createdAt;
+          if (!recordDate) return false;
+          return isSameDay(new Date(recordDate as string), date);
+        });
 
         const dateStr = format(date, "MM/dd/yyyy");
 
         if (record) {
-          const checkInTime = new Date(record.checkInTime as string);
-          const checkInStr = format(checkInTime, "HH:mm");
+          const checkInTime = record.checkInTime
+            ? new Date(record.checkInTime as string)
+            : null;
+          const checkInStr = checkInTime ? format(checkInTime, "HH:mm") : "None";
           let checkOutStr = "--";
           if (record.checkOutTime) {
             checkOutStr = format(new Date(record.checkOutTime as string), "HH:mm");
           }
 
           const rowStatus =
-            (record.checkInStatus as string) || (record.status as string) || "on-time";
+            (record.checkInStatus as string) ||
+            (record.status as string) ||
+            (record.type === "absent" ? "absent" : "on-time");
           let lateBy = "-";
-          if (rowStatus === "late" && program.schedule?.lateAfter) {
+          if (rowStatus === "late" && checkInTime && program.schedule?.lateAfter) {
             const [h, m] = program.schedule.lateAfter.split(":").map(Number);
             const expected = new Date(checkInTime);
             expected.setHours(h, m, 0, 0);
@@ -141,6 +166,18 @@ export async function GET(req: NextRequest) {
                   : `${diffMins} min`;
             }
           }
+          const statusDisplay =
+            rowStatus === "on-time"
+              ? "Present"
+              : rowStatus.charAt(0).toUpperCase() +
+                rowStatus.slice(1).replace("-", " ");
+          const gps = record.checkInGpsLocation || record.checkOutGpsLocation;
+          const location =
+            (record.locationLabel as string | undefined) ||
+            formatGps(gps) ||
+            (statusDisplay === "Present" || statusDisplay === "Late"
+              ? "Igire Rwanda Organisation premises"
+              : "Unknown");
 
           reportData.push({
             date: dateStr,
@@ -149,10 +186,9 @@ export async function GET(req: NextRequest) {
             program: program.name as string,
             checkIn: checkInStr,
             checkOut: checkOutStr,
-            status:
-              rowStatus.charAt(0).toUpperCase() +
-              rowStatus.slice(1).replace("-", " "),
+            status: statusDisplay,
             lateBy,
+            location,
             photo: user.profilePhotoUrl ? "[View]" : "-",
           });
         } else {
@@ -168,6 +204,7 @@ export async function GET(req: NextRequest) {
               checkOut: "--",
               status: "Absent",
               lateBy: "-",
+              location: "Unknown",
               photo: "-",
             });
           }
@@ -188,6 +225,7 @@ export async function GET(req: NextRequest) {
       "Check-in",
       "Check-out",
       "Late By",
+      "Location",
     ];
     const csvContent = [
       headers.join(","),
@@ -201,6 +239,7 @@ export async function GET(req: NextRequest) {
           r.checkIn,
           r.checkOut,
           r.lateBy,
+          r.location,
         ]
           .map((v) => `"${v}"`)
           .join(",")

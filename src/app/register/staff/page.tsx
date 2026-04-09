@@ -51,6 +51,8 @@ export default function StaffRegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
@@ -180,17 +182,26 @@ export default function StaffRegisterPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Password *
               </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder="••••••••••••"
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent ${
-                  fieldErrors.password ? "border-red-500" : "border-gray-300"
-                }`}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  placeholder="••••••••••••"
+                  className={`w-full px-4 py-3 pr-16 border rounded-lg focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent ${
+                    fieldErrors.password ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-600 hover:text-gray-900"
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
               {fieldErrors.password && (
                 <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
               )}
@@ -200,19 +211,28 @@ export default function StaffRegisterPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Confirm Password *
               </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                placeholder="••••••••••••"
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent ${
-                  fieldErrors.confirmPassword
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  placeholder="••••••••••••"
+                  className={`w-full px-4 py-3 pr-16 border rounded-lg focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent ${
+                    fieldErrors.confirmPassword
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-600 hover:text-gray-900"
+                >
+                  {showConfirmPassword ? "Hide" : "Show"}
+                </button>
+              </div>
               {fieldErrors.confirmPassword && (
                 <p className="mt-1 text-sm text-red-600">
                   {fieldErrors.confirmPassword}
