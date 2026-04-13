@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { toast } from "sonner";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -34,6 +35,32 @@ export default function Sidebar() {
       <nav className="flex-1 flex flex-col gap-6">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          
+          if (["History", "Notifications", "Help"].includes(item.label)) {
+            return (
+              <button
+                key={item.href}
+                onClick={() => toast.custom((t) => (
+                  <div className="bg-white border border-[#7FAF8C]/30 rounded-xl shadow-xl p-4 flex gap-4 w-[360px] items-start relative overflow-hidden">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F97316]"></div>
+                    <div className="bg-[#7FAF8C]/20 p-2 rounded-full shrink-0 mt-0.5">
+                      <NavIcon name={item.icon} active={true} customColor="#14532D" />
+                    </div>
+                    <div className="flex flex-col gap-1.5 pt-0.5">
+                      <h3 className="font-extrabold text-[#14532D] text-[15px] tracking-tight">{item.label} Feature Coming Soon</h3>
+                      <p className="text-slate-600 text-[13px] font-medium leading-relaxed">We are currently building an amazing experience for this section. Please check back soon!</p>
+                    </div>
+                  </div>
+                ))}
+                className={`flex flex-col items-center gap-1 p-3 rounded-2xl transition-all duration-200
+                         ${isActive ? "bg-white/90 shadow-lg text-[#14532D]" : "hover:bg-white/20 text-white"}`}
+                title={item.label}
+              >
+                <NavIcon name={item.icon} active={isActive} />
+              </button>
+            );
+          }
+
           return (
             <Link
               key={item.href}
@@ -55,8 +82,8 @@ export default function Sidebar() {
 
 
 
-function NavIcon({ name, active }: { name: string; active: boolean }) {
-  const color = "#FFFFFF";
+function NavIcon({ name, active, customColor }: { name: string; active: boolean; customColor?: string }) {
+  const color = customColor || "#FFFFFF";
   const strokeWidth = active ? "2.5" : "2";
 
   switch (name) {
