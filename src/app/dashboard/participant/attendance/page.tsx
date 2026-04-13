@@ -98,7 +98,7 @@ export default function AttendanceLandingPage() {
                     </svg>
                   </div>
                   <p className="text-gray-800 text-base pt-1">
-                    You Check-in before class session starts at 8:00 - 8:30 and Check-out 16:00 - 17:30
+                    You must be at Igire Center to check-in and check-out
                   </p>
                 </div>
 
