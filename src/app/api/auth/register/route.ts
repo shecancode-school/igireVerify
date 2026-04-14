@@ -123,17 +123,9 @@ export async function POST(req: NextRequest) {
       updatedAt: now,
       lastLogin: undefined,
 
-      // Participant fields
-      ...(role === "participant" && {
-        programId: resolvedProgramId,
-        enrollmentDate: now,
-      }),
-
-      // Staff fields
-      ...(role === "staff" && {
-        position,
-        assignedPrograms: [],
-      }),
+      // Participant fields (all registrations are participants)
+      programId: resolvedProgramId,
+      enrollmentDate: now,
     };
 
     const insertResult = await users.insertOne(userData);
