@@ -36,7 +36,7 @@ export default function AttendanceStats({ programId, userId }: AttendanceStatsPr
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch(`/api/attendance/user-stats?userId=${userId}&programId=${programId}`);
+        const response = await fetch(`/api/attendance/user-stats?userId=${userId}&programId=${programId}&t=${Date.now()}`);
         if (response.ok) {
           const data = await response.json();
           setStats(data.stats);
@@ -59,7 +59,7 @@ export default function AttendanceStats({ programId, userId }: AttendanceStatsPr
     const handleAttendanceUpdate = (data: AttendanceUpdatePayload) => {
       // Refresh stats when there's an attendance update
       if (data.userId === userId || data.programId === programId) {
-        fetch(`/api/attendance/user-stats?userId=${userId}&programId=${programId}`)
+        fetch(`/api/attendance/user-stats?userId=${userId}&programId=${programId}&t=${Date.now()}`)
           .then(response => response.ok ? response.json() : null)
           .then(data => {
             if (data) setStats(data.stats);

@@ -168,7 +168,6 @@ export default function StaffRegisterPage() {
                 onChange={handleChange}
                 required
                 maxLength={254}
-                placeholder="you@igirerwanda.org"
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent ${
                   fieldErrors.email ? "border-red-500" : "border-gray-300"
                 }`}
