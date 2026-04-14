@@ -17,12 +17,12 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="w-[120px] min-h-screen flex flex-col items-center py-6 fixed left-0 top-0"
+      className="w-full md:w-[120px] h-20 md:min-h-screen flex flex-row md:flex-col items-center justify-around md:justify-start px-2 md:px-0 md:py-6 fixed bottom-0 md:top-0 left-0 z-50 overflow-x-auto md:overflow-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] md:shadow-none"
       style={{ background: "#7FAF8C" }}
     >
       
       {/* Logo */}
-      <div className="mb-12">
+      <div className="hidden md:block mb-12">
         <Link href="/home">
           <h1 className="font-black text-xl leading-tight text-center">
             <span style={{ color: "#F97316" }}>Igire</span>
@@ -32,7 +32,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 flex flex-col gap-6">
+      <nav className="flex-1 flex flex-row md:flex-col gap-2 md:gap-6 w-full md:w-auto items-center md:items-stretch">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           
@@ -41,7 +41,7 @@ export default function Sidebar() {
               <button
                 key={item.href}
                 onClick={() => toast.custom((t) => (
-                  <div className="bg-white border border-[#7FAF8C]/30 rounded-xl shadow-xl p-4 flex gap-4 w-[360px] items-start relative overflow-hidden">
+                  <div className="bg-white border border-[#7FAF8C]/30 rounded-xl shadow-xl p-4 flex gap-4 w-[min(360px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] items-start relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F97316]"></div>
                     <div className="bg-[#7FAF8C]/20 p-2 rounded-full shrink-0 mt-0.5">
                       <NavIcon name={item.icon} active={true} customColor="#14532D" />
@@ -52,11 +52,12 @@ export default function Sidebar() {
                     </div>
                   </div>
                 ))}
-                className={`flex flex-col items-center gap-1 p-3 rounded-2xl transition-all duration-200
+                className={`flex flex-col items-center justify-center gap-1 p-2 md:p-3 rounded-2xl transition-all duration-200 min-w-[64px] min-h-[64px]
                          ${isActive ? "bg-white/90 shadow-lg text-[#14532D]" : "hover:bg-white/20 text-white"}`}
                 title={item.label}
               >
                 <NavIcon name={item.icon} active={isActive} />
+                <span className="md:hidden text-[10px] font-medium leading-none whitespace-nowrap mt-1 opacity-80">{item.label}</span>
               </button>
             );
           }
@@ -65,11 +66,12 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-1 p-3 rounded-2xl transition-all duration-200
+              className={`flex flex-col items-center justify-center gap-1 p-2 md:p-3 rounded-2xl transition-all duration-200 min-w-[64px] min-h-[64px]
                          ${isActive ? "bg-white/90 shadow-lg" : "hover:bg-white/20"}`}
               title={item.label}
             >
               <NavIcon name={item.icon} active={isActive} />
+              <span className="md:hidden text-[10px] text-white font-medium leading-none whitespace-nowrap mt-1 opacity-80">{item.label}</span>
             </Link>
           );
         })}

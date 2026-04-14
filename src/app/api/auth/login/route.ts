@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const result = loginSchema.safeParse(body);
     if (!result.success) {
       return NextResponse.json(
-        { error: "Validation failed" },
+        { error: "Please enter a valid email and password." },
         { status: 400 }
       );
     }
@@ -41,11 +41,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    if (user.emailVerified === false) {
+    if (!user.emailVerified) {
       return NextResponse.json(
         {
           error:
-            "Please verify your email before signing in. Check your inbox for the Igire Verify verification link.",
+            "Please check your email and click the verification link to activate your account.",
+          needsEmailVerification: true,
         },
         { status: 403 }
       );

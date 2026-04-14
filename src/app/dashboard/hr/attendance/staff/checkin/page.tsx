@@ -367,9 +367,9 @@ export default function CheckInPage() {
             Position your face in the frame for verification.
           </p>
 
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-8">
             <div className="relative w-full max-w-md mx-auto mb-6">
-              <div className="aspect-[4/3] bg-black rounded-xl overflow-hidden relative">
+              <div className="w-full min-h-[60vh] sm:min-h-[50vh] md:aspect-[4/3] md:min-h-0 bg-black rounded-xl overflow-hidden relative">
                 {cameraStatus === "captured" && capturedImage ? (
                   <Image 
                     src={capturedImage} 
@@ -380,7 +380,7 @@ export default function CheckInPage() {
                 ) : (
                   <video
                     ref={videoRef}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover absolute inset-0 md:static"
                     playsInline
                     muted
                     autoPlay
@@ -410,8 +410,9 @@ export default function CheckInPage() {
               </div>
 
               {cameraStatus === "active" && (
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-60 border-4 border-white/50 rounded-full" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <div className="w-48 h-60 sm:w-56 sm:h-72 border-4 border-white/50 rounded-full mb-4 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]" />
+                  <p className="text-white font-semibold text-lg drop-shadow-md bg-black/40 px-4 py-2 rounded-lg">Look straight at the camera</p>
                 </div>
               )}
             </div>
@@ -446,7 +447,7 @@ export default function CheckInPage() {
                   type="button"
                   onClick={handleCapturePhoto}
                   disabled={cameraStatus !== "active"}
-                  className="w-full h-12 px-8 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="w-full min-h-[64px] h-16 rounded-lg text-white font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg active:scale-95 transition-transform"
                   style={{ background: "#14532D" }}
                 >
                   📸 Capture Photo
@@ -511,10 +512,10 @@ export default function CheckInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-white flex flex-col-reverse md:flex-row">
       <Sidebar />
 
-      <div className="flex-1 ml-[120px]">
+      <div className="flex-1 w-full md:ml-[120px] pb-24 md:pb-0">
         <TopBar
           userName={userData.userName}
           programName={userData.programName}
@@ -524,7 +525,7 @@ export default function CheckInPage() {
           currentTime={userData.currentTime}
         />
 
-        <main className="px-12 py-10 bg-[#F5F5F5] min-h-screen">
+        <main className="px-4 py-6 md:px-12 md:py-10 bg-[#F5F5F5] min-h-screen">
           <div className="max-w-5xl mx-auto">
             {renderStepper()}
             {renderStepContent()}

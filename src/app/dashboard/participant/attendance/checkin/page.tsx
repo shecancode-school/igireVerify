@@ -142,9 +142,9 @@ export default function CheckInPage() {
 
   if (loading || !userData) {
     return (
-      <div className="min-h-screen bg-[#F5F5F5] flex">
+      <div className="min-h-screen bg-[#F5F5F5] flex flex-col-reverse md:flex-row">
         <Sidebar />
-        <div className="flex-1 ml-[120px] flex items-center justify-center">
+        <div className="flex-1 w-full md:ml-[120px] pb-24 md:pb-0 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E7D32] mx-auto mb-4"></div>
             <p>Loading...</p>
@@ -388,16 +388,17 @@ export default function CheckInPage() {
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl font-bold mb-6">Step 2: Take Photo</h2>
 
-          <div className="relative aspect-video bg-black rounded-2xl overflow-hidden mb-8 shadow-md">
+          <div className="relative w-full min-h-[60vh] sm:min-h-[50vh] md:aspect-video md:min-h-0 bg-black rounded-2xl overflow-hidden mb-6 shadow-md">
             {cameraStatus === "captured" && capturedImage ? (
               <Image src={capturedImage} alt="Captured Photo" fill className="object-cover" />
             ) : (
-              <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
+              <video ref={videoRef} className="w-full h-full object-cover absolute inset-0" autoPlay playsInline muted />
             )}
 
             {cameraStatus === "active" && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-56 h-72 border-4 border-white/70 rounded-full" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <div className="w-56 h-72 sm:w-64 sm:h-80 border-4 border-white/70 rounded-full mb-4 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]" />
+                <p className="text-white font-semibold text-lg drop-shadow-md bg-black/40 px-4 py-2 rounded-lg">Look straight at the camera</p>
               </div>
             )}
           </div>
@@ -420,7 +421,7 @@ export default function CheckInPage() {
               <button
                 onClick={handleCapturePhoto}
                 disabled={cameraStatus !== "active"}
-                className="w-full h-14 bg-[#14532D] text-white rounded-xl font-semibold disabled:opacity-70"
+                className="w-full min-h-[64px] h-16 bg-[#14532D] text-white rounded-xl font-bold text-lg disabled:opacity-70 shadow-lg active:scale-95 transition-transform"
               >
                 Capture Photo
               </button>
@@ -450,12 +451,12 @@ export default function CheckInPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-white flex flex-col-reverse md:flex-row">
       <Sidebar />
-      <div className="flex-1 ml-[120px]">
+      <div className="flex-1 w-full md:ml-[120px] pb-24 md:pb-0">
         <TopBar {...userData} />
 
-        <main className="px-12 py-10 bg-[#F5F5F5] min-h-screen">
+        <main className="px-4 py-6 md:px-12 md:py-10 bg-[#F5F5F5] min-h-screen">
           <div className="max-w-5xl mx-auto">
             {renderStepper()}
             {renderStepContent()}

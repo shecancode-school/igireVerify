@@ -25,11 +25,10 @@ export async function GET() {
       endOfDay.setHours(23, 59, 59, 999);
 
       const [present, late] = await Promise.all([
-        attendance.countDocuments({
-          type: { $in: ["checkin", "completed"] },
+        attendance.distinct("userId", {
+          type: "completed",
           createdAt: { $gte: startOfDay, $lt: endOfDay },
-          checkInStatus: "on-time",
-        }),
+        }).then((usersToday) => Array.isArray(usersToday) ? usersToday.length : 0),
         attendance.countDocuments({
           type: { $in: ["checkin", "completed"] },
           createdAt: { $gte: startOfDay, $lt: endOfDay },

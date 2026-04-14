@@ -149,9 +149,9 @@ export default function CheckInPage() {
 
   if (loading || !userData) {
     return (
-      <div className="min-h-screen bg-[#F5F5F5] flex">
+      <div className="min-h-screen bg-[#F5F5F5] flex flex-col-reverse lg:flex-row">
         <StaffSidebar />
-        <div className="flex-1 ml-[120px] flex items-center justify-center">
+        <div className="flex-1 w-full lg:ml-[120px] pb-24 lg:pb-0 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E7D32] mx-auto mb-4"></div>
             <p>Loading...</p>
@@ -458,12 +458,12 @@ export default function CheckInPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-white flex flex-col-reverse lg:flex-row">
       <StaffSidebar />
-      <div className="flex-1 ml-[120px]">
+      <div className="flex-1 w-full lg:ml-[120px] pb-24 lg:pb-0">
         {userData ? <TopBar {...userData} /> : <TopBar userName="" programName="" />}
 
-        <main className="px-12 py-10 bg-[#F5F5F5] min-h-screen">
+        <main className="px-4 py-6 sm:px-6 md:px-10 lg:px-12 md:py-10 bg-[#F5F5F5] min-h-screen">
           <div className="max-w-5xl mx-auto">
             {loading || !userData ? (
               <div className="flex items-center justify-center min-h-[320px] text-[#546E7A]">Loading…</div>

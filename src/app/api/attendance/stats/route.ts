@@ -31,16 +31,29 @@ export async function GET(req: Request) {
       }
     }).toArray();
 
-    // Calculate statistics
+    const userHasCheckIn = new Set(
+      records
+        .filter((r) => r.type === "checkin" || r.type === "completed")
+        .map((r) => String(r.userId))
+    );
+    const userHasCompleteSession = new Set(
+      records
+        .filter((r) => r.type === "completed" || Boolean(r.checkOutTime))
+        .map((r) => String(r.userId))
+    );
+
+    // Calculate statistics with professional attendance semantics.
+    // Present = complete session only (check-in + check-out).
     const stats = {
       totalParticipants: new Set(records.filter(r => r.role === 'participant').map(r => r.userId)).size,
       totalStaff: new Set(records.filter(r => r.role === 'staff').map(r => r.userId)).size,
-      checkedIn: new Set(records.filter(r => r.type === 'checkin').map(r => r.userId)).size,
-      checkedOut: new Set(records.filter(r => r.type === 'checkout').map(r => r.userId)).size,
-      onTime: records.filter(r => r.type === 'checkin' && r.status === 'on-time').length,
-      late: records.filter(r => r.type === 'checkin' && r.status === 'late').length,
+      checkedIn: userHasCheckIn.size,
+      checkedOut: userHasCompleteSession.size,
+      onTime: records.filter(r => (r.type === 'checkin' || r.type === "completed") && r.checkInStatus === 'on-time').length,
+      late: records.filter(r => (r.type === 'checkin' || r.type === "completed") && r.checkInStatus === 'late').length,
       absent: 0, // Would need to calculate based on enrolled users vs checked in
-      present: new Set(records.filter(r => r.type === 'checkin').map(r => r.userId)).size,
+      present: userHasCompleteSession.size,
+      checkedInOnly: [...userHasCheckIn].filter((id) => !userHasCompleteSession.has(id)).length,
       lastUpdate: new Date().toISOString()
     };
 

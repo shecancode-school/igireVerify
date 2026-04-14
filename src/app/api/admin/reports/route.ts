@@ -124,18 +124,22 @@ export async function GET(req: NextRequest) {
 
           const statusRaw =
             record.checkInStatus || record.status || (record.type === "absent" ? "absent" : "on-time");
+          const hasCheckOut = Boolean(record.checkOutTime) || record.type === "completed";
+          const hasCheckIn = Boolean(record.checkInTime) || record.type === "manual" || record.type === "checkin";
 
           const statusDisplay =
-            statusRaw === "late"
-              ? "Late"
-              : statusRaw === "absent"
-                ? "Absent"
-                : "Present";
+            !hasCheckIn || statusRaw === "absent" || record.type === "absent"
+              ? "Absent"
+              : !hasCheckOut
+                ? "Checked In"
+                : statusRaw === "late"
+                  ? "Late"
+                  : "Present";
           const gps = record.checkInGpsLocation || record.checkOutGpsLocation;
           const location =
             record.locationLabel ||
             formatGps(gps) ||
-            (statusDisplay === "Present" || statusDisplay === "Late"
+            (statusDisplay === "Present" || statusDisplay === "Late" || statusDisplay === "Checked In"
               ? "Igire Rwanda Organisation premises"
               : "Unknown");
 
@@ -162,8 +166,16 @@ export async function GET(req: NextRequest) {
             checkOut: checkOutStr,
             status: statusDisplay,
             lateBy: lateBy,
+            statusExplanation:
+              statusDisplay === "Present"
+                ? "Full attendance (check-in + check-out)"
+                : statusDisplay === "Late"
+                  ? "Completed session with late arrival"
+                  : statusDisplay === "Checked In"
+                    ? "Checked in only (no check-out yet)"
+                    : "No attendance record for scheduled session",
             location,
-            photo: user.profilePhotoUrl ? '[View]' : '-'
+            photo: record.checkInPhotoUrl || record.checkOutPhotoUrl || "-"
           });
         } else {
           // Check if the day is in the past or today (don't mark as absent for future dates)
@@ -180,6 +192,7 @@ export async function GET(req: NextRequest) {
                checkOut: '--',
                status: 'Absent',
                lateBy: '-',
+               statusExplanation: "No attendance record for scheduled session",
                location: "Unknown",
                photo: '-'
              });
@@ -189,16 +202,36 @@ export async function GET(req: NextRequest) {
     }
 
     // 5. Output response based on format
+    const presentCount = reportData.filter((r) => r.status === "Present").length;
+    const lateCount = reportData.filter((r) => r.status === "Late").length;
+    const absentCount = reportData.filter((r) => r.status === "Absent").length;
+    const incompleteCount = reportData.filter((r) => r.status === "Checked In").length;
+    const totalExpectedSessions = reportData.length;
+    const attendanceRate =
+      totalExpectedSessions > 0
+        ? Math.round((presentCount / totalExpectedSessions) * 100)
+        : 0;
+
     if (formatType === 'json') {
-      return NextResponse.json({ data: reportData });
+      return NextResponse.json({
+        data: reportData,
+        summary: {
+          totalRecords: totalExpectedSessions,
+          present: presentCount,
+          late: lateCount,
+          absent: absentCount,
+          incomplete: incompleteCount,
+          attendanceRate,
+        },
+      });
     }
 
     // CSV fallback (basic implementation)
-    const headers = ['Date', 'Name', 'Email', 'Program', 'Status', 'Check-in', 'Check-out', 'Late By', 'Location'];
+    const headers = ['Date', 'Name', 'Email', 'Program', 'Status', 'Status Explanation', 'Check-in', 'Check-out', 'Late By', 'Location', 'Photo'];
     const csvContent = [
       headers.join(','),
       ...reportData.map(r => [
-        r.date, r.name, r.email, r.program, r.status, r.checkIn, r.checkOut, r.lateBy, r.location
+        r.date, r.name, r.email, r.program, r.status, r.statusExplanation, r.checkIn, r.checkOut, r.lateBy, r.location, r.photo
       ].map(v => `"${v}"`).join(','))
     ].join('\n');
 

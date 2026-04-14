@@ -45,11 +45,11 @@ export default async function ParticipantDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] flex">
+    <div className="min-h-screen bg-[#F5F5F5] flex flex-col-reverse md:flex-row">
       
       <Sidebar />
 
-      <div className="flex-1 ml-[120px]">
+      <div className="flex-1 w-full md:ml-[120px] pb-24 md:pb-0">
         
         <TopBar
           userName={userData.userName}
@@ -61,17 +61,17 @@ export default async function ParticipantDashboard() {
         />
 
         {/* CENTERED CONTENT WITH FREE SPACE ON SIDES */}
-        <main className="px-16 py-8 max-w-[1400px]">
+        <main className="px-4 sm:px-6 md:px-10 lg:px-16 py-6 md:py-8 max-w-[1400px] w-full mx-auto">
           
           {/* Row 1: Program Card (LEFT) + Attendance Chart (RIGHT) */}
-          <div className="grid grid-cols-12 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
             {/* Program Card - Takes 5 columns */}
-            <div className="col-span-5">
+            <div className="col-span-1 lg:col-span-5">
               <ProgramCard programName={userData.programName} />
             </div>
             
             {/* Attendance Chart - Takes 7 columns */}
-            <div className="col-span-7">
+            <div className="col-span-1 lg:col-span-7">
               <AttendanceChart 
                 programId={userData.programId}
                 userId={userData.userId || ""}
@@ -88,8 +88,8 @@ export default async function ParticipantDashboard() {
           </div>
 
           {/* Row 3: Attendance History - Takes only LEFT half */}
-          <div className="grid grid-cols-12 gap-6">
-            <div className="col-span-7">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="col-span-1 lg:col-span-7">
               <AttendanceHistory 
                 programId={userData.programId}
                 userId={userData.userId || ""}

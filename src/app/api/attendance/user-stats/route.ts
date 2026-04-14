@@ -54,7 +54,7 @@ export async function GET(req: Request) {
 
     const uniqueDaysAttended = new Set(
       userRecords
-        .filter((r) => r.checkInStatus !== "absent" && r.type !== "absent")
+        .filter((r) => r.checkInStatus !== "absent" && r.type !== "absent" && (r.type === "completed" || !!r.checkOutTime))
         .map((r) =>
           new Date((r.date as string) || (r.checkInTime as string) || (r.createdAt as string)).toDateString()
         )

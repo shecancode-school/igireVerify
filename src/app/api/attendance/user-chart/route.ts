@@ -51,13 +51,18 @@ export async function GET(req: Request) {
       const hasCheckedIn = dayRecords.some(
         (r) => (r.type === "checkin" || r.type === "completed" || r.type === "manual") && r.checkInStatus !== "absent"
       );
+      const hasCheckedOut = dayRecords.some(
+        (r) => r.type === "completed" || Boolean(r.checkOutTime)
+      );
       const isLate = dayRecords.some(
         (r) => (r.type === "checkin" || r.type === "completed" || r.type === "manual") && r.checkInStatus === "late"
       );
       
       let rate = 0;
-      if (hasCheckedIn) {
-        rate = isLate ? 70 : 100;
+      if (hasCheckedIn && hasCheckedOut) {
+        rate = isLate ? 85 : 100;
+      } else if (hasCheckedIn) {
+        rate = 50;
       }
 
       data.push({

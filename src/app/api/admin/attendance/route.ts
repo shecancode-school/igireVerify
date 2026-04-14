@@ -61,10 +61,11 @@ export async function GET(req: NextRequest) {
     // 4. Merge Users and Attendance
     const dayName = format(targetDate, 'EEEE');
 
-    const getDisplayStatus = (checkInStatus?: unknown) => {
+    const getDisplayStatus = (checkInStatus?: unknown, hasCheckOut?: boolean) => {
       const raw = typeof checkInStatus === "string" ? checkInStatus : "";
       if (raw === "late") return "Late";
       if (raw === "absent") return "Absent";
+      if (!hasCheckOut) return "Checked In";
       // "on-time" => Present
       if (raw === "on-time" || raw === "present") return "Present";
       return "Present";
@@ -113,7 +114,8 @@ export async function GET(req: NextRequest) {
 
       if (record) {
         const checkInStatus = record.checkInStatus ?? record.status;
-        const displayStatus = getDisplayStatus(checkInStatus);
+        const hasCheckOut = Boolean(record.checkOutTime) || record.type === "completed";
+        const displayStatus = getDisplayStatus(checkInStatus, hasCheckOut);
 
         const gpsLocation = record.checkInGpsLocation ?? record.checkOutGpsLocation;
         const resolvedLocation =
@@ -122,7 +124,7 @@ export async function GET(req: NextRequest) {
           record.location;
         const location =
           resolvedLocation ||
-          (displayStatus === "Present" || displayStatus === "Late"
+          (displayStatus === "Present" || displayStatus === "Late" || displayStatus === "Checked In"
             ? "Igire Rwanda Organisation premises"
             : "Unknown");
 

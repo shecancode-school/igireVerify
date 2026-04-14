@@ -32,13 +32,13 @@ export async function GET() {
         }),
       ]);
 
-    // After checkout, attendance.type becomes `completed` but checkInStatus remains (on-time/late/absent).
-    const [presentToday, lateToday, checkedInToday] = await Promise.all([
-      attendance.countDocuments({
-        type: { $in: ["checkin", "completed"] },
+    // Professional rule:
+    // Present = completed session only (has check-in + check-out).
+    const [presentToday, lateToday, checkedInToday, incompleteToday] = await Promise.all([
+      attendance.distinct("userId", {
+        type: "completed",
         createdAt: { $gte: startOfDay, $lt: endOfDay },
-        checkInStatus: "on-time",
-      }),
+      }).then((usersToday) => Array.isArray(usersToday) ? usersToday.length : 0),
       attendance.countDocuments({
         type: { $in: ["checkin", "completed"] },
         createdAt: { $gte: startOfDay, $lt: endOfDay },
@@ -48,6 +48,11 @@ export async function GET() {
         type: { $in: ["checkin", "completed"] },
         createdAt: { $gte: startOfDay, $lt: endOfDay },
         checkInStatus: { $in: ["on-time", "late"] },
+      }).then((usersToday) => Array.isArray(usersToday) ? usersToday.length : 0),
+      attendance.distinct("userId", {
+        type: "checkin",
+        createdAt: { $gte: startOfDay, $lt: endOfDay },
+        checkOutTime: { $exists: false },
       }).then((usersToday) => Array.isArray(usersToday) ? usersToday.length : 0),
     ]);
     
@@ -81,11 +86,11 @@ export async function GET() {
     // Calculate real average attendance rate this month
     const monthRecordCount = await attendance.countDocuments({
       createdAt: { $gte: startOfMonth, $lte: now },
-      type: { $in: ["checkin", "completed"] }
+      type: "completed"
     });
-    const avgAttendanceRate = totalParticipantsCount > 0 && monthRecordCount > 0 
-      ? Math.round((monthRecordCount / (totalParticipantsCount * now.getDate())) * 100) 
-      : 85; 
+    const avgAttendanceRate = totalParticipantsCount > 0 && monthRecordCount > 0
+      ? Math.round((monthRecordCount / (totalParticipantsCount * now.getDate())) * 100)
+      : 0;
 
     return NextResponse.json({
       ok: true,
@@ -96,6 +101,7 @@ export async function GET() {
         activeProgramsToday,
         presentToday,
         lateToday,
+        incompleteToday,
         absentToday: absentTodayCount,
         checkinsLastHour,
         mostActiveProgram,
