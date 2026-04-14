@@ -41,40 +41,40 @@ export default function AttendanceChart({ programId, userId }: ChartProps) {
     return () => { socket.off('attendance-update', handleUpdate); };
   }, [socket]);
 
-  if (loading) return <div className="h-full bg-white rounded-3xl p-8 animate-pulse flex items-center justify-center">Loading Chart...</div>;
+  if (loading) return <div className="h-64 sm:h-80 md:h-96 bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 animate-pulse flex items-center justify-center">Loading Chart...</div>;
 
   return (
-    <div className="bg-white rounded-3xl px-10 py-8 shadow-sm border border-gray-100 h-full flex flex-col">
-      
+    <div className="bg-white rounded-2xl sm:rounded-3xl px-4 sm:px-8 md:px-10 py-4 sm:py-6 md:py-8 shadow-sm border border-gray-100 h-full flex flex-col">
+
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-4 sm:mb-6">
         <div>
-          <h3 className="text-lg font-black text-black tracking-[0.2em] uppercase">
+          <h3 className="text-base sm:text-lg font-black text-black tracking-[0.2em] uppercase">
             Attendance Rate
           </h3>
-          <p className="text-sm text-gray-500 font-medium mt-1">Current Week Analysis</p>
+          <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Current Week Analysis</p>
         </div>
-        <div className="p-2 bg-green-50 rounded-xl">
-          <Activity className="w-6 h-6 text-[#2E7D32]" />
+        <div className="p-2 bg-green-50 rounded-lg sm:rounded-xl">
+          <Activity className="w-5 sm:w-6 h-5 sm:h-6 text-[#2E7D32]" />
         </div>
       </div>
 
       {/* Chart - FLEXIBLE HEIGHT */}
-      <div className="relative flex-1 min-h-[220px]">
+      <div className="relative flex-1 min-h-[200px] sm:min-h-[220px] md:min-h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <LineChart data={data} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
             <XAxis 
               dataKey="name" 
               axisLine={false} 
               tickLine={false} 
-              tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 600 }} 
-              dy={10} 
+              tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }}
+              dy={8}
             />
             <YAxis 
               axisLine={false} 
               tickLine={false} 
-              tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 600 }} 
+              tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }}
               domain={[0, 100]}
               tickFormatter={(value) => `${value}%`}
             />

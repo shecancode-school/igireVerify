@@ -17,14 +17,14 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="w-full md:w-[120px] h-20 md:min-h-screen flex flex-row md:flex-col items-center justify-around md:justify-start px-2 md:px-0 md:py-6 fixed bottom-0 md:top-0 left-0 z-50 overflow-x-auto md:overflow-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] md:shadow-none"
+      className="w-full sm:w-20 md:w-24 lg:w-[120px] h-20 sm:h-screen sm:min-h-screen flex flex-row sm:flex-col items-center justify-around sm:justify-start px-2 sm:px-0 sm:py-4 md:py-6 fixed bottom-0 sm:top-0 left-0 z-50 overflow-x-auto sm:overflow-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] sm:shadow-none"
       style={{ background: "#7FAF8C" }}
     >
       
       {/* Logo */}
-      <div className="hidden md:block mb-12">
+      <div className="hidden sm:block mb-6 md:mb-8 lg:mb-12">
         <Link href="/home">
-          <h1 className="font-black text-xl leading-tight text-center">
+          <h1 className="font-black text-sm md:text-base lg:text-xl leading-tight text-center">
             <span style={{ color: "#F97316" }}>Igire</span>
             <span style={{ color: "#14532D" }}>Verify</span>
           </h1>
@@ -32,7 +32,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 flex flex-row md:flex-col gap-2 md:gap-6 w-full md:w-auto items-center md:items-stretch">
+      <nav className="flex-1 flex flex-row sm:flex-col gap-1 sm:gap-3 md:gap-4 lg:gap-6 w-full sm:w-auto items-center sm:items-stretch justify-center sm:justify-start px-1 sm:px-0">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           
@@ -52,12 +52,12 @@ export default function Sidebar() {
                     </div>
                   </div>
                 ))}
-                className={`flex flex-col items-center justify-center gap-1 p-2 md:p-3 rounded-2xl transition-all duration-200 min-w-[64px] min-h-[64px]
+                className={`flex flex-col items-center justify-center gap-1 p-2 sm:p-2 md:p-3 lg:p-3 rounded-xl sm:rounded-2xl transition-all duration-200 min-w-[56px] sm:min-w-[52px] md:min-w-[60px] lg:min-w-[64px] min-h-[56px] sm:min-h-[52px] md:min-h-[60px] lg:min-h-[64px]
                          ${isActive ? "bg-white/90 shadow-lg text-[#14532D]" : "hover:bg-white/20 text-white"}`}
                 title={item.label}
               >
                 <NavIcon name={item.icon} active={isActive} />
-                <span className="md:hidden text-[10px] font-medium leading-none whitespace-nowrap mt-1 opacity-80">{item.label}</span>
+                <span className="sm:hidden text-[9px] font-medium leading-none whitespace-nowrap mt-1 opacity-80">{item.label}</span>
               </button>
             );
           }
@@ -66,12 +66,12 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center gap-1 p-2 md:p-3 rounded-2xl transition-all duration-200 min-w-[64px] min-h-[64px]
+              className={`flex flex-col items-center justify-center gap-1 p-2 sm:p-2 md:p-3 lg:p-3 rounded-xl sm:rounded-2xl transition-all duration-200 min-w-[56px] sm:min-w-[52px] md:min-w-[60px] lg:min-w-[64px] min-h-[56px] sm:min-h-[52px] md:min-h-[60px] lg:min-h-[64px]
                          ${isActive ? "bg-white/90 shadow-lg" : "hover:bg-white/20"}`}
               title={item.label}
             >
               <NavIcon name={item.icon} active={isActive} />
-              <span className="md:hidden text-[10px] text-white font-medium leading-none whitespace-nowrap mt-1 opacity-80">{item.label}</span>
+              <span className="sm:hidden text-[9px] text-white font-medium leading-none whitespace-nowrap mt-1 opacity-80">{item.label}</span>
             </Link>
           );
         })}

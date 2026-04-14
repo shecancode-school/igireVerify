@@ -75,27 +75,28 @@ export default function TopBar({
   };
 
   return (
-    <div className="bg-white border-b border-gray-200">
-      <div className="flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-12 py-3 gap-3 sm:gap-4 md:gap-6">
-        {/* Left: date / window / time */}
-        <div className="hidden md:flex items-center gap-4 text-xs md:text-sm whitespace-nowrap">
-          <span className="font-medium text-gray-700 whitespace-nowrap">
+    <div className="bg-white border-b border-gray-200 w-full">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3 md:py-4 gap-2 sm:gap-4">
+
+        {/* Left: date / window / time - Stack on mobile */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm w-full sm:w-auto whitespace-nowrap">
+          <span className="font-medium text-gray-700 text-xs sm:text-sm">
             {liveDate}
           </span>
 
-          <span className="h-4 w-px bg-gray-300" />
+          <span className="hidden sm:block h-3 w-px bg-gray-300" />
 
-          <div className="flex items-center gap-1 whitespace-nowrap">
-            <span className="text-gray-600">Check-In Window:</span>
+          <div className="flex items-center gap-1 text-xs sm:text-sm">
+            <span className="text-gray-600">Check-In:</span>
             <span className="font-semibold text-gray-900">
               {checkInWindow}
             </span>
           </div>
 
-          <span className="h-4 w-px bg-gray-300" />
+          <span className="hidden sm:block h-3 w-px bg-gray-300" />
 
-          <div className="flex items-center gap-1 whitespace-nowrap">
-            <span className="text-gray-600">Current Time:</span>
+          <div className="flex items-center gap-1 text-xs sm:text-sm">
+            <span className="text-gray-600">Time:</span>
             <span className="font-semibold text-[#2E7D32]">
               {liveTime}
             </span>

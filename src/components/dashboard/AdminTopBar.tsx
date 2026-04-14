@@ -67,20 +67,20 @@ export default function AdminTopBar({ userName, userRole, profilePhotoUrl }: Adm
   };
 
   return (
-    <div className="bg-white shadow-sm border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between">
-      <div className="flex items-center w-auto">
-        <h1 className="text-xl font-semibold text-gray-900 hidden md:block">Admin Dashboard</h1>
+    <div className="bg-white shadow-sm border-b border-gray-200 px-2 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="flex items-center w-full sm:w-auto">
+        <h1 className="text-lg sm:text-xl font-semibold text-gray-900">Admin Dashboard</h1>
       </div>
 
-      <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 flex-1 md:flex-initial justify-end">
-        {/* Search Bar */}
-        <div className="relative hidden sm:block flex-1 max-w-[220px] md:max-w-none md:w-auto">
+      <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 flex-1 sm:flex-initial justify-end w-full sm:w-auto">
+        {/* Search Bar - Hidden on mobile */}
+        <div className="relative hidden sm:block flex-1 sm:flex-initial">
           <input
             type="text"
             placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent text-sm"
+            className="w-full sm:w-48 md:w-64 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent text-sm"
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-3">
             <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,11 +90,11 @@ export default function AdminTopBar({ userName, userRole, profilePhotoUrl }: Adm
         </div>
 
         {/* Notification Bell */}
-        <button className="relative p-2 min-h-[44px] min-w-[44px] text-gray-400 hover:text-gray-600">
-          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button className="relative p-2 min-h-[44px] min-w-[44px] text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+          <svg className="h-5 sm:h-6 w-5 sm:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5-5V7a5 5 0 00-10 0v5l-5 5h5m0 0v1a3 3 0 006 0v-1m-6 0h6" />
           </svg>
-          <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white"></span>
+          <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white"></span>
         </button>
 
         {/* User Profile */}
