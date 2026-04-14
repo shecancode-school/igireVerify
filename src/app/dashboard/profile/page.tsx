@@ -99,7 +99,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen bg-[#F5F5F5] flex">
         <Sidebar />
-        <div className="flex-1 ml-[120px] flex items-center justify-center">
+        <div className="flex-1 w-full md:ml-[120px] pb-24 md:pb-0 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E7D32] mx-auto mb-4"></div>
             <p>Loading profile...</p>
@@ -113,7 +113,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen bg-[#F5F5F5] flex">
         <Sidebar />
-        <div className="flex-1 ml-[120px] flex items-center justify-center">
+        <div className="flex-1 w-full md:ml-[120px] pb-24 md:pb-0 flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-600">Failed to load profile</p>
           </div>
@@ -123,12 +123,12 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] flex">
+    <div className="min-h-screen bg-[#F5F5F5] flex flex-col-reverse md:flex-row">
       <Sidebar />
-      <div className="flex-1 ml-[120px]">
+      <div className="flex-1 w-full md:ml-[120px] pb-24 md:pb-0">
         <TopBar />
 
-        <main className="px-12 py-10">
+        <main className="px-4 sm:px-6 md:px-10 lg:px-12 py-6 md:py-10">
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <div className="text-center mb-8">

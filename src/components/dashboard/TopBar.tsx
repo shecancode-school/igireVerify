@@ -76,9 +76,9 @@ export default function TopBar({
 
   return (
     <div className="bg-white border-b border-gray-200">
-      <div className="flex items-center justify-between px-12 py-3 gap-6">
+      <div className="flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-12 py-3 gap-3 sm:gap-4 md:gap-6">
         {/* Left: date / window / time */}
-        <div className="flex items-center gap-4 text-xs md:text-sm whitespace-nowrap">
+        <div className="hidden md:flex items-center gap-4 text-xs md:text-sm whitespace-nowrap">
           <span className="font-medium text-gray-700 whitespace-nowrap">
             {liveDate}
           </span>
@@ -103,7 +103,10 @@ export default function TopBar({
         </div>
 
         {/* Right: online + profile */}
-        <div className="flex items-center gap-6 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-4 md:gap-6 flex-shrink-0 w-full md:w-auto justify-between md:justify-end">
+          <div className="md:hidden text-xs text-gray-600 font-medium truncate max-w-[55vw]">
+            {liveTime} · {checkInWindow}
+          </div>
           <div className="flex items-center gap-2 whitespace-nowrap">
             <svg
               width="18"
@@ -141,9 +144,9 @@ export default function TopBar({
           <div className="relative">
             <button 
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-3"
+              className="flex items-center gap-2 sm:gap-3 min-h-[44px]"
             >
-              <div className="text-right">
+              <div className="text-right hidden sm:block">
                 <p className="font-bold text-[#111111] text-sm">
                   {userName}
                 </p>

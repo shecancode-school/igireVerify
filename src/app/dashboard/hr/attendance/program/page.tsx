@@ -12,16 +12,16 @@ export default function ProgramOverviewPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-white flex flex-col-reverse md:flex-row">
       {/* Sidebar */}
-      <aside className="w-[160px] bg-[#7FAF8C] fixed left-0 top-0 h-screen flex flex-col items-center py-8">
-        <div className="mb-12">
-          <h1 className="font-black text-2xl text-white">
+      <aside className="w-full md:w-[160px] h-16 md:h-screen md:min-h-screen bg-[#7FAF8C] fixed bottom-0 md:bottom-auto left-0 md:top-0 z-40 flex flex-row md:flex-col items-center justify-center md:justify-start gap-4 md:gap-8 py-2 md:py-8 px-2 md:px-0 overflow-x-auto md:overflow-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] md:shadow-none">
+        <div className="hidden md:block mb-12 shrink-0">
+          <h1 className="font-black text-xl md:text-2xl text-white text-center px-1">
             Igire<span className="text-[#C47D0E]">Verify</span>
           </h1>
         </div>
 
-        <nav className="flex-1 flex flex-col gap-8">
+        <nav className="flex-1 flex flex-row md:flex-col gap-4 md:gap-8 items-center justify-center md:justify-start">
           <button
             onClick={() => router.push("/dashboard/hr")}
             className="w-14 h-14 rounded-xl hover:bg-white/20 transition-colors flex items-center justify-center"
@@ -42,9 +42,9 @@ export default function ProgramOverviewPage() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 ml-[160px]">
+      <div className="flex-1 w-full md:ml-[160px] pb-20 md:pb-0 min-w-0">
         {/* Top Bar */}
-        <header className="bg-[#F5F5F5] border-b border-gray-200 px-12 py-4 flex items-center justify-between">
+        <header className="bg-[#F5F5F5] border-b border-gray-200 px-4 sm:px-6 md:px-12 py-3 md:py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2">
               <path d="M5 12.55a11 11 0 0 1 14.08 0" />
@@ -55,10 +55,10 @@ export default function ProgramOverviewPage() {
           <div className="relative">
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-4"
+              className="flex items-center gap-2 sm:gap-4 min-w-0"
             >
-              <div className="text-right">
-                <p className="font-bold text-gray-900">Juliette NYIRASAFARI</p>
+              <div className="text-right hidden sm:block min-w-0">
+                <p className="font-bold text-gray-900 truncate max-w-[140px] md:max-w-none">Juliette NYIRASAFARI</p>
                 <p className="text-sm text-gray-600">HR  & Finance</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
@@ -87,15 +87,15 @@ export default function ProgramOverviewPage() {
         </header>
 
         {/* Page Content */}
-        <main className="px-12 py-10 min-h-[calc(100vh-120px)]">
+        <main className="px-4 sm:px-6 md:px-12 py-6 md:py-10 min-h-[calc(100vh-120px)]">
 
           {/* Page Title */}
-          <h1 className="text-4xl font-black text-[#111111] mb-10">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#111111] mb-6 md:mb-10">
             Program Overview
           </h1>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-4 gap-6 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
             <div className="bg-[#D6E9F5] rounded-xl p-6 border-2 border-[#7BAFD4]">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
@@ -293,7 +293,7 @@ export default function ProgramOverviewPage() {
         </main>
 
         {/* Footer */}
-        <footer className="px-12 py-6 text-center text-sm text-gray-500 border-t border-gray-200 mt-auto">
+        <footer className="px-4 md:px-12 py-6 text-center text-sm text-gray-500 border-t border-gray-200 mt-auto">
           © 2026 Igire Rwanda Organisation - All Actions are auditable
         </footer>
       </div>

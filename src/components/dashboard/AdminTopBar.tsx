@@ -67,20 +67,20 @@ export default function AdminTopBar({ userName, userRole, profilePhotoUrl }: Adm
   };
 
   return (
-    <div className="bg-white shadow-sm border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-      <div className="flex items-center">
-        <h1 className="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
+    <div className="bg-white shadow-sm border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between">
+      <div className="flex items-center w-auto">
+        <h1 className="text-xl font-semibold text-gray-900 hidden md:block">Admin Dashboard</h1>
       </div>
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 flex-1 md:flex-initial justify-end">
         {/* Search Bar */}
-        <div className="relative">
+        <div className="relative hidden sm:block flex-1 max-w-[220px] md:max-w-none md:w-auto">
           <input
             type="text"
-            placeholder="Search users, programs, attendance..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent"
+            className="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent text-sm"
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-3">
             <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,7 +90,7 @@ export default function AdminTopBar({ userName, userRole, profilePhotoUrl }: Adm
         </div>
 
         {/* Notification Bell */}
-        <button className="relative p-2 text-gray-400 hover:text-gray-600">
+        <button className="relative p-2 min-h-[44px] min-w-[44px] text-gray-400 hover:text-gray-600">
           <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5-5V7a5 5 0 00-10 0v5l-5 5h5m0 0v1a3 3 0 006 0v-1m-6 0h6" />
           </svg>
@@ -98,14 +98,14 @@ export default function AdminTopBar({ userName, userRole, profilePhotoUrl }: Adm
         </button>
 
         {/* User Profile */}
-        <div className="flex items-center space-x-3">
-          <div className="text-right">
+        <div className="flex items-center space-x-2 md:space-x-3 shrink-0">
+          <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-gray-900">{userName}</p>
             <p className="text-xs text-gray-500 capitalize">{userRole}</p>
           </div>
           <button 
             onClick={() => setIsProfileModalOpen(true)}
-            className="focus:outline-none focus:ring-2 focus:ring-[#2E7D32] focus:ring-offset-2 rounded-full transition-transform hover:scale-105"
+            className="min-h-[44px] min-w-[44px] focus:outline-none focus:ring-2 focus:ring-[#2E7D32] focus:ring-offset-2 rounded-full transition-transform hover:scale-105"
             title="Edit Profile"
           >
             {profilePhotoUrl ? (
@@ -118,7 +118,7 @@ export default function AdminTopBar({ userName, userRole, profilePhotoUrl }: Adm
           </button>
           <button
             onClick={handleLogout}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 min-h-[44px] min-w-[44px]"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

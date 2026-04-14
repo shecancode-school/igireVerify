@@ -32,7 +32,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: msg }, { status: 400 });
     }
 
-    const { name, email, password, role, programId, position } = result.data;
+    const { name, email, password, programId, position } = result.data;
+    const role = "participant"; // STRICT RULE: All new public registrations are participants
+
 
     // Normalize email for consistent storage and comparison
     const normalizedEmail = email.toLowerCase().trim();
@@ -105,7 +107,7 @@ export async function POST(req: NextRequest) {
     const now = new Date();
 
     const verification = createEmailVerificationToken();
-    const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const verificationExpiry = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
 
     // Create user document with all required fields
     const userData = {

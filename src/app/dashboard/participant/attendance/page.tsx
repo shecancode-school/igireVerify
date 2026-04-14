@@ -25,10 +25,10 @@ export default function AttendanceLandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-white flex flex-col-reverse md:flex-row">
       <Sidebar />
 
-      <div className="flex-1 ml-[120px]">
+      <div className="flex-1 w-full md:ml-[120px] pb-24 md:pb-0">
         <TopBar
           userName={userData.userName}
           programName={userData.programName}
@@ -38,11 +38,11 @@ export default function AttendanceLandingPage() {
           currentTime={userData.currentTime}
         />
 
-        <main className="px-12 py-10 bg-white min-h-screen">
-          <div className="max-w-4xl mx-auto">
+        <main className="px-4 sm:px-6 md:px-10 lg:px-12 py-6 md:py-10 bg-white min-h-screen">
+          <div className="max-w-4xl mx-auto w-full">
 
             {/* Header */}
-            <h1 className="text-5xl font-black text-[#111111] mb-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#111111] mb-4">
               Take Attendance
             </h1>
 

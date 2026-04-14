@@ -33,10 +33,10 @@ export default function StaffSidebar() {
 
   return (
     <aside
-      className="w-[120px] min-h-screen flex flex-col items-center py-6 fixed left-0 top-0 z-30"
+      className="w-full lg:w-[120px] h-20 lg:min-h-screen flex flex-row lg:flex-col items-center justify-around lg:justify-start px-1 lg:px-2 py-2 lg:py-6 fixed bottom-0 lg:bottom-auto lg:left-0 lg:top-0 z-30 overflow-x-auto lg:overflow-y-auto lg:overflow-x-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] lg:shadow-none"
       style={{ background: '#7FAF8C' }}
     >
-      <div className="mb-10 px-2">
+      <div className="hidden lg:block mb-10 px-2 shrink-0">
         <Link href="/home">
           <h1 className="font-black text-lg leading-tight text-center">
             <span style={{ color: '#F97316' }}>Igire</span>
@@ -48,7 +48,7 @@ export default function StaffSidebar() {
         </p>
       </div>
 
-      <nav className="flex-1 flex flex-col gap-5 w-full px-2">
+      <nav className="flex-1 flex flex-row lg:flex-col gap-2 lg:gap-5 w-full lg:w-auto items-center md:justify-center lg:justify-start px-1 lg:px-2 min-w-0">
         {navigation.map((item) => {
           const active = isActive(item.tabMatch);
           const Icon =
@@ -68,7 +68,7 @@ export default function StaffSidebar() {
               key={item.name}
               href={item.href}
               title={item.name}
-              className={`w-12 h-12 mx-auto rounded-2xl flex items-center justify-center transition-all ${
+              className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center transition-all ${
                 active ? 'bg-white shadow-md scale-105' : 'hover:bg-white/25'
               }`}
             >
@@ -82,7 +82,7 @@ export default function StaffSidebar() {
         })}
       </nav>
 
-      <p className="text-[9px] text-white/80 text-center px-2 leading-tight mt-4">
+      <p className="hidden lg:block text-[9px] text-white/80 text-center px-2 leading-tight mt-4">
         Programs managed in Admin
       </p>
     </aside>

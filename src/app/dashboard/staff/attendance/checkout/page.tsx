@@ -448,12 +448,12 @@ export default function CheckOutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-white flex flex-col-reverse lg:flex-row">
       <StaffSidebar />
-      <div className="flex-1 ml-[120px]">
+      <div className="flex-1 w-full lg:ml-[120px] pb-24 lg:pb-0">
         {userData ? <TopBar {...userData} /> : <TopBar userName="" programName="" />}
 
-        <main className="px-12 py-10 bg-[#F5F5F5] min-h-screen">
+        <main className="px-4 py-6 sm:px-6 md:px-10 lg:px-12 md:py-10 bg-[#F5F5F5] min-h-screen">
           {loading || !userData ? (
             <div className="max-w-5xl mx-auto flex items-center justify-center min-h-[400px]">
               <div className="text-center">

@@ -13,6 +13,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleEmailSubmit = (e: React.FormEvent) => {
@@ -27,6 +30,8 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setNeedsVerification(false);
+    setResendMessage("");
 
     try {
       const response = await fetch("/api/auth/login", {
@@ -59,6 +64,7 @@ export default function LoginPage() {
 
       if (!response.ok) {
         setError(data.error || "Login failed. Please try again.");
+        setNeedsVerification(Boolean(data.needsEmailVerification));
         setLoading(false);
         return;
       }
@@ -70,6 +76,31 @@ export default function LoginPage() {
       setError("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email.trim()) return;
+    setResendLoading(true);
+    setResendMessage("");
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.toLowerCase().trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Could not resend verification email.");
+      } else {
+        setResendMessage(data.message || "Verification email sent. Please check your inbox.");
+      }
+    } catch {
+      setError("Network error while resending verification email.");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -104,7 +135,7 @@ export default function LoginPage() {
 
           {step === 1 && (
             <>
-              <h2 className="text-5xl font-bold text-gray-900 mb-12">Sign In</h2>
+              <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-10 sm:mb-12">Sign In</h2>
 
               <form onSubmit={handleEmailSubmit} className="space-y-8">
                 <div>
@@ -114,14 +145,14 @@ export default function LoginPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
                     required
-                    className="w-full px-0 py-4 text-xl bg-transparent border-0 border-b-2 border-gray-300 focus:border-gray-900 focus:outline-none placeholder-gray-400"
+                    className="w-full px-0 py-4 text-lg sm:text-xl bg-transparent border-0 border-b-2 border-gray-300 focus:border-gray-900 focus:outline-none placeholder-gray-400"
                   />
                 </div>
 
                 <div className="pt-4">
                   <button
                     type="submit"
-                    className="w-full py-4 text-white font-bold text-lg rounded-xl transition-all hover:opacity-90 active:scale-[0.98]"
+                    className="w-full min-h-[48px] py-4 text-white font-bold text-lg rounded-xl transition-all hover:opacity-90 active:scale-[0.98]"
                     style={{ background: "#C47D0E" }}
                   >
                     Next
@@ -146,13 +177,18 @@ export default function LoginPage() {
 
           {step === 2 && (
             <>
-              <h2 className="text-5xl font-bold text-gray-900 mb-10">
+              <h2 className="text-3xl sm:text-5xl font-bold text-gray-900 mb-10">
                 Enter your password
               </h2>
 
               {error && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
                   <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              )}
+              {resendMessage && (
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+                  <p className="text-green-700 text-sm">{resendMessage}</p>
                 </div>
               )}
 
@@ -172,7 +208,7 @@ export default function LoginPage() {
                       placeholder="Password"
                       required
                       autoFocus
-                      className="w-full px-0 py-4 pr-14 text-xl bg-transparent border-0 border-b-2 border-gray-300 focus:border-gray-900 focus:outline-none placeholder-gray-400"
+                      className="w-full px-0 py-4 pr-14 text-lg sm:text-xl bg-transparent border-0 border-b-2 border-gray-300 focus:border-gray-900 focus:outline-none placeholder-gray-400"
                     />
                     <button
                       type="button"
@@ -196,11 +232,22 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 text-white font-bold text-lg rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                  className="w-full min-h-[48px] py-4 text-white font-bold text-lg rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
                   style={{ background: "#C47D0E" }}
                 >
                   {loading ? "Logging in..." : "Login"}
                 </button>
+
+                {needsVerification && (
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resendLoading}
+                    className="w-full min-h-[48px] py-3 rounded-xl border border-[#2E7D32] text-[#2E7D32] font-semibold hover:bg-[#E8F5E9] disabled:opacity-60"
+                  >
+                    {resendLoading ? "Sending verification..." : "Resend verification email"}
+                  </button>
+                )}
 
                 <button
                   type="button"

@@ -44,6 +44,7 @@ interface Stats {
   activeProgramsToday: number;
   presentToday: number;
   lateToday: number;
+  incompleteToday: number;
   absentToday: number;
   checkinsLastHour: number;
   mostActiveProgram: string;
@@ -127,6 +128,7 @@ export default function AdminDashboard() {
     activeProgramsToday: 0,
     presentToday: 0,
     lateToday: 0,
+    incompleteToday: 0,
     absentToday: 0,
     checkinsLastHour: 0,
     mostActiveProgram: 'N/A',
@@ -424,15 +426,28 @@ export default function AdminDashboard() {
       
       const fileNameStr = `Attendance-Report-${reportStartDate}-to-${reportEndDate}`;
 
-      const totalParticipants = records.length;
-      const present = records.filter((r: any) => r.status === 'Present').length;
-      const late = records.filter((r: any) => r.status === 'Late').length;
-      const absent = records.filter((r: any) => r.status === 'Absent').length;
-      const attendanceRate = totalParticipants > 0 ? Math.round(((present + late) / totalParticipants) * 100) : 0;
+      const summary = resData.summary || {};
+      const totalParticipants = summary.totalRecords ?? records.length;
+      const present = summary.present ?? records.filter((r: any) => r.status === 'Present').length;
+      const late = summary.late ?? records.filter((r: any) => r.status === 'Late').length;
+      const absent = summary.absent ?? records.filter((r: any) => r.status === 'Absent').length;
+      const incomplete = summary.incomplete ?? records.filter((r: any) => r.status === 'Checked In').length;
+      const attendanceRate =
+        summary.attendanceRate ??
+        (totalParticipants > 0 ? Math.round((present / totalParticipants) * 100) : 0);
 
-      const tableHeaders = ['Date', 'Participant Name', 'Program', 'Check-in Time', 'Check-out Time', 'Status', 'Late By', 'Location', 'Photo'];
+      const tableHeaders = ['Date', 'Participant Name', 'Program', 'Check-in Time', 'Check-out Time', 'Status', 'Status Explanation', 'Late By', 'Location', 'Photo'];
       const tableRows = records.map((r: any) => [
-        r.date, r.name, r.program, r.checkIn, r.checkOut, r.status, r.lateBy, r.location || 'Unknown', r.photo
+        r.date,
+        r.name,
+        r.program,
+        r.checkIn,
+        r.checkOut,
+        r.status,
+        r.statusExplanation || '-',
+        r.lateBy,
+        r.location || 'Unknown',
+        r.photo && r.photo !== '-' ? 'View' : '-'
       ]);
 
       if (formatType === 'pdf') {
@@ -476,6 +491,8 @@ export default function AdminDashboard() {
         
         doc.setTextColor(220, 38, 38); // Red
         doc.text(`Absent: ${absent}`, 125, summaryY);
+        doc.setTextColor(37, 99, 235); // Blue
+        doc.text(`Checked In Only: ${incomplete}`, 20, summaryY + 8);
         
         doc.setTextColor(0, 0, 0);
         doc.text(`Rate: ${attendanceRate}%`, 160, summaryY);
@@ -494,6 +511,7 @@ export default function AdminDashboard() {
                 if (statusStr === 'Present') hookData.cell.styles.textColor = [46, 125, 50];
                 if (statusStr === 'Late') hookData.cell.styles.textColor = [245, 158, 11];
                 if (statusStr === 'Absent') hookData.cell.styles.textColor = [220, 38, 38];
+                if (statusStr === 'Checked In') hookData.cell.styles.textColor = [37, 99, 235];
                 hookData.cell.styles.fontStyle = 'bold';
              }
           },
@@ -530,8 +548,8 @@ export default function AdminDashboard() {
           [`Generated on: ${format(new Date(), 'MMMM dd, yyyy \\a\\t hh:mm a')} by ${userName}`],
           [],
           ['Summary Statistics'],
-          ['Total Participants', 'Present', 'Late', 'Absent', 'Attendance Rate'],
-          [totalParticipants, present, late, absent, `${attendanceRate}%`],
+          ['Total Records', 'Present', 'Late', 'Absent', 'Checked In Only', 'Attendance Rate'],
+          [totalParticipants, present, late, absent, incomplete, `${attendanceRate}%`],
           [],
           tableHeaders,
           ...tableRows,
@@ -542,10 +560,10 @@ export default function AdminDashboard() {
         
         const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
         const tableStartRow = 9;
-        worksheet['!autofilter'] = { ref: `A${tableStartRow + 1}:H${tableStartRow + 1 + totalParticipants}` };
+        worksheet['!autofilter'] = { ref: `A${tableStartRow + 1}:J${tableStartRow + 1 + totalParticipants}` };
 
         worksheet['!cols'] = [
-           { wch: 12 }, { wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 10 }, { wch: 8 }
+           { wch: 12 }, { wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }, { wch: 10 }, { wch: 30 }, { wch: 8 }
         ];
 
         const workbook = XLSX.utils.book_new();
@@ -588,11 +606,11 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-gray-100">
+      <div className="flex flex-col-reverse lg:flex-row min-h-screen bg-gray-100">
         <AdminSidebar />
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <AdminTopBar userName={userName} userRole={userRole} profilePhotoUrl={profilePhotoUrl} />
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-4 sm:p-6 pb-24 lg:pb-6">
             <div className="animate-pulse">
               <div className="h-8 bg-gray-300 rounded w-1/4 mb-6"></div>
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
@@ -608,15 +626,15 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex flex-col-reverse lg:flex-row min-h-screen bg-gray-100">
       <AdminSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <AdminTopBar userName={userName} userRole={userRole} profilePhotoUrl={profilePhotoUrl} />
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pb-24 lg:pb-0">
           {/* Tab Navigation */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
-            <nav className="flex space-x-8">
+          <div className="bg-white border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 overflow-x-auto">
+            <nav className="flex space-x-4 sm:space-x-6 md:space-x-8 min-w-max">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
@@ -637,7 +655,7 @@ export default function AdminDashboard() {
             </nav>
           </div>
 
-          <div className="p-6">
+          <div className="p-3 sm:p-4 md:p-6">
             {/* Overview Tab flex structure */}
             {activeTab === 'overview' && (
               <div className="space-y-8 animate-in fade-in duration-500">
@@ -835,6 +853,10 @@ export default function AdminDashboard() {
                         <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
                           <span className="text-sm font-medium text-gray-600">Late</span>
                           <span className="text-sm font-bold text-orange-600 bg-orange-100 px-3 py-1 rounded-full">{stats.lateToday}</span>
+                        </div>
+                        <div className="flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-100">
+                          <span className="text-sm font-medium text-blue-800">Checked In Only</span>
+                          <span className="text-sm font-bold text-blue-700 bg-blue-100 px-3 py-1 rounded-full">{stats.incompleteToday}</span>
                         </div>
                         <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
                           <span className="text-sm font-medium text-gray-600">Absent</span>
@@ -1146,6 +1168,8 @@ export default function AdminDashboard() {
                                   ? 'bg-green-100 text-green-700'
                                   : record.status.toLowerCase() === 'late'
                                   ? 'bg-orange-100 text-orange-700'
+                                : record.status.toLowerCase() === 'checked in'
+                                  ? 'bg-blue-100 text-blue-700'
                                   : record.status.toLowerCase() === 'absent'
                                   ? 'bg-red-100 text-red-700 font-bold'
                                   : 'bg-gray-100 text-gray-700'

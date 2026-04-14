@@ -12,16 +12,16 @@ export default function AttendanceManagementHub() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
-      {/* Sidebar */}
-      <aside className="w-[160px] bg-[#7FAF8C] fixed left-0 top-0 h-screen flex flex-col items-center py-8">
-        <div className="mb-12">
-          <h1 className="font-black text-2xl text-white">
+    <div className="min-h-screen bg-white flex flex-col-reverse md:flex-row">
+      {/* Sidebar: bottom bar on mobile, left rail on md+ */}
+      <aside className="w-full md:w-[160px] h-16 md:h-screen md:min-h-screen bg-[#7FAF8C] fixed bottom-0 md:bottom-auto left-0 md:top-0 z-40 flex flex-row md:flex-col items-center justify-center md:justify-start gap-4 md:gap-8 py-2 md:py-8 px-2 md:px-0 overflow-x-auto md:overflow-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] md:shadow-none">
+        <div className="hidden md:block mb-8 md:mb-12 shrink-0">
+          <h1 className="font-black text-xl md:text-2xl text-white text-center px-1">
             Igire<span className="text-[#C47D0E]">Verify</span>
           </h1>
         </div>
 
-        <nav className="flex-1 flex flex-col gap-8">
+        <nav className="flex-1 flex flex-row md:flex-col gap-4 md:gap-8 items-center justify-center md:justify-start">
           <button
             onClick={() => router.push("/dashboard/hr")}
             className="w-14 h-14 rounded-xl hover:bg-white/20 transition-colors flex items-center justify-center"
@@ -42,9 +42,9 @@ export default function AttendanceManagementHub() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 ml-[160px]">
+      <div className="flex-1 w-full md:ml-[160px] pb-20 md:pb-0 min-w-0">
         {/* Top Bar */}
-        <header className="bg-[#F5F5F5] border-b border-gray-200 px-12 py-4 flex items-center justify-between">
+        <header className="bg-[#F5F5F5] border-b border-gray-200 px-4 sm:px-6 md:px-12 py-3 md:py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2">
               <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
@@ -58,10 +58,10 @@ export default function AttendanceManagementHub() {
           <div className="relative">
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-4 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-2 sm:gap-4 hover:opacity-80 transition-opacity min-w-0"
             >
-              <div className="text-right">
-                <p className="font-bold text-gray-900">Juliette NYIRASAFARI</p>
+              <div className="text-right hidden sm:block min-w-0">
+                <p className="font-bold text-gray-900 truncate max-w-[140px] md:max-w-none">Juliette NYIRASAFARI</p>
                 <p className="text-sm text-gray-600">HR& Finance</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
@@ -94,11 +94,11 @@ export default function AttendanceManagementHub() {
         </header>
 
         {/* Page Content */}
-        <main className="px-12 py-16 min-h-[calc(100vh-180px)] flex items-center justify-center">
+        <main className="px-4 sm:px-6 md:px-12 py-10 md:py-16 min-h-[calc(100vh-180px)] flex items-center justify-center">
           <div className="max-w-4xl w-full text-center">
             
             {/* Header */}
-            <h1 className="text-6xl font-black mb-6" style={{ color: "#16A34A" }}>
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-black mb-6" style={{ color: "#16A34A" }}>
               Attendance Management
             </h1>
 
@@ -120,10 +120,10 @@ export default function AttendanceManagementHub() {
             </p>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-center gap-8">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4 sm:gap-8 max-w-md sm:max-w-none mx-auto">
               <button
                 onClick={() => router.push("/dashboard/hr/attendance/program")}
-                className="px-12 py-5 rounded-2xl text-white text-xl font-bold transition-all hover:opacity-90 hover:scale-105 shadow-lg"
+                className="min-h-[48px] px-6 sm:px-12 py-4 sm:py-5 rounded-2xl text-white text-lg sm:text-xl font-bold transition-all hover:opacity-90 hover:scale-105 shadow-lg"
                 style={{ background: "#16A34A" }}
               >
                 Program Attendance
@@ -131,7 +131,7 @@ export default function AttendanceManagementHub() {
 
               <button
                 onClick={() => router.push("/dashboard/hr/attendance/staff")}
-                className="px-12 py-5 rounded-2xl text-white text-xl font-bold transition-all hover:opacity-90 hover:scale-105 shadow-lg"
+                className="min-h-[48px] px-6 sm:px-12 py-4 sm:py-5 rounded-2xl text-white text-lg sm:text-xl font-bold transition-all hover:opacity-90 hover:scale-105 shadow-lg"
                 style={{ background: "#16A34A" }}
               >
                 Staff Attendance
@@ -141,7 +141,7 @@ export default function AttendanceManagementHub() {
         </main>
 
         {/* Footer - Fixed at bottom */}
-        <footer className="px-12 py-6 text-center text-sm text-gray-500 border-t border-gray-200">
+        <footer className="px-4 md:px-12 py-6 text-center text-sm text-gray-500 border-t border-gray-200">
           © 2026 Igire Rwanda Organisation - All Actions are auditable
         </footer>
       </div>

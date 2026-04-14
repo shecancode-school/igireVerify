@@ -80,8 +80,8 @@ export function getAttendanceWindowMessage(
   }
 
   if (type === 'checkin') {
-    if (timeStr < rules.checkInStart || timeStr > rules.checkInEnd) {
-      return `Check-in is only allowed between ${toDisplayTime(rules.checkInStart)} and ${toDisplayTime(rules.checkInEnd)}. Please return during the scheduled window.`;
+    if (timeStr < rules.checkInStart) {
+      return `Check-in opens at ${toDisplayTime(rules.checkInStart)}. Please return during the scheduled time window.`;
     }
   } else {
     // Checkout
