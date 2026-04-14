@@ -3,6 +3,8 @@ import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -59,7 +61,12 @@ export async function GET(req: Request) {
         onTimeCount: onTime,
         uniqueDays,
         onTimeStatus: onTime > 0 ? "On-Time" : "Needs Improvement",
-        percentage: 0 // Will handle via UI or further logic
+        percentage: 0, // Will handle via UI or further logic
+        records: records.sort((a, b) => {
+          const dateA = new Date((a.date as string) || (a.checkInTime as string) || (a.createdAt as string)).getTime();
+          const dateB = new Date((b.date as string) || (b.checkInTime as string) || (b.createdAt as string)).getTime();
+          return dateB - dateA;
+        })
       };
     }
 

@@ -131,7 +131,6 @@ If you did not create this account, ignore this email.
                       <span style="color:#C47D0E;">Igire</span><span style="color:#2E7D32;">Verify</span>
                     </div>
                     <div style="margin-top:6px;color:#4b5563;font-size:14px;">
-                      Professional Attendance Verification Platform
                     </div>
                   </td>
                 </tr>

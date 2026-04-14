@@ -150,7 +150,7 @@ export default function StaffDashboardClient() {
             checkInWindow: d.checkInWindow || "N/A",
           });
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const loadOverview = useCallback(async () => {
@@ -215,7 +215,7 @@ export default function StaffDashboardClient() {
   }, [rosterProgramId, rosterDate]);
 
   useEffect(() => {
-    fetch("/api/attendance/maintenance/absentees").catch(() => {});
+    fetch("/api/attendance/maintenance/absentees").catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -466,11 +466,10 @@ export default function StaffDashboardClient() {
                     key={r}
                     type="button"
                     onClick={() => setRange(r)}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                      range === r
-                        ? "bg-[#16A34A] text-white"
-                        : "bg-white text-gray-700 border border-gray-200"
-                    }`}
+                    className={`px-4 py-2 rounded-full text-sm font-semibold ${range === r
+                      ? "bg-[#16A34A] text-white"
+                      : "bg-white text-gray-700 border border-gray-200"
+                      }`}
                   >
                     {r === "today" ? "Today" : r === "week" ? "7 days" : "This month"}
                   </button>
@@ -489,9 +488,8 @@ export default function StaffDashboardClient() {
                 <button
                   type="button"
                   onClick={() => setScopeProgramId("all")}
-                  className={`px-3 py-1.5 rounded-xl text-sm font-medium ${
-                    scopeProgramId === "all" ? "bg-[#14532D] text-white" : "bg-white border"
-                  }`}
+                  className={`px-3 py-1.5 rounded-xl text-sm font-medium ${scopeProgramId === "all" ? "bg-[#14532D] text-white" : "bg-white border"
+                    }`}
                 >
                   All programs
                 </button>
@@ -500,9 +498,8 @@ export default function StaffDashboardClient() {
                     key={p._id}
                     type="button"
                     onClick={() => setScopeProgramId(p._id)}
-                    className={`px-3 py-1.5 rounded-xl text-sm font-medium max-w-[180px] truncate ${
-                      scopeProgramId === p._id ? "bg-[#14532D] text-white" : "bg-white border"
-                    }`}
+                    className={`px-3 py-1.5 rounded-xl text-sm font-medium max-w-[180px] truncate ${scopeProgramId === p._id ? "bg-[#14532D] text-white" : "bg-white border"
+                      }`}
                     title={p.name}
                   >
                     {p.name}
@@ -760,9 +757,8 @@ export default function StaffDashboardClient() {
                           setCalSelected(day);
                           setRosterDate(format(day, "yyyy-MM-dd"));
                         }}
-                        className={`py-2 rounded-lg text-sm font-medium ${
-                          sel ? "bg-[#14532D] text-white" : "hover:bg-[#E8F5E9]"
-                        }`}
+                        className={`py-2 rounded-lg text-sm font-medium ${sel ? "bg-[#14532D] text-white" : "hover:bg-[#E8F5E9]"
+                          }`}
                       >
                         {format(day, "d")}
                       </button>
@@ -798,16 +794,15 @@ export default function StaffDashboardClient() {
                           <td className="px-4 py-3 text-center">{r.checkOut}</td>
                           <td className="px-4 py-3 text-center">
                             <span
-                              className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                                r.status === "absent"
-                                  ? "bg-red-100 text-red-800"
-                                  : 
+                              className={`text-xs font-semibold px-2 py-1 rounded-full ${r.status === "absent"
+                                ? "bg-red-100 text-red-800"
+                                :
                                 r.status === "checked-out"
                                   ? "bg-green-100 text-green-800"
                                   : r.status === "checked-in"
                                     ? "bg-amber-100 text-amber-800"
                                     : "bg-gray-100 text-gray-700"
-                              }`}
+                                }`}
                             >
                               {r.status === "not-checked-in" ? "not checked in" : r.status.replace("-", " ")}
                             </span>
@@ -983,22 +978,20 @@ export default function StaffDashboardClient() {
                     <button
                       type="button"
                       onClick={() => setManualStatus("absent")}
-                      className={`px-4 py-2 rounded-xl text-sm font-semibold border ${
-                        manualStatus === "absent"
-                          ? "bg-red-100 text-red-700 border-red-200"
-                          : "bg-white text-gray-700 border-gray-200"
-                      }`}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold border ${manualStatus === "absent"
+                        ? "bg-red-100 text-red-700 border-red-200"
+                        : "bg-white text-gray-700 border-gray-200"
+                        }`}
                     >
                       Absent
                     </button>
                     <button
                       type="button"
                       onClick={() => setManualStatus("late")}
-                      className={`px-4 py-2 rounded-xl text-sm font-semibold border ${
-                        manualStatus === "late"
-                          ? "bg-amber-100 text-amber-700 border-amber-200"
-                          : "bg-white text-gray-700 border-gray-200"
-                      }`}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold border ${manualStatus === "late"
+                        ? "bg-amber-100 text-amber-700 border-amber-200"
+                        : "bg-white text-gray-700 border-gray-200"
+                        }`}
                     >
                       Late
                     </button>
