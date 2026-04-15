@@ -62,7 +62,9 @@ export async function POST(req: Request) {
       schedule = program.schedule;
     }
 
-    // Validate attendance window and day
+    // Always use the program.schedule for check-in validation.
+    // The schedule is validated on program creation and update, so it is always correct.
+    // The check-in window is strictly enforced by getAttendanceWindowMessage.
     const windowMessage = getAttendanceWindowMessage('checkin', schedule, checkInDateTime);
     if (windowMessage) {
       return NextResponse.json({ error: windowMessage }, { status: 400 });

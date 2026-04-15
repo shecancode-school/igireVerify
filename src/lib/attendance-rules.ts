@@ -83,6 +83,9 @@ export function getAttendanceWindowMessage(
     if (timeStr < rules.checkInStart) {
       return `Check-in opens at ${toDisplayTime(rules.checkInStart)}. Please return during the scheduled time window.`;
     }
+    if (timeStr > rules.checkInEnd) {
+      return `Check-in window closed at ${toDisplayTime(rules.checkInEnd)}. Please check in during the scheduled window (${toDisplayTime(rules.checkInStart)} - ${toDisplayTime(rules.checkInEnd)}).`;
+    }
   } else {
     // Checkout
     if (timeStr < rules.classStart) {
