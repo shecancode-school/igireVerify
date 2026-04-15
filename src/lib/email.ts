@@ -45,7 +45,7 @@ function appBaseUrl() {
 }
 
 export function buildVerifyUrl(rawToken: string) {
-  // Put token in URL fragment so it is not sent to server logs/proxies by default.
+
   return `${appBaseUrl()}/verify-email#token=${encodeURIComponent(rawToken)}`;
 }
 

@@ -45,12 +45,12 @@ export default async function ParticipantDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] flex flex-col-reverse md:flex-row">
-      
+    <div className="min-h-screen bg-[#F5F5F5] flex flex-col-reverse sm:flex-col">
+
       <Sidebar />
 
-      <div className="flex-1 w-full md:ml-[120px] pb-24 md:pb-0">
-        
+      <div className="flex-1 w-full sm:ml-20 md:ml-24 lg:ml-[120px] pb-24 sm:pb-0">
+
         <TopBar
           userName={userData.userName}
           programName={userData.programName}
@@ -60,42 +60,42 @@ export default async function ParticipantDashboard() {
           currentTime={userData.currentTime}
         />
 
-        {/* CENTERED CONTENT WITH FREE SPACE ON SIDES */}
-        <main className="px-4 sm:px-6 md:px-10 lg:px-16 py-6 md:py-8 max-w-[1400px] w-full mx-auto">
-          
-          {/* Row 1: Program Card (LEFT) + Attendance Chart (RIGHT) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-            {/* Program Card - Takes 5 columns */}
-            <div className="col-span-1 lg:col-span-5">
+        {/* RESPONSIVE CONTENT */}
+        <main className="px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 md:py-8 max-w-7xl w-full mx-auto">
+
+          {/* Row 1: Program Card + Attendance Chart - Responsive Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 md:gap-6 mb-6 md:mb-8">
+            {/* Program Card - Full width on mobile, 5 cols on desktop */}
+            <div className="col-span-1 md:col-span-5">
               <ProgramCard programName={userData.programName} />
             </div>
             
-            {/* Attendance Chart - Takes 7 columns */}
-            <div className="col-span-1 lg:col-span-7">
-              <AttendanceChart 
+            {/* Attendance Chart - Full width on mobile, 7 cols on desktop */}
+            <div className="col-span-1 md:col-span-7">
+              <AttendanceChart
                 programId={userData.programId}
                 userId={userData.userId || ""}
               />
             </div>
           </div>
 
-          {/* Row 2: Attendance Stats - 3 cards */}
-          <div className="mb-8">
+          {/* Row 2: Attendance Stats - Responsive 3-card grid */}
+          <div className="mb-6 md:mb-8">
             <AttendanceStats
               programId={userData.programId}
               userId={userData.userId || ""}
             />
           </div>
 
-          {/* Row 3: Attendance History - Takes only LEFT half */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="col-span-1 lg:col-span-7">
-              <AttendanceHistory 
+          {/* Row 3: Attendance History - Takes 7 cols on desktop, full width on mobile */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 md:gap-6">
+            <div className="col-span-1 md:col-span-7">
+              <AttendanceHistory
                 programId={userData.programId}
                 userId={userData.userId || ""}
               />
             </div>
-            {/* Right side is FREE SPACE */}
+            {/* Right side is FREE SPACE on desktop */}
           </div>
 
         </main>

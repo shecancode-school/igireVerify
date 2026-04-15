@@ -626,162 +626,167 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="flex flex-col-reverse lg:flex-row min-h-screen bg-gray-100">
+    <div className="flex flex-col sm:flex-col lg:flex-row min-h-screen bg-gray-100">
       <AdminSidebar />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <AdminTopBar userName={userName} userRole={userRole} profilePhotoUrl={profilePhotoUrl} />
 
-        <div className="flex-1 overflow-y-auto pb-24 lg:pb-0">
-          {/* Tab Navigation */}
-          <div className="bg-white border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 overflow-x-auto">
-            <nav className="flex space-x-4 sm:space-x-6 md:space-x-8 min-w-max">
+        <div className="flex-1 overflow-y-auto pb-24 sm:pb-0">
+          {/* Tab Navigation - Responsive */}
+          <div className="bg-white border-b border-gray-200 px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 overflow-x-auto">
+            <nav className="flex space-x-2 sm:space-x-4 md:space-x-6 min-w-max">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`flex items-center px-1 py-2 border-b-2 font-medium text-sm ${
+                    className={`flex items-center px-2 sm:px-3 md:px-4 py-2 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
                       activeTab === tab.id
                         ? 'border-[#2E7D32] text-[#2E7D32]'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    <Icon className="w-4 h-4 mr-2" />
-                    {tab.name}
+                    <Icon className="w-4 h-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">{tab.name}</span>
                   </button>
                 );
               })}
             </nav>
           </div>
 
-          <div className="p-3 sm:p-4 md:p-6">
+          <div className="p-2 sm:p-4 md:p-6">
             {/* Overview Tab flex structure */}
             {activeTab === 'overview' && (
-              <div className="space-y-8 animate-in fade-in duration-500">
-                {/* Header Welcome Box */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back, {userName} 👋</h1>
-                    <p className="text-gray-500 text-sm font-medium">Here's an overview of your platforms performance and activity.</p>
+              <div className="space-y-4 sm:space-y-6 md:space-y-8 animate-in fade-in duration-500">
+                {/* Header Welcome Box - Responsive */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100">
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-lg sm:text-2xl font-bold text-gray-900 mb-1 truncate">Welcome back, {userName} 👋</h1>
+                    <p className="text-gray-500 text-xs sm:text-sm font-medium">Here's an overview of your platforms performance and activity.</p>
                   </div>
-                  <div className="mt-4 md:mt-0 text-right bg-gray-50 px-5 py-3 rounded-xl border border-gray-200">
-                    <p className="text-md font-bold text-gray-900">{liveDate}</p>
-                    <p className="text-[#2E7D32] text-sm font-bold flex items-center justify-end gap-1 mt-1"><Clock className="w-4 h-4"/> {liveTime} (Live)</p>
+                  <div className="mt-3 sm:mt-0 text-right bg-gray-50 px-3 sm:px-5 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-gray-200 whitespace-nowrap">
+                    <p className="text-sm sm:text-md font-bold text-gray-900">{liveDate}</p>
+                    <p className="text-[#2E7D32] text-xs sm:text-sm font-bold flex items-center justify-end gap-1 mt-1"><Clock className="w-3 h-3 sm:w-4 sm:h-4"/> {liveTime}</p>
                   </div>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-4">
-                    <div className="bg-[#DDF1E2] w-14 h-14 rounded-full flex items-center justify-center shrink-0">
-                      <BookOpen className="w-7 h-7 text-[#1B5E20]" />
+                {/* Stats Cards - Responsive Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 sm:gap-4 md:gap-6">
+                  <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center sm:items-start gap-2 sm:gap-4">
+                    <div className="bg-[#DDF1E2] w-10 sm:w-12 md:w-14 h-10 sm:h-12 md:h-14 rounded-full flex items-center justify-center shrink-0">
+                      <BookOpen className="w-5 sm:w-6 md:w-7 h-5 sm:h-6 md:h-7 text-[#1B5E20]" />
                     </div>
-                    <div className="flex flex-col">
-                      <div className="text-4xl font-black text-[#111111] leading-none mb-1">
+                    <div className="flex flex-col text-center sm:text-left">
+                      <div className="text-2xl sm:text-3xl md:text-4xl font-black text-[#111111] leading-none mb-1">
                         {stats.totalPrograms < 10 ? `0${stats.totalPrograms}` : stats.totalPrograms}
                       </div>
-                      <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Programs</div>
+                      <div className="text-[9px] sm:text-[10px] md:text-xs font-bold text-gray-500 uppercase tracking-wider">Programs</div>
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-4">
-                    <div className="bg-[#DDF1E2] w-14 h-14 rounded-full flex items-center justify-center shrink-0">
-                      <Users className="w-7 h-7 text-[#1B5E20]" />
+
+                  <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center sm:items-start gap-2 sm:gap-4">
+                    <div className="bg-[#DDF1E2] w-10 sm:w-12 md:w-14 h-10 sm:h-12 md:h-14 rounded-full flex items-center justify-center shrink-0">
+                      <Users className="w-5 sm:w-6 md:w-7 h-5 sm:h-6 md:h-7 text-[#1B5E20]" />
                     </div>
-                    <div className="flex flex-col">
-                      <div className="text-4xl font-black text-[#111111] leading-none mb-1">
+                    <div className="flex flex-col text-center sm:text-left">
+                      <div className="text-2xl sm:text-3xl md:text-4xl font-black text-[#111111] leading-none mb-1">
                         {stats.totalUsers < 10 ? `0${stats.totalUsers}` : stats.totalUsers}
                       </div>
-                      <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Users</div>
+                      <div className="text-[9px] sm:text-[10px] md:text-xs font-bold text-gray-500 uppercase tracking-wider">Users</div>
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-4">
-                    <div className="bg-gray-100 w-14 h-14 rounded-full flex items-center justify-center shrink-0">
-                      <FileText className="w-7 h-7 text-gray-600" />
+
+                  <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center sm:items-start gap-2 sm:gap-4">
+                    <div className="bg-gray-100 w-10 sm:w-12 md:w-14 h-10 sm:h-12 md:h-14 rounded-full flex items-center justify-center shrink-0">
+                      <FileText className="w-5 sm:w-6 md:w-7 h-5 sm:h-6 md:h-7 text-gray-600" />
                     </div>
-                    <div className="flex flex-col">
-                      <div className="text-4xl font-black text-[#111111] leading-none mb-1">
+                    <div className="flex flex-col text-center sm:text-left">
+                      <div className="text-2xl sm:text-3xl md:text-4xl font-black text-[#111111] leading-none mb-1">
                         {stats.totalAttendanceRecords < 10 ? `0${stats.totalAttendanceRecords}` : stats.totalAttendanceRecords}
                       </div>
-                      <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Records</div>
+                      <div className="text-[9px] sm:text-[10px] md:text-xs font-bold text-gray-500 uppercase tracking-wider">Records</div>
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-4 border-b-4 border-b-green-500">
-                    <div className="bg-green-50 w-14 h-14 rounded-full flex items-center justify-center shrink-0">
-                      <CheckSquare className="w-7 h-7 text-green-600" />
+
+                  <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center sm:items-start gap-2 sm:gap-4 border-b-4 border-b-green-500">
+                    <div className="bg-green-50 w-10 sm:w-12 md:w-14 h-10 sm:h-12 md:h-14 rounded-full flex items-center justify-center shrink-0">
+                      <CheckSquare className="w-5 sm:w-6 md:w-7 h-5 sm:h-6 md:h-7 text-green-600" />
                     </div>
-                    <div className="flex flex-col">
-                      <div className="text-4xl font-black text-[#111111] leading-none mb-1">
+                    <div className="flex flex-col text-center sm:text-left">
+                      <div className="text-2xl sm:text-3xl md:text-4xl font-black text-[#111111] leading-none mb-1">
                         {stats.presentToday < 10 ? `0${stats.presentToday}` : stats.presentToday}
                       </div>
-                      <div className="text-xs font-bold text-green-600 uppercase tracking-wider">Present</div>
+                      <div className="text-[9px] sm:text-[10px] md:text-xs font-bold text-green-600 uppercase tracking-wider">Present</div>
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-4 border-b-4 border-b-orange-400">
-                    <div className="bg-orange-50 w-14 h-14 rounded-full flex items-center justify-center shrink-0">
-                      <Clock className="w-7 h-7 text-orange-500" />
+
+                  <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center sm:items-start gap-2 sm:gap-4 border-b-4 border-b-orange-400">
+                    <div className="bg-orange-50 w-10 sm:w-12 md:w-14 h-10 sm:h-12 md:h-14 rounded-full flex items-center justify-center shrink-0">
+                      <Clock className="w-5 sm:w-6 md:w-7 h-5 sm:h-6 md:h-7 text-orange-500" />
                     </div>
-                    <div className="flex flex-col">
-                      <div className="text-4xl font-black text-[#111111] leading-none mb-1">
+                    <div className="flex flex-col text-center sm:text-left">
+                      <div className="text-2xl sm:text-3xl md:text-4xl font-black text-[#111111] leading-none mb-1">
                         {stats.lateToday < 10 ? `0${stats.lateToday}` : stats.lateToday}
                       </div>
-                      <div className="text-xs font-bold text-orange-500 uppercase tracking-wider">Late</div>
+                      <div className="text-[9px] sm:text-[10px] md:text-xs font-bold text-orange-500 uppercase tracking-wider">Late</div>
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-4 border-b-4 border-b-red-500">
-                    <div className="bg-red-50 w-14 h-14 rounded-full flex items-center justify-center shrink-0">
-                      <XCircle className="w-7 h-7 text-red-500" />
+
+                  <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center sm:items-start gap-2 sm:gap-4 border-b-4 border-b-red-500">
+                    <div className="bg-red-50 w-10 sm:w-12 md:w-14 h-10 sm:h-12 md:h-14 rounded-full flex items-center justify-center shrink-0">
+                      <XCircle className="w-5 sm:w-6 md:w-7 h-5 sm:h-6 md:h-7 text-red-500" />
                     </div>
-                    <div className="flex flex-col">
-                      <div className="text-4xl font-black text-[#111111] leading-none mb-1">
+                    <div className="flex flex-col text-center sm:text-left">
+                      <div className="text-2xl sm:text-3xl md:text-4xl font-black text-[#111111] leading-none mb-1">
                         {stats.absentToday < 10 ? `0${stats.absentToday}` : stats.absentToday}
                       </div>
-                      <div className="text-xs font-bold text-red-500 uppercase tracking-wider">Absent</div>
+                      <div className="text-[9px] sm:text-[10px] md:text-xs font-bold text-red-500 uppercase tracking-wider">Absent</div>
                     </div>
                   </div>
                 </div>
 
-                {/* Big Grid Layout */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Big Grid Layout - Responsive */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                   {/* Left Column (Charts and Quick Stats) */}
-                  <div className="lg:col-span-2 space-y-6">
+                  <div className="lg:col-span-2 space-y-4 sm:space-y-6">
                     {/* Quick Stats Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="bg-white p-5 rounded-2xl border border-gray-200 flex flex-col justify-center items-center text-center shadow-sm hover:shadow-md transition-shadow">
-                        <Activity className="w-6 h-6 text-blue-500 mb-2"/>
-                        <p className="text-gray-500 text-xs font-medium tracking-wide uppercase">Most Active Program</p>
-                        <h3 className="text-lg font-bold text-gray-900 truncate max-w-full">{stats.mostActiveProgram}</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                      <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-2xl border border-gray-200 flex flex-col justify-center items-center text-center shadow-sm hover:shadow-md transition-shadow">
+                        <Activity className="w-5 sm:w-6 h-5 sm:h-6 text-blue-500 mb-2"/>
+                        <p className="text-gray-500 text-[10px] sm:text-xs font-medium tracking-wide uppercase">Most Active Program</p>
+                        <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate max-w-full text-center">{stats.mostActiveProgram}</h3>
                       </div>
-                      <div className="bg-white p-5 rounded-2xl border border-gray-200 flex flex-col justify-center items-center text-center shadow-sm hover:shadow-md transition-shadow">
-                        <TrendingUp className="w-6 h-6 text-green-500 mb-2"/>
-                        <p className="text-gray-500 text-xs font-medium tracking-wide uppercase">Avg Weekly Rate</p>
-                        <h3 className="text-lg font-bold text-gray-900">{stats.avgAttendanceRate}%</h3>
+                      <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-2xl border border-gray-200 flex flex-col justify-center items-center text-center shadow-sm hover:shadow-md transition-shadow">
+                        <TrendingUp className="w-5 sm:w-6 h-5 sm:h-6 text-green-500 mb-2"/>
+                        <p className="text-gray-500 text-[10px] sm:text-xs font-medium tracking-wide uppercase">Avg Weekly Rate</p>
+                        <h3 className="text-base sm:text-lg font-bold text-gray-900">{stats.avgAttendanceRate}%</h3>
                       </div>
-                      <div className="bg-white p-5 rounded-2xl border border-gray-200 flex flex-col justify-center items-center text-center shadow-sm hover:shadow-md transition-shadow">
-                        <AlertCircle className="w-6 h-6 text-orange-500 mb-2"/>
-                        <p className="text-gray-500 text-xs font-medium tracking-wide uppercase">Late This Month</p>
-                        <h3 className="text-lg font-bold text-gray-900">{stats.lateThisMonth}</h3>
+                      <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-2xl border border-gray-200 flex flex-col justify-center items-center text-center shadow-sm hover:shadow-md transition-shadow">
+                        <AlertCircle className="w-5 sm:w-6 h-5 sm:h-6 text-orange-500 mb-2"/>
+                        <p className="text-gray-500 text-[10px] sm:text-xs font-medium tracking-wide uppercase">Late This Month</p>
+                        <h3 className="text-base sm:text-lg font-bold text-gray-900">{stats.lateThisMonth}</h3>
                       </div>
                     </div>
 
-                    {/* Chart Box */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 h-96">
-                      <h2 className="text-lg font-bold text-gray-900 mb-6">Daily Attendance Trend</h2>
+                    {/* Chart Box - Responsive */}
+                    <div className="bg-white p-4 sm:p-6 rounded-lg sm:rounded-2xl shadow-sm border border-gray-200 h-64 sm:h-80 md:h-96">
+                      <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-6">Daily Attendance Trend</h2>
                       <ResponsiveContainer width="100%" height="80%">
-                        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                        <BarChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dy={10} />
-                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6B7280' }} dy={8} />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6B7280' }} />
                           <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                          <Bar dataKey="present" name="Present" fill="#2E7D32" radius={[4, 4, 4, 4]} barSize={30} />
-                          <Bar dataKey="late" name="Late" fill="#F59E0B" radius={[4, 4, 4, 4]} barSize={30} />
+                          <Bar dataKey="present" name="Present" fill="#2E7D32" radius={[4, 4, 4, 4]} barSize={25} />
+                          <Bar dataKey="late" name="Late" fill="#F59E0B" radius={[4, 4, 4, 4]} barSize={25} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
 
-                  {/* Right Column (Activity & Callendar) */}
-                  <div className="space-y-6">
+                  {/* Right Column (Activity & Calendar) */}
+                  <div className="space-y-4 sm:space-y-6">
                     {/* Mini Calendar Preview */}
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
                       <div className="flex justify-between items-center mb-4">

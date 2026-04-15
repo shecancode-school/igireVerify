@@ -33,22 +33,22 @@ export default function StaffSidebar() {
 
   return (
     <aside
-      className="w-full lg:w-[120px] h-20 lg:min-h-screen flex flex-row lg:flex-col items-center justify-around lg:justify-start px-1 lg:px-2 py-2 lg:py-6 fixed bottom-0 lg:bottom-auto lg:left-0 lg:top-0 z-30 overflow-x-auto lg:overflow-y-auto lg:overflow-x-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] lg:shadow-none"
+      className="w-full sm:w-20 lg:w-[120px] h-20 sm:h-screen sm:min-h-screen flex flex-row sm:flex-col items-center justify-around sm:justify-start px-1 sm:px-2 lg:px-2 py-2 sm:py-4 lg:py-6 fixed bottom-0 sm:top-0 sm:left-0 z-30 overflow-x-auto sm:overflow-y-auto sm:overflow-x-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] sm:shadow-none"
       style={{ background: '#7FAF8C' }}
     >
-      <div className="hidden lg:block mb-10 px-2 shrink-0">
+      <div className="hidden sm:block mb-6 sm:mb-8 lg:mb-10 px-2 shrink-0">
         <Link href="/home">
-          <h1 className="font-black text-lg leading-tight text-center">
+          <h1 className="font-black text-sm sm:text-base lg:text-lg leading-tight text-center">
             <span style={{ color: '#F97316' }}>Igire</span>
             <span style={{ color: '#14532D' }}>Verify</span>
           </h1>
         </Link>
-        <p className="text-[10px] font-semibold text-[#14532D] text-center mt-1 uppercase tracking-wide">
+        <p className="text-[8px] sm:text-[9px] lg:text-[10px] font-semibold text-[#14532D] text-center mt-1 uppercase tracking-wide hidden lg:block">
           Staff
         </p>
       </div>
 
-      <nav className="flex-1 flex flex-row lg:flex-col gap-2 lg:gap-5 w-full lg:w-auto items-center md:justify-center lg:justify-start px-1 lg:px-2 min-w-0">
+      <nav className="flex-1 flex flex-row sm:flex-col gap-1 sm:gap-2 lg:gap-4 w-full sm:w-auto items-center sm:items-center lg:justify-start px-1 sm:px-2 lg:px-2 min-w-0">
         {navigation.map((item) => {
           const active = isActive(item.tabMatch);
           const Icon =
@@ -68,14 +68,14 @@ export default function StaffSidebar() {
               key={item.name}
               href={item.href}
               title={item.name}
-              className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center transition-all ${
+              className={`w-12 sm:w-11 lg:w-12 h-12 sm:h-11 lg:h-12 shrink-0 rounded-lg sm:rounded-2xl flex items-center justify-center transition-all ${
                 active ? 'bg-white shadow-md scale-105' : 'hover:bg-white/25'
               }`}
             >
               <Icon
-                size={22}
-                className={active ? 'text-[#14532D]' : 'text-white'}
+                size={20}
                 strokeWidth={2}
+                className={`${active ? 'text-[#14532D]' : 'text-white'} sm:w-5 sm:h-5 lg:w-6 lg:h-6`}
               />
             </Link>
           );
