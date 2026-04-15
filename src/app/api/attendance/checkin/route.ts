@@ -4,6 +4,7 @@ import { getDb } from "@/lib/mongodb";
 import { getAttendanceStatus, isValidAttendanceDay, STAFF_RULES, getAttendanceWindowMessage } from "@/lib/attendance-rules";
 import { emitAttendanceUpdate } from "@/lib/socket-server";
 import { checkInSchema } from "@/lib/validation";
+import { getUserTimezone, formatTimeWithZone } from "@/lib/timezone-utils";
 
 /**
  * POST /api/attendance/checkin
@@ -19,9 +20,8 @@ export async function POST(req: Request) {
     if (!result.success) {
       const issues = result.error.issues;
       const isPhotoMissing = issues.some(i => i.path.includes('photoUrl'));
-      
       return NextResponse.json(
-        { error: isPhotoMissing ? "Please capture a photo before submitting your attendance." : "Missing required information. Please ensure all steps are completed." },
+        { error: isPhotoMissing ? "A photo is required for check-in. Please capture your photo before submitting your attendance." : "Some required information is missing. Please complete all steps and try again." },
         { status: 400 }
       );
     }
@@ -38,6 +38,8 @@ export async function POST(req: Request) {
 
     const now = new Date();
     const checkInDateTime = new Date(checkInTime);
+    // Get user's timezone from request headers if available, fallback to UTC
+    const userTimeZone = req.headers.get('x-timezone') || 'UTC';
 
     let schedule;
     let program;
@@ -55,10 +57,10 @@ export async function POST(req: Request) {
         isActive: true,
       });
 
-      if (!program) {
-        console.warn(`[CHECKIN] Program not found: ${programId}`);
-        return NextResponse.json({ error: "Program not found" }, { status: 404 });
-      }
+        if (!program) {
+          console.warn(`[CHECKIN] Program not found: ${programId}`);
+          return NextResponse.json({ error: "The selected program could not be found. Please contact support if this issue persists." }, { status: 404 });
+        }
       schedule = program.schedule;
     }
 
@@ -67,7 +69,12 @@ export async function POST(req: Request) {
     // The check-in window is strictly enforced by getAttendanceWindowMessage.
     const windowMessage = getAttendanceWindowMessage('checkin', schedule, checkInDateTime);
     if (windowMessage) {
-      return NextResponse.json({ error: windowMessage }, { status: 400 });
+      // Show both session and user time for clarity
+      const sessionTime = formatTimeWithZone(checkInDateTime, 'Africa/Kigali');
+      const userTime = formatTimeWithZone(now, userTimeZone);
+      return NextResponse.json({
+        error: `Check-in not allowed at this time. ${windowMessage}\nSession time: ${sessionTime}. Your current time: ${userTime}. If you believe this is an error, please contact the Help Desk.`
+      }, { status: 400 });
     }
 
     // Check if already checked in today
@@ -91,7 +98,7 @@ export async function POST(req: Request) {
 
     if (existingCheckIn) {
       return NextResponse.json(
-        { error: "You have already checked in for today." },
+        { error: "You have already checked in for today's session. If you believe this is an error, please contact the Help Desk." },
         { status: 400 }
       );
     }
@@ -173,14 +180,16 @@ export async function POST(req: Request) {
       {
         ok: true,
         status,
-        message: status === "on-time" ? "Check-in successful" : "Check-in recorded as late",
+        message: status === "on-time"
+          ? "Check-in successful. Welcome to your session!"
+          : "Check-in recorded as late. Please be on time for future sessions.",
         recordId: insertResult.insertedId,
       },
       { status: 200 }
     );
   } catch (error) {
     console.error("[CHECKIN] Error:", error);
-    const message = error instanceof Error ? error.message : "Check-in failed";
+    const message = error instanceof Error ? error.message : "Check-in failed due to a server error. Please try again or contact support.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
