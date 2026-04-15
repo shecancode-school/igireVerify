@@ -1,4 +1,3 @@
-// src/app/api/auth/register/route.ts
 import bcrypt from "bcryptjs";
 import { NextResponse, NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
@@ -10,15 +9,12 @@ import {
   sendWelcomeVerificationEmail,
 } from "@/lib/email";
 
-/**
- * POST /api/auth/register
- * Register a new user (participant or staff)
- */
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Validate input using Zod schema
+
     const result = registerSchema.safeParse(body);
     if (!result.success) {
       const first = result.error.flatten().fieldErrors;
@@ -52,10 +48,10 @@ export async function POST(req: NextRequest) {
       const programLookupValue = programId.toString().trim();
 
       if (/^[0-9a-fA-F]{24}$/.test(programLookupValue)) {
-        // Valid ObjectId format
+
         resolvedProgramId = new ObjectId(programLookupValue);
         
-        // Final check: Does this program exist?
+
         const programs = db.collection("programs");
         const programExists = await programs.findOne({ _id: resolvedProgramId, isActive: true });
         
@@ -66,7 +62,7 @@ export async function POST(req: NextRequest) {
           );
         }
       } else {
-        // Try to find program by code or name in database
+
         const programs = db.collection("programs");
         const program = await programs.findOne({
           isActive: true,
@@ -107,9 +103,9 @@ export async function POST(req: NextRequest) {
     const now = new Date();
 
     const verification = createEmailVerificationToken();
-    const verificationExpiry = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+    const verificationExpiry = new Date(Date.now() + 30 * 60 * 1000);
 
-    // Create user document with all required fields
+
     const userData = {
       name: name.trim(),
       email: normalizedEmail,
