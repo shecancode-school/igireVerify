@@ -4,6 +4,7 @@ import { getDb } from "@/lib/mongodb";
 import { STAFF_RULES, getAttendanceWindowMessage, isWithinCheckOutWindow } from "@/lib/attendance-rules";
 import { emitAttendanceUpdate } from "@/lib/socket-server";
 import { checkOutSchema } from "@/lib/validation";
+import { getUserTimezone, formatTimeWithZone } from "@/lib/timezone-utils";
 
 /**
  * POST /api/attendance/checkout
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
     const result = checkOutSchema.safeParse(body);
     if (!result.success) {
       return NextResponse.json(
-        { error: "Missing required information. Please ensure all steps are completed." },
+        { error: "Some required information is missing. Please complete all steps and try again." },
         { status: 400 }
       );
     }
@@ -35,6 +36,8 @@ export async function POST(req: Request) {
 
     const now = new Date();
     const checkOutDateTime = new Date(checkOutTime);
+    // Get user's timezone from request headers if available, fallback to UTC
+    const userTimeZone = req.headers.get('x-timezone') || 'UTC';
     let schedule;
     let program;
 
@@ -51,10 +54,10 @@ export async function POST(req: Request) {
         isActive: true,
       });
 
-      if (!program) {
-        console.warn(`[CHECKOUT] Program not found: ${programId}`);
-        return NextResponse.json({ error: "Program not found" }, { status: 404 });
-      }
+        if (!program) {
+          console.warn(`[CHECKOUT] Program not found: ${programId}`);
+          return NextResponse.json({ error: "The selected program could not be found. Please contact support if this issue persists." }, { status: 404 });
+        }
       schedule = program.schedule;
     }
 
@@ -63,7 +66,12 @@ export async function POST(req: Request) {
     // The check-out window is strictly enforced by getAttendanceWindowMessage.
     const windowMessage = getAttendanceWindowMessage('checkout', schedule, checkOutDateTime);
     if (windowMessage) {
-      return NextResponse.json({ error: windowMessage }, { status: 400 });
+      // Show both session and user time for clarity
+      const sessionTime = formatTimeWithZone(checkOutDateTime, 'Africa/Kigali');
+      const userTime = formatTimeWithZone(now, userTimeZone);
+      return NextResponse.json({
+        error: `Check-out not allowed at this time. ${windowMessage}\nSession time: ${sessionTime}. Your current time: ${userTime}. If you believe this is an error, please contact the Help Desk.`
+      }, { status: 400 });
     }
 
     // Find the matching check-in for today
@@ -100,7 +108,7 @@ export async function POST(req: Request) {
 
     if (!checkInRecord) {
       return NextResponse.json({ 
-        error: "You must complete your check-in first before you can check out. Please ensure you have checked in for today's session." 
+        error: "You must check in before you can check out. Please ensure you have checked in for today's session. If you need help, contact the Help Desk."
       }, { status: 400 });
     }
 
@@ -108,7 +116,7 @@ export async function POST(req: Request) {
     if (checkInRecord.checkOutTime) {
       console.warn(`[CHECKOUT] User ${userId} already checked out today`);
       return NextResponse.json(
-        { error: "You have already completed your check-out for today. No further action is needed." },
+        { error: "You have already checked out for today's session. No further action is needed. If you believe this is an error, please contact the Help Desk." },
         { status: 400 }
       );
     }
@@ -161,13 +169,15 @@ export async function POST(req: Request) {
       {
         ok: true,
         status: checkOutStatus,
-        message: withinWindow ? "Check-out recorded" : "Check-out recorded (early)",
+        message: withinWindow
+          ? "Check-out successful. Thank you for attending your session!"
+          : `Check-out recorded as early. The official session end time is ${schedule?.end ? new Date(schedule.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}. Please ensure you stay until the end of future sessions.`,
         timestamp: checkOutDateTime.toISOString(),
       },
       { status: 200 }
     );
   } catch (error) {
     console.error("[CHECKOUT] Error:", error);
-    return NextResponse.json({ error: "Checkout failed" }, { status: 500 });
+    return NextResponse.json({ error: "Check-out failed due to a server error. Please try again or contact support." }, { status: 500 });
   }
 }
