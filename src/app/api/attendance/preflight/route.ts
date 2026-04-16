@@ -2,13 +2,8 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
 import { STAFF_RULES, getAttendanceWindowMessage, formatTimeToHHMM } from "@/lib/attendance-rules";
+import { toZonedTime } from 'date-fns-tz';
 
-/**
- * POST /api/attendance/preflight
- * Lightweight pre-check before photo upload.
- * Validates: time window, existing check-in (for checkout), duplicate records.
- * Does NOT upload photos or create records.
- */
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -27,8 +22,9 @@ export async function POST(req: Request) {
       db.collection("programs"),
     ]);
 
-    const now = new Date();
+    const nowUTC = new Date();
     let schedule;
+    let programTimeZone = 'Africa/Kigali'; // Default timezone
 
     if (role === "staff") {
       schedule = STAFF_RULES;
@@ -52,7 +48,13 @@ export async function POST(req: Request) {
         );
       }
       schedule = program.schedule;
+      if (program.timeZone) {
+        programTimeZone = program.timeZone;
+      }
     }
+
+    // Convert now to the program's timezone
+    const now = toZonedTime(nowUTC, programTimeZone);
 
     // Check time window
     const windowMessage = getAttendanceWindowMessage(type, schedule, now);
