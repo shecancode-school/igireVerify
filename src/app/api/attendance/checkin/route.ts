@@ -5,6 +5,7 @@ import { getAttendanceStatus, isValidAttendanceDay, STAFF_RULES, getAttendanceWi
 import { emitAttendanceUpdate } from "@/lib/socket-server";
 import { checkInSchema } from "@/lib/validation";
 import { getUserTimezone, formatTimeWithZone } from "@/lib/timezone-utils";
+import { toZonedTime } from 'date-fns-tz';
 
 /**
  * POST /api/attendance/checkin
@@ -37,13 +38,9 @@ export async function POST(req: Request) {
     ]);
 
     const now = new Date();
-    const checkInDateTime = new Date(checkInTime);
-    // Get user's timezone from request headers if available, fallback to UTC
-    const userTimeZone = req.headers.get('x-timezone') || 'UTC';
-
     let schedule;
     let program;
-
+    let programTimeZone = 'Africa/Kigali'; // Default timezone
     if (role === 'staff') {
       schedule = STAFF_RULES;
     } else {
@@ -57,21 +54,28 @@ export async function POST(req: Request) {
         isActive: true,
       });
 
-        if (!program) {
-          console.warn(`[CHECKIN] Program not found: ${programId}`);
-          return NextResponse.json({ error: "The selected program could not be found. Please contact support if this issue persists." }, { status: 404 });
-        }
+      if (!program) {
+        console.warn(`[CHECKIN] Program not found: ${programId}`);
+        return NextResponse.json({ error: "The selected program could not be found. Please contact support if this issue persists." }, { status: 404 });
+      }
       schedule = program.schedule;
+      if (program.timeZone) {
+        programTimeZone = program.timeZone;
+      }
     }
 
     // Always use the program.schedule for check-in validation.
+    // Convert checkInTime to the program's timezone
+    const checkInDateTimeUTC = new Date(checkInTime);
+    const checkInDateTime = toZonedTime(checkInDateTimeUTC, programTimeZone);
+
     // The schedule is validated on program creation and update, so it is always correct.
     // The check-in window is strictly enforced by getAttendanceWindowMessage.
     const windowMessage = getAttendanceWindowMessage('checkin', schedule, checkInDateTime);
     if (windowMessage) {
       // Show both session and user time for clarity
-      const sessionTime = formatTimeWithZone(checkInDateTime, 'Africa/Kigali');
-      const userTime = formatTimeWithZone(now, userTimeZone);
+      const sessionTime = formatTimeWithZone(checkInDateTime, programTimeZone);
+      const userTime = formatTimeWithZone(new Date(), req.headers.get('x-timezone') || 'UTC');
       return NextResponse.json({
         error: `Check-in not allowed at this time. ${windowMessage}\nSession time: ${sessionTime}. Your current time: ${userTime}. If you believe this is an error, please contact the Help Desk.`
       }, { status: 400 });
