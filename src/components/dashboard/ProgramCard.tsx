@@ -4,7 +4,7 @@ export default function ProgramCard({
   programName?: string;
 }) {
   return (
-    <div className="bg-[#DCEFE3] rounded-2xl sm:rounded-3xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 shadow-sm h-full">
+    <div className="bg-[#DCEFE3] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-5 py-3 sm:py-4 flex flex-col sm:flex-row items-center gap-2 sm:gap-3 shadow-sm h-full">
 
       {/* Icon */}
       <div className="flex-shrink-0">
@@ -28,10 +28,10 @@ export default function ProgramCard({
 
       {/* Text */}
       <div className="text-center sm:text-left">
-        <p className="text-gray-500 text-[10px] sm:text-[11px] font-medium tracking-[0.2em] sm:tracking-[0.25em] uppercase mb-1 sm:mb-2">
+        <p className="text-gray-500 text-[10px] sm:text-[11px] font-medium tracking-[0.2em] sm:tracking-[0.25em] uppercase mb-0.5 sm:mb-1">
           Your Program
         </p>
-        <h3 className="text-xl sm:text-2xl font-bold text-black break-words">
+        <h3 className="text-lg sm:text-xl font-bold text-black break-words">
           {programName}
         </h3>
       </div>

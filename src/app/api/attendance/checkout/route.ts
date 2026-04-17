@@ -5,6 +5,7 @@ import { STAFF_RULES, getAttendanceWindowMessage, isWithinCheckOutWindow } from 
 import { emitAttendanceUpdate } from "@/lib/socket-server";
 import { checkOutSchema } from "@/lib/validation";
 import { getUserTimezone, formatTimeWithZone } from "@/lib/timezone-utils";
+import { toZonedTime } from 'date-fns-tz';
 
 /**
  * POST /api/attendance/checkout
@@ -35,11 +36,12 @@ export async function POST(req: Request) {
     ]);
 
     const now = new Date();
-    const checkOutDateTime = new Date(checkOutTime);
+    const checkOutDateTimeUTC = new Date(checkOutTime);
     // Get user's timezone from request headers if available, fallback to UTC
     const userTimeZone = req.headers.get('x-timezone') || 'UTC';
     let schedule;
     let program;
+    let programTimeZone = 'Africa/Kigali'; // Default timezone
 
     if (role === 'staff') {
       schedule = STAFF_RULES;
@@ -59,7 +61,13 @@ export async function POST(req: Request) {
           return NextResponse.json({ error: "The selected program could not be found. Please contact support if this issue persists." }, { status: 404 });
         }
       schedule = program.schedule;
+      if (program.timeZone) {
+        programTimeZone = program.timeZone;
+      }
     }
+
+    // Convert checkout time to the program's timezone for schedule validation
+    const checkOutDateTime = toZonedTime(checkOutDateTimeUTC, programTimeZone);
 
     // Always use the program.schedule for check-out validation.
     // The schedule is validated on program creation and update, so it is always correct.
@@ -67,7 +75,7 @@ export async function POST(req: Request) {
     const windowMessage = getAttendanceWindowMessage('checkout', schedule, checkOutDateTime);
     if (windowMessage) {
       // Show both session and user time for clarity
-      const sessionTime = formatTimeWithZone(checkOutDateTime, 'Africa/Kigali');
+      const sessionTime = formatTimeWithZone(checkOutDateTime, programTimeZone);
       const userTime = formatTimeWithZone(now, userTimeZone);
       return NextResponse.json({
         error: `Check-out not allowed at this time. ${windowMessage}\nSession time: ${sessionTime}. Your current time: ${userTime}. If you believe this is an error, please contact the Help Desk.`

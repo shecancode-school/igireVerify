@@ -62,7 +62,7 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { name, code, description, startDate, endDate, schedule, facilitators, hrOfficer, isActive } = body;
+    const { name, code, description, startDate, endDate, schedule, facilitators, hrOfficer, isActive, timeZone } = body;
 
     const db = await getDb();
     const programs = db.collection("programs");
@@ -74,6 +74,7 @@ export async function PUT(
     if (startDate) updateData.startDate = new Date(startDate);
     if (endDate) updateData.endDate = new Date(endDate);
     if (schedule) updateData.schedule = schedule;
+    if (timeZone) updateData.timeZone = timeZone;
     if (facilitators)
       updateData.facilitators = facilitators.map((id: string) => new ObjectId(id));
     if (hrOfficer !== undefined) updateData.hrOfficer = hrOfficer ? new ObjectId(hrOfficer) : null;
