@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 
 export default function ParticipantProfilePage() {
@@ -48,7 +50,7 @@ export default function ParticipantProfilePage() {
     }
     // Save name and photo URL
     const res = await fetch("/api/users/profile", {
-      method: "POST",
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, profilePhotoUrl: uploadedUrl }),
     });
@@ -94,4 +96,3 @@ export default function ParticipantProfilePage() {
     </div>
   );
 }
-
