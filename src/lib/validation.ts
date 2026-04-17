@@ -115,6 +115,7 @@ export const createProgramSchema = z.object({
   schedule: programScheduleSchema,
   facilitators: z.array(z.string().regex(/^[0-9a-f]{24}$/)).optional(),
   hrOfficer: z.string().regex(/^[0-9a-f]{24}$/).optional(),
+  timeZone: z.string().optional(),
 }).refine((data) => data.endDate > data.startDate, {
   message: "End date must be after start date",
   path: ["endDate"],
