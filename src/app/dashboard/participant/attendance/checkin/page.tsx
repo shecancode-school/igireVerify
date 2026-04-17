@@ -11,10 +11,10 @@ type Step = 1 | 2 | 3;
 type GpsStatus = "idle" | "checking" | "verified" | "error";
 type CameraStatus = "idle" | "active" | "captured" | "error";
 
-const IGIRE_LAT = -1.9306;
-const IGIRE_LNG = 30.0746;
-const IGIRE_RADIUS_METERS = 50;
-const MIN_GPS_ACCURACY = 58;
+const IGIRE_LAT = -1.9305;
+const IGIRE_LNG = 30.0747;
+const IGIRE_RADIUS_METERS = 100;
+const MIN_GPS_ACCURACY = 100;
 
 interface UserData {
   userName: string;
@@ -257,7 +257,10 @@ export default function CheckInPage() {
 
       const response = await fetch("/api/attendance/checkin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-timezone": Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
         body: JSON.stringify({
           userName: userData.userName,
           programName: userData.programName,
