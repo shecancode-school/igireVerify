@@ -10,10 +10,13 @@ type Step = 1 | 2 | 3;
 type GpsStatus = "idle" | "checking" | "verified" | "error";
 type CameraStatus = "idle" | "active" | "captured" | "error";
 
-const IGIRE_LAT = -1.9306;
-const IGIRE_LNG = 30.0746;
-const IGIRE_RADIUS_METERS = 50;
-const MIN_GPS_ACCURACY = 58;
+// Igire Rwanda Organization Headquarters - More accurate coordinates
+const IGIRE_LAT = -1.9305;
+const IGIRE_LNG = 30.0747;
+// Increased radius to account for GPS variance (100m is reasonable for indoor/outdoor)
+const IGIRE_RADIUS_METERS = 100;
+// GPS accuracy threshold - more lenient for real-world conditions
+const MIN_GPS_ACCURACY = 100;
 
 interface UserData {
   userName: string;
@@ -231,7 +234,10 @@ export default function CheckOutPage() {
 
       const response = await fetch("/api/attendance/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-timezone": Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
         body: JSON.stringify({
           userId: userData.userId,
           programId: userData.programId,
