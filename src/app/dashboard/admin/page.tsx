@@ -36,6 +36,7 @@ import { useSocket, joinAdminRoom } from '@/lib/socket';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { formatInTimeZone } from 'date-fns-tz';
 
 interface Stats {
   totalPrograms: number;
@@ -104,6 +105,10 @@ interface AttendanceRecord {
 }
 
 type TabType = 'overview' | 'programs' | 'users' | 'attendance' | 'reports' | 'settings';
+
+function getProgramTimezone(record: any) {
+  return record.programTimeZone || 'Africa/Kigali';
+}
 
 export default function AdminDashboard() {
   const searchParams = useSearchParams();
@@ -1162,10 +1167,14 @@ export default function AdminDashboard() {
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-600">{record.programName}</td>
                             <td className="px-6 py-4 text-sm text-gray-600 font-mono">
-                              {record.checkInTime ? format(new Date(record.checkInTime), 'HH:mm:ss') : '--:--:--'}
+                              {record.checkInTime
+                                ? formatInTimeZone(new Date(record.checkInTime), getProgramTimezone(record), 'HH:mm:ss')
+                                : '--:--:--'}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-600 font-mono">
-                              {record.checkOutTime ? format(new Date(record.checkOutTime), 'HH:mm:ss') : '--:--:--'}
+                              {record.checkOutTime
+                                ? formatInTimeZone(new Date(record.checkOutTime), getProgramTimezone(record), 'HH:mm:ss')
+                                : '--:--:--'}
                             </td>
                             <td className="px-6 py-4 text-sm">
                               <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
