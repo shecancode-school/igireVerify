@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, code, description, startDate, endDate, schedule, facilitators, hrOfficer } =
+    const { name, code, description, startDate, endDate, schedule, facilitators, hrOfficer, timeZone } =
       result.data;
 
     const db = await getDb();
@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       schedule,
+      timeZone: timeZone || 'Africa/Kigali',
       facilitators: facilitators?.map((id: string) => new ObjectId(id)) || [],
       hrOfficer: hrOfficer ? new ObjectId(hrOfficer) : null,
       isActive: true,

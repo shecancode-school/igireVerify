@@ -75,129 +75,22 @@ export default function TopBar({
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 w-full">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3 md:py-4 gap-2 sm:gap-4">
-
-        {/* Left: date / window / time - Stack on mobile */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm w-full sm:w-auto whitespace-nowrap">
-          <span className="font-medium text-gray-700 text-xs sm:text-sm">
-            {liveDate}
-          </span>
-
-          <span className="hidden sm:block h-3 w-px bg-gray-300" />
-
-          <div className="flex items-center gap-1 text-xs sm:text-sm">
-            <span className="text-gray-600">Check-In:</span>
-            <span className="font-semibold text-gray-900">
-              {checkInWindow}
-            </span>
-          </div>
-
-          <span className="hidden sm:block h-3 w-px bg-gray-300" />
-
-          <div className="flex items-center gap-1 text-xs sm:text-sm">
-            <span className="text-gray-600">Time:</span>
-            <span className="font-semibold text-[#2E7D32]">
-              {liveTime}
-            </span>
-          </div>
-        </div>
-
-        {/* Right: online + profile */}
-        <div className="flex items-center gap-2 sm:gap-4 md:gap-6 flex-shrink-0 w-full md:w-auto justify-between md:justify-end">
-          <div className="md:hidden text-xs text-gray-600 font-medium truncate max-w-[55vw]">
-            {liveTime} · {checkInWindow}
-          </div>
-          <div className="flex items-center gap-2 whitespace-nowrap">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={networkStatus ? "#2E7D32" : "#9E9E9E"}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`transition-colors duration-300 ${!networkStatus && 'opacity-70'}`}
-            >
-              {networkStatus ? (
-                <>
-                  <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-                  <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-                  <circle cx="12" cy="20" r="1" fill="#2E7D32" />
-                </>
-              ) : (
-                <>
-                  <line x1="2" y1="2" x2="22" y2="22" />
-                  <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-                  <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-                  <circle cx="12" cy="20" r="1" fill="#9E9E9E" />
-                </>
-              )}
-            </svg>
-            <span className={`text-sm font-semibold transition-colors duration-300 ${networkStatus ? 'text-[#111111]' : 'text-gray-500'}`}>
-              {networkStatus ? "Online" : "Offline"}
-            </span>
-          </div>
-
-          <div className="relative">
-            <button 
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-2 sm:gap-3 min-h-[44px]"
-            >
-              <div className="text-right hidden sm:block">
-                <p className="font-bold text-[#111111] text-sm">
-                  {userName}
-                </p>
-                <p className="text-xs text-gray-700">
-                  {programName}
-                </p>
-              </div>
-
-              <div className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center border border-gray-400 overflow-hidden">
-                {profilePhotoUrl ? (
-                  <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#666"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                )}
-              </div>
-            </button>
-
-            {showProfileMenu && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border py-2 z-50">
-                <button
-                  onClick={() => window.location.href = "/dashboard/profile"}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm font-medium text-gray-700"
-                >
-                  View Profile
-                </button>
-                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm font-medium text-gray-700">Settings</button>
-                <hr className="my-2" />
-                <button
-                  onClick={handleLogout}
-                  className="w-full px-4 py-3 text-left font-semibold text-white rounded-lg mx-2"
-                  style={{ background: "#C47D0E", width: "calc(100% - 16px)" }}
-                >
-                  Log Out →
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+    <div className="w-full bg-white shadow-sm border-b border-gray-200 px-2 sm:px-4 md:px-6 py-2 sm:py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
+      <div className="flex items-center w-full sm:w-auto">
+        <h1 className="text-lg sm:text-xl font-semibold text-gray-900">Welcome, {userName}</h1>
+        <span className={`ml-3 px-2 py-1 rounded text-xs font-bold ${networkStatus ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{networkStatus ? 'WiFi Connected' : 'Offline'}</span>
+      </div>
+      <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 flex-1 sm:flex-initial justify-end w-full sm:w-auto">
+        {/* Profile photo */}
+        <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="min-h-[36px] min-w-[36px] focus:outline-none focus:ring-2 focus:ring-[#2E7D32] focus:ring-offset-2 rounded-full transition-transform hover:scale-105">
+          {profilePhotoUrl ? (
+            <img src={profilePhotoUrl} alt="Profile" className="h-8 w-8 rounded-full object-cover border-2 border-white shadow-sm" />
+          ) : (
+            <div className="h-8 w-8 rounded-full bg-[#2E7D32] flex items-center justify-center text-white font-bold text-sm shadow-sm">
+              {userName.charAt(0).toUpperCase()}
+            </div>
+          )}
+        </button>
       </div>
     </div>
   );
