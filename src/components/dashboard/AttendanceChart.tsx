@@ -41,18 +41,18 @@ export default function AttendanceChart({ programId, userId }: ChartProps) {
     return () => { socket.off('attendance-update', handleUpdate); };
   }, [socket]);
 
-  if (loading) return <div className="h-64 sm:h-80 md:h-96 bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 animate-pulse flex items-center justify-center">Loading Chart...</div>;
+  if (loading) return <div className="h-64 sm:h-80 md:h-96 bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-4 animate-pulse flex items-center justify-center">Loading Chart...</div>;
 
   return (
-    <div className="bg-white rounded-2xl sm:rounded-3xl px-4 sm:px-8 md:px-10 py-4 sm:py-6 md:py-8 shadow-sm border border-gray-100 h-full flex flex-col">
+    <div className="bg-white rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-5 py-3 sm:py-4 md:py-6 shadow-sm border border-gray-100 h-full flex flex-col">
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-4 sm:mb-6">
+      <div className="flex items-start justify-between mb-3 sm:mb-4">
         <div>
           <h3 className="text-base sm:text-lg font-black text-black tracking-[0.2em] uppercase">
             Attendance Rate
           </h3>
-          <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Current Week Analysis</p>
+          <p className="text-xs sm:text-sm text-gray-500 font-medium mt-0.5">Current Week Analysis</p>
         </div>
         <div className="p-2 bg-green-50 rounded-lg sm:rounded-xl">
           <Activity className="w-5 sm:w-6 h-5 sm:h-6 text-[#2E7D32]" />
