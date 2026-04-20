@@ -6,6 +6,7 @@ import { emitAttendanceUpdate } from "@/lib/socket-server";
 import { checkOutSchema } from "@/lib/validation";
 import { getUserTimezone, formatTimeWithZone } from "@/lib/timezone-utils";
 import { toZonedTime } from 'date-fns-tz';
+import { getProgramDateWindowError } from "@/lib/program-time";
 
 /**
  * POST /api/attendance/checkout
@@ -35,8 +36,8 @@ export async function POST(req: Request) {
       db.collection("users"),
     ]);
 
-    const now = new Date();
-    const checkOutDateTimeUTC = new Date(checkOutTime);
+    const nowUTC = new Date();
+    const clientReportedCheckOutTimeUTC = new Date(checkOutTime);
     // Get user's timezone from request headers if available, fallback to UTC
     const userTimeZone = req.headers.get('x-timezone') || 'UTC';
     let schedule;
@@ -64,10 +65,19 @@ export async function POST(req: Request) {
       if (program.timeZone) {
         programTimeZone = program.timeZone;
       }
+
+      const programDateError = getProgramDateWindowError(
+        nowUTC,
+        program as unknown as { startDate?: Date; endDate?: Date },
+        programTimeZone
+      );
+      if (programDateError) {
+        return NextResponse.json({ error: programDateError }, { status: 400 });
+      }
     }
 
-    // Convert checkout time to the program's timezone for schedule validation
-    const checkOutDateTime = toZonedTime(checkOutDateTimeUTC, programTimeZone);
+    // Server time is the source of truth for attendance validation.
+    const checkOutDateTime = toZonedTime(nowUTC, programTimeZone);
 
     // Always use the program.schedule for check-out validation.
     // The schedule is validated on program creation and update, so it is always correct.
@@ -76,7 +86,7 @@ export async function POST(req: Request) {
     if (windowMessage) {
       // Show both session and user time for clarity
       const sessionTime = formatTimeWithZone(checkOutDateTime, programTimeZone);
-      const userTime = formatTimeWithZone(now, userTimeZone);
+      const userTime = formatTimeWithZone(nowUTC, userTimeZone);
       return NextResponse.json({
         error: `Check-out not allowed at this time. ${windowMessage}\nSession time: ${sessionTime}. Your current time: ${userTime}. If you believe this is an error, please contact the Help Desk.`
       }, { status: 400 });
@@ -89,7 +99,8 @@ export async function POST(req: Request) {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Helper to safely create ObjectId
-    const toObjectId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id as any;
+    const toObjectId = (id: string): ObjectId | string =>
+      /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id;
 
     const userObjectId = new ObjectId(userId);
     const programObjectId = toObjectId(programId);
@@ -142,10 +153,11 @@ export async function POST(req: Request) {
           checkOutStatus,
           checkOutPhotoUrl: photoUrl,
           checkOutGpsLocation: gpsLocation,
+          clientReportedCheckOutTimeUTC,
           // Attendance flow already geofence-verifies Igire premises before checkout.
           locationLabel: "Igire Rwanda Organisation premises",
           type: "completed", // Transition from checkin to completed
-          updatedAt: now,
+          updatedAt: nowUTC,
         },
       }
     );
@@ -179,7 +191,7 @@ export async function POST(req: Request) {
         status: checkOutStatus,
         message: withinWindow
           ? "Check-out successful. Thank you for attending your session!"
-          : `Check-out recorded as early. The official session end time is ${schedule?.end ? new Date(schedule.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}. Please ensure you stay until the end of future sessions.`,
+          : `Check-out recorded as early. The official check-out window starts at ${schedule?.checkOutStart ? schedule.checkOutStart : 'N/A'}. Please ensure you stay until the end of future sessions.`,
         timestamp: checkOutDateTime.toISOString(),
       },
       { status: 200 }

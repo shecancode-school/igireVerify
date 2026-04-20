@@ -10,7 +10,6 @@ export default function AttendanceLandingPage() {
   const userData = {
     userName: "Alice Uwera",
     programName: "Web fundamentals",
-    isOnline: true,
     sessionDate: "Today: Friday, 6 Feb 2026",
     checkInWindow: "08:00 - 08:30",
     currentTime: "08:52",
@@ -32,7 +31,6 @@ export default function AttendanceLandingPage() {
         <TopBar
           userName={userData.userName}
           programName={userData.programName}
-          isOnline={userData.isOnline}
           sessionDate={userData.sessionDate}
           checkInWindow={userData.checkInWindow}
           currentTime={userData.currentTime}

@@ -4,6 +4,8 @@ import { getDb } from "@/lib/mongodb";
 import { requireAuthOrRedirect } from "@/lib/auth";
 import { emitAttendanceUpdate } from "@/lib/socket-server";
 import { manualAttendanceSchema } from "@/lib/validation";
+import { getProgramDateWindowErrorForDate } from "@/lib/program-time";
+import { format } from "date-fns";
 
 /**
  * POST /api/attendance/manual
@@ -67,6 +69,37 @@ export async function POST(req: NextRequest) {
     attendanceDate.setHours(0, 0, 0, 0);
     const tomorrow = new Date(attendanceDate);
     tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Enforce program date range (inclusive) for the selected date.
+    const programTimeZone =
+      (program as unknown as { timeZone?: string })?.timeZone || "Africa/Kigali";
+    const rangeError = getProgramDateWindowErrorForDate(
+      attendanceDate,
+      program as unknown as { startDate?: Date; endDate?: Date },
+      programTimeZone
+    );
+    if (rangeError) {
+      return NextResponse.json({ error: rangeError }, { status: 400 });
+    }
+
+    // Strict rule: manual attendance can only be recorded on scheduled program days.
+    const workingDays =
+      (program as unknown as { schedule?: { days?: string[] } })?.schedule?.days || [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+      ];
+    const dayName = format(attendanceDate, "EEEE");
+    if (!workingDays.includes(dayName)) {
+      return NextResponse.json(
+        {
+          error: `Manual attendance is not allowed on ${dayName} because it is not a scheduled program day.`,
+        },
+        { status: 400 }
+      );
+    }
 
     // Check if record already exists for this date
     const existing = await attendance.findOne({

@@ -17,7 +17,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="w-full sm:w-20 md:w-24 lg:w-[120px] h-20 sm:h-screen sm:min-h-screen flex flex-row sm:flex-col items-center justify-around sm:justify-start px-2 sm:px-0 sm:py-4 md:py-6 fixed bottom-0 sm:top-0 left-0 z-50 overflow-x-auto sm:overflow-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] sm:shadow-none"
+      className="w-full sm:w-20 md:w-24 lg:w-[120px] flex-shrink-0 h-20 sm:h-screen sm:min-h-screen flex flex-row sm:flex-col items-center justify-around sm:justify-start px-2 sm:px-0 sm:py-4 md:py-6 fixed bottom-0 sm:top-0 left-0 z-50 overflow-x-auto sm:overflow-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] sm:shadow-none"
       style={{ background: "#7FAF8C" }}
     >
       
@@ -40,7 +40,7 @@ export default function Sidebar() {
             return (
               <button
                 key={item.href}
-                onClick={() => toast.custom((t) => (
+                onClick={() => toast.custom(() => (
                   <div className="bg-white border border-[#7FAF8C]/30 rounded-xl shadow-xl p-4 flex gap-4 w-[min(360px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] items-start relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F97316]"></div>
                     <div className="bg-[#7FAF8C]/20 p-2 rounded-full shrink-0 mt-0.5">

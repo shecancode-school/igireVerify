@@ -1,6 +1,7 @@
 // src/app/api/attendance/stats/route.ts
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 
 export async function GET(req: Request) {
   try {
@@ -22,14 +23,34 @@ export async function GET(req: Request) {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Get all attendance records for the program and date
-    const records = await attendance.find({
-      programName: programId,
-      createdAt: {
-        $gte: startOfDay,
-        $lt: endOfDay
-      }
-    }).toArray();
+    // Get all attendance records for the program and date.
+    // Support legacy callers that accidentally pass `programName` by falling back only if needed.
+    const isObjectId = ObjectId.isValid(programId);
+    const baseDateMatch = {
+      $or: [
+        { date: { $gte: startOfDay, $lte: endOfDay } },
+        { checkInTime: { $gte: startOfDay, $lte: endOfDay } },
+        { createdAt: { $gte: startOfDay, $lte: endOfDay } },
+      ],
+    };
+
+    let records = await attendance
+      .find({
+        ...baseDateMatch,
+        ...(isObjectId ? { programId: new ObjectId(programId) } : {}),
+        type: { $in: ["checkin", "completed", "manual", "absent"] },
+      })
+      .toArray();
+
+    if (!isObjectId) {
+      records = await attendance
+        .find({
+          ...baseDateMatch,
+          programName: programId,
+          type: { $in: ["checkin", "completed", "manual", "absent"] },
+        })
+        .toArray();
+    }
 
     const userHasCheckIn = new Set(
       records

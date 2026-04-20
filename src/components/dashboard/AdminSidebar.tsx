@@ -8,7 +8,6 @@ import {
   BookOpen,
   Users,
   LineChart,
-  Calendar,
   Settings
 } from 'lucide-react';
 
@@ -27,7 +26,10 @@ export default function AdminSidebar() {
   const currentTab = searchParams?.get('tab') || 'overview';
 
   return (
-    <div className="w-full sm:w-20 lg:w-64 h-20 sm:h-screen sm:min-h-screen p-2 sm:p-3 lg:p-4 flex flex-row sm:flex-col fixed sm:static bottom-0 left-0 z-50 overflow-x-auto sm:overflow-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] sm:shadow-none" style={{ background: "#7FAF8C" }}>
+    <div
+      className="w-full sm:w-20 lg:w-72 flex-shrink-0 h-20 sm:h-screen sm:min-h-screen p-2 sm:p-3 lg:p-4 flex flex-row sm:flex-col fixed sm:static bottom-0 left-0 z-50 overflow-x-auto sm:overflow-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] sm:shadow-none"
+      style={{ background: "#7FAF8C" }}
+    >
       <div className="hidden sm:block lg:block mb-4 sm:mb-6 lg:mb-8 px-2 lg:pl-4 w-full">
         <Link href="/dashboard/admin">
           <h1 className="font-black text-sm sm:text-lg lg:text-2xl leading-tight text-center sm:text-left">

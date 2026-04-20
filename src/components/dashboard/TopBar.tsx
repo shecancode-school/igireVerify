@@ -1,18 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Wifi, WifiOff } from "lucide-react";
 
 export default function TopBar({ 
   userName: initialUserName,
   programName: initialProgramName,
-  isOnline = true,
   sessionDate = "Today: Friday, 6 Feb 2026",
   checkInWindow = "08:00 - 08:30",
   currentTime = "08:52"
 }: {
   userName?: string;
   programName?: string;
-  isOnline?: boolean;
   sessionDate?: string;
   checkInWindow?: string;
   currentTime?: string;
@@ -23,11 +22,12 @@ export default function TopBar({
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [liveDate, setLiveDate] = useState(sessionDate);
   const [liveTime, setLiveTime] = useState(currentTime);
-  const [networkStatus, setNetworkStatus] = useState(true);
+  const [networkStatus, setNetworkStatus] = useState(
+    typeof window !== "undefined" ? navigator.onLine : true
+  );
 
   useEffect(() => {
     // Network status listeners
-    setNetworkStatus(navigator.onLine);
     const handleOnline = () => setNetworkStatus(true);
     const handleOffline = () => setNetworkStatus(false);
     
@@ -75,43 +75,45 @@ export default function TopBar({
   };
 
   return (
-    <div className="w-full bg-white shadow-sm border-b border-gray-200 px-2 sm:px-6 py-2 flex items-center justify-between gap-2">
-      {/* Left Section: Date, Check-In Window, Current Time */}
-      <div className="flex items-center gap-6 min-w-0">
-        {/* Date */}
-        <div className="flex flex-col min-w-[180px]">
-          <span className="text-xs text-gray-500 font-medium">Today</span>
-          <span className="text-base font-semibold text-gray-900 truncate">{liveDate}</span>
+    <header className="relative z-[60] w-full shrink-0 border-b border-gray-200 bg-white px-3 py-2.5 sm:px-5 sm:py-3 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 min-w-0">
+      {/* Left: Date | Check-in | Time (Figma-style, with dividers on md+) */}
+      <div className="flex flex-wrap items-stretch gap-x-2 sm:gap-x-4 min-w-0 flex-1">
+        <div className="flex min-w-0 flex-col justify-center border-r border-gray-200 pr-3 sm:pr-4">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Today</span>
+          <span className="text-sm font-semibold text-gray-900 truncate sm:text-[15px]">{liveDate.replace(/^Today:\s*/i, "")}</span>
         </div>
-        {/* Check-In Window */}
-        <div className="flex flex-col min-w-[160px]">
-          <span className="text-xs text-gray-500 font-medium">Check-In Window</span>
-          <span className="text-base font-semibold text-gray-900">{checkInWindow}</span>
+        <div className="hidden min-w-0 flex-col justify-center border-r border-gray-200 pr-3 sm:flex sm:pr-4">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Check-In Window</span>
+          <span className="text-sm font-semibold text-gray-900 sm:text-[15px]">{checkInWindow}</span>
         </div>
-        {/* Current Time */}
-        <div className="flex flex-col min-w-[100px]">
-          <span className="text-xs text-gray-500 font-medium">Current Time</span>
-          <span className="text-base font-semibold text-gray-900">{liveTime}</span>
+        <div className="flex min-w-0 flex-col justify-center sm:border-r sm:border-gray-200 sm:pr-4">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Current Time</span>
+          <span className="text-sm font-semibold tabular-nums text-gray-900 sm:text-[15px]">{liveTime}</span>
+        </div>
+        <div className="flex min-w-0 flex-col justify-center sm:hidden">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Window</span>
+          <span className="truncate text-sm font-semibold text-gray-900">{checkInWindow}</span>
         </div>
       </div>
 
-      {/* Right Section: Connection Status, Profile */}
-      <div className="flex items-center gap-6">
-        {/* Connection Status */}
-        <div className="flex items-center gap-2">
-          <svg className={`w-5 h-5 ${networkStatus ? 'text-green-500' : 'text-red-500'}`} fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-            <path d="M2 12c5-5 13-5 18 0" />
-            <path d="M6 16c2.5-2.5 7.5-2.5 10 0" />
-            <circle cx="12" cy="20" r="1.5" fill={networkStatus ? '#22c55e' : '#ef4444'} />
-          </svg>
-          <span className={`text-sm font-semibold ${networkStatus ? 'text-green-600' : 'text-red-600'}`}>{networkStatus ? 'Online' : 'Offline'}</span>
+      {/* Right: Wi‑Fi status + profile */}
+      <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-1.5 border-r border-gray-200 pr-3 sm:pr-4">
+          {networkStatus ? (
+            <Wifi className="h-5 w-5 shrink-0 text-[#22c55e]" strokeWidth={2} aria-hidden />
+          ) : (
+            <WifiOff className="h-5 w-5 shrink-0 text-red-500" strokeWidth={2} aria-hidden />
+          )}
+          <span className={`text-sm font-semibold ${networkStatus ? "text-gray-900" : "text-red-600"}`}>
+            {networkStatus ? "Online" : "Offline"}
+          </span>
         </div>
 
-        {/* Profile Section */}
-        <div className="flex items-center gap-3 relative">
+        <div className="relative flex items-center gap-2 sm:gap-3">
           <div className="flex flex-col items-end mr-2">
-            <span className="text-sm font-semibold text-gray-900 leading-tight">{userName}</span>
-            <span className="text-xs text-gray-500 font-medium leading-tight">{programName}</span>
+            <span className="text-sm font-semibold text-gray-900 leading-tight max-w-[14rem] truncate">{userName}</span>
+            <span className="text-xs text-gray-500 font-medium leading-tight max-w-[14rem] truncate">{programName}</span>
           </div>
           <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="min-h-[40px] min-w-[40px] focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 rounded-full transition-transform hover:scale-105">
             {profilePhotoUrl ? (
@@ -124,7 +126,7 @@ export default function TopBar({
           </button>
           {/* Dropdown Menu */}
           {showProfileMenu && (
-            <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-2 animate-fade-in">
+            <div className="absolute right-0 top-full z-[70] mt-2 w-52 max-w-[calc(100vw-1rem)] rounded-lg border border-gray-200 bg-white py-2 shadow-lg animate-fade-in">
               <div className="px-4 py-2 border-b border-gray-100">
                 <p className="text-sm font-semibold text-gray-900">{userName}</p>
                 <p className="text-xs text-gray-500">{programName}</p>
@@ -148,6 +150,7 @@ export default function TopBar({
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </header>
   );
 }

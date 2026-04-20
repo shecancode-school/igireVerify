@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 export default function ParticipantProfilePage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
   const [newPhoto, setNewPhoto] = useState<File | null>(null);
@@ -64,8 +67,17 @@ export default function ParticipantProfilePage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto mt-10 bg-white p-6 rounded shadow">
-      <h2 className="text-xl font-bold mb-4">Edit Profile</h2>
+    <div className="max-w-lg mx-auto mt-8 px-4 sm:px-0">
+      <button 
+        onClick={() => router.back()} 
+        className="flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-6 transition-colors font-medium text-sm group"
+      >
+        <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+        Back to Dashboard
+      </button>
+      
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <h2 className="text-xl font-bold mb-6 text-gray-900 border-b border-gray-100 pb-3">Edit Profile</h2>
       <div className="flex flex-col items-center mb-4">
         {profilePhotoUrl ? (
           <img src={profilePhotoUrl} alt="Profile" className="h-24 w-24 rounded-full object-cover border-2 border-green-600 mb-2" />
@@ -88,11 +100,12 @@ export default function ParticipantProfilePage() {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+        className="w-full bg-[#14532D] text-white px-4 py-3 rounded-xl font-semibold hover:bg-[#0f3d23] disabled:opacity-50 transition-colors mt-2"
       >
-        {saving ? "Saving..." : "Save Changes"}
+        {saving ? "Saving changes..." : "Save Changes"}
       </button>
-      {message && <div className="mt-3 text-center text-sm text-green-700">{message}</div>}
+      {message && <div className={`mt-4 text-center text-sm font-medium p-3 rounded-lg ${message.includes('successfully') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{message}</div>}
+      </div>
     </div>
   );
 }

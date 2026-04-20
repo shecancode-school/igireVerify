@@ -19,7 +19,7 @@ export default async function ParticipantDashboard() {
   
   let programName = "No Program Assigned";
   let checkInWindow = "N/A";
-  let programId = user?.programId || "";
+  const programId = user?.programId || "";
 
   if (user?.programId) {
     const program = await programs.findOne({ _id: user.programId });
@@ -38,23 +38,21 @@ export default async function ParticipantDashboard() {
     programName,
     programId: programId.toString(),
     userId: user?._id.toString(),
-    isOnline: true,
     sessionDate: `Today: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`,
     checkInWindow,
     currentTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] flex flex-col-reverse sm:flex-col">
+    <div className="min-h-screen bg-[#F5F5F5] flex flex-col-reverse sm:flex-row w-full overflow-x-hidden">
 
       <Sidebar />
 
-      <div className="flex-1 w-full sm:ml-20 md:ml-24 lg:ml-[120px] pb-24 sm:pb-0">
+      <div className="flex flex-1 flex-col min-w-0 w-full sm:ml-20 md:ml-24 lg:ml-[120px] pb-24 sm:pb-0">
 
         <TopBar
           userName={userData.userName}
           programName={userData.programName}
-          isOnline={userData.isOnline}
           sessionDate={userData.sessionDate}
           checkInWindow={userData.checkInWindow}
           currentTime={userData.currentTime}
@@ -62,6 +60,7 @@ export default async function ParticipantDashboard() {
 
         {/* RESPONSIVE CONTENT - Compact Layout */}
         <main className="px-2 sm:px-3 md:px-4 lg:px-5 py-3 sm:py-4 md:py-6 w-full">
+          <div className="w-full max-w-[1400px] mx-auto min-w-0">
 
           {/* Row 1: Program Card + Attendance Chart - Responsive Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-5 mb-4 sm:mb-5 md:mb-6">
@@ -95,6 +94,7 @@ export default async function ParticipantDashboard() {
             />
           </div>
 
+          </div>
         </main>
       </div>
 

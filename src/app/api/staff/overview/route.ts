@@ -104,11 +104,11 @@ export async function GET(req: NextRequest) {
     const endToday = new Date(startToday);
     endToday.setDate(endToday.getDate() + 1);
 
+    // Present must mean a complete session (check-in + check-out).
     const presentToday = await attendanceCol.countDocuments({
       programId: { $in: programIds },
-      type: { $in: ["checkin", "completed"] },
-      createdAt: { $gte: startToday, $lt: endToday },
-      checkInStatus: { $in: ["on-time", "late"] },
+      type: "completed",
+      date: { $gte: startToday, $lt: endToday },
     });
 
     const programBreakdown = await Promise.all(
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
         const checkInsToday = await attendanceCol.countDocuments({
           programId: p._id,
           type: { $in: ["checkin", "completed"] },
-          createdAt: { $gte: startToday, $lt: endToday },
+          date: { $gte: startToday, $lt: endToday },
           checkInStatus: { $in: ["on-time", "late"] },
         });
         return {
