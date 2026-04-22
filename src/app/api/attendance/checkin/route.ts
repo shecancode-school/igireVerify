@@ -6,6 +6,7 @@ import { emitAttendanceUpdate } from "@/lib/socket-server";
 import { checkInSchema } from "@/lib/validation";
 import { getUserTimezone, formatTimeWithZone } from "@/lib/timezone-utils";
 import { toZonedTime } from 'date-fns-tz';
+import { getProgramDateWindowError } from "@/lib/program-time";
 
 /**
  * POST /api/attendance/checkin
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
       db.collection("users"),
     ]);
 
-    const now = new Date();
+    const nowUTC = new Date();
     let schedule;
     let program;
     let programTimeZone = 'Africa/Kigali'; // Default timezone
@@ -62,12 +63,21 @@ export async function POST(req: Request) {
       if (program.timeZone) {
         programTimeZone = program.timeZone;
       }
+
+      const programDateError = getProgramDateWindowError(
+        nowUTC,
+        program as unknown as { startDate?: Date; endDate?: Date },
+        programTimeZone
+      );
+      if (programDateError) {
+        return NextResponse.json({ error: programDateError }, { status: 400 });
+      }
     }
 
-    // Always use the program.schedule for check-in validation.
-    // Convert checkInTime to the program's timezone
-    const checkInDateTimeUTC = new Date(checkInTime);
-    const checkInDateTime = toZonedTime(checkInDateTimeUTC, programTimeZone);
+    // Server time is the source of truth for attendance validation.
+    // Client-sent timestamps can be wrong/manipulated; we only keep them for debugging.
+    const checkInDateTime = toZonedTime(nowUTC, programTimeZone);
+    const clientReportedCheckInTimeUTC = new Date(checkInTime);
 
     // The schedule is validated on program creation and update, so it is always correct.
     // The check-in window is strictly enforced by getAttendanceWindowMessage.
@@ -88,7 +98,8 @@ export async function POST(req: Request) {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Helper to safely create ObjectId
-    const toObjectId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id as any;
+    const toObjectId = (id: string): ObjectId | string =>
+      /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id;
 
     const existingCheckIn = await attendance.findOne({
       userId: new ObjectId(userId),
@@ -121,11 +132,12 @@ export async function POST(req: Request) {
       checkInStatus: status,
       checkInPhotoUrl: photoUrl,
       checkInGpsLocation: gpsLocation,
+      clientReportedCheckInTimeUTC,
       // Check-in is only allowed after location verification near Igire premises.
       locationLabel: "Igire Rwanda Organisation premises",
       checkInMethod: "AUTO",
-      createdAt: now,
-      updatedAt: now,
+      createdAt: nowUTC,
+      updatedAt: nowUTC,
       date: today,
     };
 

@@ -95,10 +95,12 @@ export async function POST(req: NextRequest) {
     const token = jwt.sign(payload, JWT_SECRET as string, { expiresIn: "7d" });
 
   
+    const isIgireEmail = normalizedEmail.endsWith("@igirerwanda.org");
+    
     const redirectTo =
       user.role === "admin"
         ? "/dashboard/admin"
-        : user.role === "staff"
+        : (user.role === "staff" || isIgireEmail)
           ? "/dashboard/staff"
           : "/dashboard/participant";
 

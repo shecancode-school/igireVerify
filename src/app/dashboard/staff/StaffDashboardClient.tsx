@@ -439,9 +439,9 @@ export default function StaffDashboardClient() {
   const padStart = monthStart.getDay();
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] flex flex-col-reverse lg:flex-row">
+    <div className="flex min-h-screen bg-[#F5F5F5] w-full overflow-x-hidden">
       <StaffSidebar />
-      <div className="flex-1 w-full lg:ml-[120px] flex flex-col min-h-screen pb-24 lg:pb-0">
+      <div className="flex-1 w-full sm:ml-20 md:ml-24 lg:ml-[120px] flex flex-col min-h-screen pb-24 lg:pb-0">
         <TopBar
           userName={topUser?.userName}
           programName={topUser?.programName}
@@ -450,7 +450,7 @@ export default function StaffDashboardClient() {
           currentTime={currentTime}
         />
 
-        <main className="flex-1 px-3 sm:px-5 md:px-8 lg:px-16 py-6 md:py-8 max-w-[1400px] w-full mx-auto">
+        <main className="flex-1 px-3 sm:px-5 md:px-8 lg:px-16 py-6 md:py-10 max-w-[1400px] w-full mx-auto">
           {activeTab === "overview" && (
             <>
               <div className="mb-8">

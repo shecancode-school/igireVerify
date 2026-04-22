@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { CheckCircle2, CalendarX, MapPinOff, AlertCircle } from "lucide-react";
 import StaffSidebar from "@/components/dashboard/staff/StaffSidebar";
 import TopBar from "@/components/dashboard/TopBar";
 import { uploadToCloudinary } from "@/lib/cloudinary";
@@ -151,7 +152,7 @@ export default function CheckInPage() {
     return (
       <div className="min-h-screen bg-[#F5F5F5] flex flex-col-reverse lg:flex-row">
         <StaffSidebar />
-        <div className="flex-1 w-full lg:ml-[120px] pb-24 lg:pb-0 flex items-center justify-center">
+        <div className="flex-1 w-full sm:ml-20 md:ml-24 lg:ml-[120px] pb-24 lg:pb-0 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E7D32] mx-auto mb-4"></div>
             <p>Loading...</p>
@@ -162,6 +163,9 @@ export default function CheckInPage() {
   }
 
   const handleVerifyLocation = () => {
+
+
+    
     if (!navigator.geolocation) {
       setGpsStatus("error");
       setGpsError("Geolocation is not supported.");
@@ -257,7 +261,8 @@ export default function CheckInPage() {
 
       let photoUrl = "";
       try {
-        photoUrl = await uploadToCloudinary(capturedImage, "igire/attendance");
+        const folderPath = `igire/attendance/${userData.programId}`;
+        photoUrl = await uploadToCloudinary(capturedImage, folderPath);
       } catch (storageErr) {
         console.error("[STORAGE_FAILURE]", storageErr);
         throw new Error("Unable to securely store your photo. Please check your internet connection and try again.");
@@ -366,24 +371,20 @@ export default function CheckInPage() {
           </button>
 
           {gpsError && (
-            <div className="mt-8 bg-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-sm animate-in fade-in zoom-in duration-300">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="bg-red-100 p-2 rounded-full">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D32F2F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
+            <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6 shadow-sm animate-in fade-in zoom-in duration-300 text-left">
+              <div className="flex items-start gap-4">
+                <div className="bg-gray-50 p-2.5 rounded-lg shrink-0">
+                  <MapPinOff className="w-6 h-6 text-gray-600" />
                 </div>
-                <h3 className="text-xl font-bold text-red-700">Verification Failed</h3>
-              </div>
-              <p className="text-red-900 font-medium mb-2">
-                You are not currently at Igire Rwanda Organisation premises. Please be physically present to record attendance.
-              </p>
-              <div className="bg-white/60 p-4 rounded-xl mt-4">
-                <p className="text-sm text-red-800 font-semibold mb-1">Security Policy:</p>
-                <p className="text-sm text-red-700">
-                  Attendance can only be recorded when you are within the official geofenced headquarters radius. Please commute to the premises and try again.
-                </p>
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900 mb-1">Location Verification Required</h3>
+                  <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                    It appears you are currently outside the designated headquarters radius. Our policy requires physical presence on the premises to record attendance.
+                  </p>
+                  <p className="text-sm text-gray-500 border-t border-gray-100 pt-3">
+                    Please commute to the official premises and try again.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -458,12 +459,12 @@ export default function CheckInPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col-reverse lg:flex-row">
+    <div className="min-h-screen bg-[#F9FAFB] flex flex-col-reverse lg:flex-row">
       <StaffSidebar />
-      <div className="flex-1 w-full lg:ml-[120px] pb-24 lg:pb-0">
+      <div className="flex-1 w-full sm:ml-20 md:ml-24 lg:ml-[120px] pb-24 lg:pb-0">
         {userData ? <TopBar {...userData} /> : <TopBar userName="" programName="" />}
 
-        <main className="px-4 py-6 sm:px-6 md:px-10 lg:px-12 md:py-10 bg-[#F5F5F5] min-h-screen">
+        <main className="px-4 py-2 sm:px-6 md:px-10 lg:px-12 md:py-4 bg-[#F5F5F5] min-h-screen">
           <div className="max-w-5xl mx-auto">
             {loading || !userData ? (
               <div className="flex items-center justify-center min-h-[320px] text-[#546E7A]">Loading…</div>
@@ -472,24 +473,40 @@ export default function CheckInPage() {
             {renderStepper()}
             {renderStepContent()}
 
-            {/* Global notification — visible on ALL steps */}
             {uiMessage && (
-              <div className={`mt-8 max-w-2xl mx-auto p-6 rounded-2xl text-center font-medium border animate-in fade-in slide-in-from-bottom-4 duration-500 ${
-                uiMessage.type === "success"
-                  ? "bg-green-50 border-green-200 text-green-800"
-                  : "bg-red-50 border-red-200 text-red-800"
+              <div className={`mt-8 max-w-2xl mx-auto p-6 rounded-xl border shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white ${
+                uiMessage.type === "success" 
+                  ? "border-[#16A34A]/30" 
+                  : "border-gray-200"
               }`}>
-                <div className="flex items-center justify-center gap-3 mb-1">
-                  {uiMessage.type === "success" ? (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  ) : (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  )}
-                  <span className="text-lg">{uiMessage.text}</span>
+                <div className="flex items-start gap-4">
+                  <div className={`shrink-0 p-2.5 rounded-lg ${
+                    uiMessage.type === "success" ? "bg-green-50 text-[#16A34A]" : "bg-gray-50 text-gray-600"
+                  }`}>
+                    {uiMessage.type === "success" ? (
+                      <CheckCircle2 className="w-6 h-6" />
+                    ) : uiMessage.text.toLowerCase().includes("scheduled") ? (
+                      <CalendarX className="w-6 h-6" />
+                    ) : uiMessage.text.toLowerCase().includes("location") || uiMessage.text.toLowerCase().includes("gps") ? (
+                      <MapPinOff className="w-6 h-6" />
+                    ) : (
+                      <AlertCircle className="w-6 h-6" />
+                    )}
+                  </div>
+                  <div className="flex-1 text-left">
+                    <h3 className="text-base font-semibold text-gray-900 mb-1">
+                      {uiMessage.type === "success" ? "Success" : "Availability Notice"}
+                    </h3>
+                    <p className="text-sm text-gray-600 leading-relaxed max-w-lg mb-0 text-balance">
+                      {uiMessage.text}
+                    </p>
+                    {uiMessage.type === "error" && (
+                      <p className="text-sm text-gray-500 mt-3 pt-3 border-t border-gray-100">
+                        If you believe this is a mistake, please reach out to the administrative team.
+                      </p>
+                    )}
+                  </div>
                 </div>
-                {uiMessage.type === "error" && (
-                  <p className="text-sm opacity-80 mt-1">Please try again or visit the Help Desk if you need assistance.</p>
-                )}
               </div>
             )}
               </>

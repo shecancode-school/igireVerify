@@ -631,7 +631,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="flex flex-col sm:flex-col lg:flex-row min-h-screen bg-gray-100">
+    <div className="flex flex-col sm:flex-col lg:flex-row min-h-screen bg-gray-100 w-full overflow-x-hidden">
       <AdminSidebar />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <AdminTopBar userName={userName} userRole={userRole} profilePhotoUrl={profilePhotoUrl} />
@@ -660,7 +660,7 @@ export default function AdminDashboard() {
             </nav>
           </div>
 
-          <div className="p-2 sm:p-4 md:p-6">
+          <div className="p-2 sm:p-4 md:p-6 w-full min-w-0">
             {/* Overview Tab flex structure */}
             {activeTab === 'overview' && (
               <div className="space-y-4 sm:space-y-6 md:space-y-8 animate-in fade-in duration-500">

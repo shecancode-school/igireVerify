@@ -166,16 +166,20 @@ export async function GET(req: NextRequest) {
                   : `${diffMins} min`;
             }
           }
+          const hasCheckOut = Boolean(record.checkOutTime) || record.type === "completed";
           const statusDisplay =
-            rowStatus === "on-time"
-              ? "Present"
-              : rowStatus.charAt(0).toUpperCase() +
-                rowStatus.slice(1).replace("-", " ");
+            rowStatus === "absent"
+              ? "Absent"
+              : rowStatus === "late"
+                ? (hasCheckOut ? "Late" : "Checked In")
+                : hasCheckOut
+                  ? "Present"
+                  : "Checked In";
           const gps = record.checkInGpsLocation || record.checkOutGpsLocation;
           const location =
             (record.locationLabel as string | undefined) ||
             formatGps(gps) ||
-            (statusDisplay === "Present" || statusDisplay === "Late"
+            (statusDisplay === "Present" || statusDisplay === "Late" || statusDisplay === "Checked In"
               ? "Igire Rwanda Organisation premises"
               : "Unknown");
 

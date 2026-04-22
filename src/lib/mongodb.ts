@@ -24,7 +24,7 @@ export async function getDb(): Promise<Db> {
       throw new Error("MONGODB_URI is empty");
     }
     cachedClient = new MongoClient(uri, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
     });
   }

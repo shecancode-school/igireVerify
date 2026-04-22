@@ -1,36 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-export default function AttendanceHistory() {
+export default function AttendanceHistory({ programId, userId }: { programId: string; userId: string }) {
   const [activeTab, setActiveTab] = useState<"week" | "month">("week");
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const weekData = {
-    checkedIn: 4,
-    percentage: 96,
-    checkedOut: 4,
-    aiVerified: "AI Verified",
-    aiPercentage: 100,
-    onTime: "On-Time"
-  };
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch(`/api/attendance/user-history?userId=${userId}&programId=${programId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error("History fetch error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (userId && programId) fetchStats();
+  }, [userId, programId]);
 
-  const monthData = {
-    checkedIn: 15,
-    percentage: 94,
-    checkedOut: 15,
-    aiVerified: "AI Verified",
-    aiPercentage: 98,
-    onTime: "On-Time"
-  };
-
-  const currentData = activeTab === "week" ? weekData : monthData;
+  const currentData = activeTab === "week" ? stats?.week : stats?.month;
 
   return (
     <div className="bg-[#E5E5E5] rounded-
-    2xl p-6 shadow-sm">
+    2xl p-4 shadow-sm">
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-[#16A34A] rounded-full flex items-center justify-center">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -56,7 +57,7 @@ export default function AttendanceHistory() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-5 bg-white rounded-xl p-1.5">
+      <div className="flex gap-2 mb-3 bg-white rounded-xl p-1.5">
         <button
           onClick={() => setActiveTab("week")}
           className={`flex-1 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200
@@ -78,35 +79,34 @@ export default function AttendanceHistory() {
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-xl p-5">
-        <div className="grid grid-cols-3 gap-4 text-xs">
-          
-          <div className="space-y-1">
-            <p className="font-semibold text-[#111111]">
-              {currentData.checkedIn} Checked-In
-            </p>
-            <p className="font-semibold text-[#111111]">
-              {currentData.checkedOut} Checked-Out
-            </p>
+      <div className="bg-white rounded-xl p-3">
+        {loading ? (
+          <div className="h-10 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400"></div>
           </div>
-
-          <div className="space-y-1">
-            <p className="font-semibold text-[#111111]">{currentData.percentage} %</p>
-            <p className="text-[#111111]">{currentData.aiVerified}</p>
-          </div>
-
-          <div className="space-y-1 flex flex-col items-center">
-            <div className="flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-              <p className="font-semibold text-[#111111]">{currentData.onTime}</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            
+            <div className="space-y-2">
+              <div className="flex flex-col">
+                <span className="text-[9px] text-gray-400 font-black uppercase tracking-tighter mb-0.5">Check-Ins</span>
+                <p className="text-base font-black text-gray-900 leading-none">
+                  {currentData?.checkedIn || 0}
+                </p>
+              </div>
             </div>
-            <p className="font-semibold text-[#111111]">{currentData.aiPercentage} %</p>
-          </div>
 
-        </div>
+            <div className="space-y-2">
+              <div className="flex flex-col">
+                <span className="text-[9px] text-gray-400 font-black uppercase tracking-tighter mb-0.5">Check-Outs</span>
+                <p className="text-base font-black text-gray-900 leading-none">
+                  {currentData?.checkedOut || 0}
+                </p>
+              </div>
+            </div>
+
+          </div>
+        )}
       </div>
 
     </div>

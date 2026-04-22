@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
 import { STAFF_RULES, getAttendanceWindowMessage, formatTimeToHHMM } from "@/lib/attendance-rules";
+import { getProgramDateWindowError } from "@/lib/program-time";
 
 
 
@@ -59,6 +60,15 @@ export async function POST(req: Request) {
       if (program.timeZone) {
         programTimeZone = program.timeZone;
       }
+
+      const programDateError = getProgramDateWindowError(
+        nowUTC,
+        program as unknown as { startDate?: Date; endDate?: Date },
+        programTimeZone
+      );
+      if (programDateError) {
+        return NextResponse.json({ error: programDateError }, { status: 400 });
+      }
     }
 
     // Convert now to the program's timezone
@@ -76,8 +86,8 @@ export async function POST(req: Request) {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const toObjectId = (id: string) =>
-      /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : (id as any);
+    const toObjectId = (id: string): ObjectId | string =>
+      /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id;
 
     if (type === "checkin") {
       // Check for duplicate check-in

@@ -72,8 +72,16 @@ export async function GET(req: Request) {
 
     const weekStart = startOfWeek(now, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-    const monthStart = startOfMonth(now);
-    const monthEnd = endOfMonth(now);
+
+    const yearParam = searchParams.get('year');
+    const monthParam = searchParams.get('month');
+    let targetMonthDate = now;
+    if (yearParam && monthParam) {
+      targetMonthDate = new Date(parseInt(yearParam), parseInt(monthParam) - 1, 1);
+    }
+
+    const monthStart = startOfMonth(targetMonthDate);
+    const monthEnd = endOfMonth(targetMonthDate);
 
     const [weekStats, monthStats] = await Promise.all([
       getStatsForRange(weekStart, weekEnd),
@@ -82,7 +90,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       week: weekStats,
-      month: monthStats
+      month: monthStats,
+      records: monthStats.records // Adding this to fix backward compatibility with Calendar
     });
 
   } catch (error) {

@@ -67,14 +67,14 @@ export default function AdminTopBar({ userName, userRole, profilePhotoUrl }: Adm
   };
 
   return (
-    <div className="bg-white shadow-sm border-b border-gray-200 px-2 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-      <div className="flex items-center w-full sm:w-auto">
-        <h1 className="text-lg sm:text-xl font-semibold text-gray-900">Admin Dashboard</h1>
+    <div className="bg-white shadow-sm border-b border-gray-200 px-2 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 w-full min-w-0 sticky top-0 z-40">
+      <div className="flex items-center w-full sm:w-auto min-w-0">
+        <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">Admin Dashboard</h1>
       </div>
 
-      <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 flex-1 sm:flex-initial justify-end w-full sm:w-auto">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 flex-1 sm:flex-initial justify-end w-full sm:w-auto min-w-0">
         {/* Search Bar - Hidden on mobile */}
-        <div className="relative hidden sm:block flex-1 sm:flex-initial">
+        <div className="relative hidden sm:block flex-1 sm:flex-initial min-w-[12rem]">
           <input
             type="text"
             placeholder="Search..."
@@ -98,7 +98,7 @@ export default function AdminTopBar({ userName, userRole, profilePhotoUrl }: Adm
         </button>
 
         {/* User Profile */}
-        <div className="flex items-center space-x-2 md:space-x-3 shrink-0">
+        <div className="flex items-center gap-2 md:gap-3 shrink-0">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-gray-900">{userName}</p>
             <p className="text-xs text-gray-500 capitalize">{userRole}</p>

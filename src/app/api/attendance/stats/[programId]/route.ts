@@ -74,7 +74,7 @@ export async function GET(
           $match: {
             programId: new ObjectId(programId),
             date: { $gte: fromDate, $lte: toDate },
-            type: { $in: ["checkin", "manual"] },
+            type: { $in: ["checkin", "completed", "manual", "absent"] },
           },
         },
         {
@@ -98,7 +98,7 @@ export async function GET(
           $match: {
             programId: new ObjectId(programId),
             date: { $gte: fromDate, $lte: toDate },
-            type: { $in: ["checkin", "manual"] },
+            type: { $in: ["checkin", "completed", "manual", "absent"] },
           },
         },
         {
@@ -134,7 +134,7 @@ export async function GET(
           $match: {
             programId: new ObjectId(programId),
             date: { $gte: fromDate, $lte: toDate },
-            type: { $in: ["checkin", "manual"] },
+            type: { $in: ["checkin", "completed", "manual", "absent"] },
           },
         },
         {
@@ -157,6 +157,21 @@ export async function GET(
               },
             },
             total: { $sum: 1 },
+            completedSessions: {
+              $sum: {
+                $cond: [
+                  {
+                    $or: [
+                      { $eq: ["$type", "completed"] },
+                      { $ne: ["$checkOutTime", null] },
+                      { $ne: ["$checkOutStatus", null] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
           },
         },
         {
@@ -167,6 +182,7 @@ export async function GET(
             late: 1,
             absent: 1,
             total: 1,
+            completedSessions: 1,
             attendanceRate: {
               $round: [
                 {
