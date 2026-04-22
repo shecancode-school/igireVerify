@@ -53,7 +53,7 @@ export async function GET() {
         .collection("programs")
         .findOne({ _id: user.programId as ObjectId });
       if (programDoc?.schedule) {
-        checkInWindow = `${programDoc.schedule.checkInStart} - ${programDoc.schedule.checkInEnd}`;
+        checkInWindow = `${programDoc.schedule.checkInStart} - ${programDoc.schedule.checkInEnd} and Check-out ${programDoc.schedule.checkOutStart || "16:00"} - ${programDoc.schedule.checkOutEnd || "17:30"}`;
       }
     } else if (user.role === "staff" && programId === "staff-mon") {
       checkInWindow = "Staff default window";

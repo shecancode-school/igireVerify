@@ -515,11 +515,10 @@ export default function CheckInPage() {
     <div className="min-h-screen bg-white flex flex-col-reverse md:flex-row">
       <Sidebar />
 
-      <div className="flex-1 w-full md:ml-[120px] pb-24 md:pb-0">
+      <div className="flex-1 w-full md:ml-[80px] pb-24 md:pb-0">
         <TopBar
           userName={userData.userName}
           programName={userData.programName}
-          isOnline={userData.isOnline}
           sessionDate={userData.sessionDate}
           checkInWindow={userData.checkInWindow}
           currentTime={userData.currentTime}

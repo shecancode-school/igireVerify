@@ -284,24 +284,35 @@ export default function CheckOutPage() {
   };
 
   const renderStepper = () => (
-    <div className="flex items-center justify-center gap-4 mb-10">
+    <div className="flex items-center justify-center gap-12 mb-16">
       {[1, 2, 3].map((value) => (
-        <div key={value} className="flex items-center gap-4">
+        <div key={value} className="relative flex flex-col items-center group">
           <div
-            className={`flex h-12 w-12 items-center justify-center rounded-full text-white font-bold text-lg transition-all ${
-              value <= step ? "bg-[#16A34A]" : "bg-gray-300"
+            className={`flex h-14 w-14 items-center justify-center rounded-[20px] transition-all duration-500 shadow-lg ${
+              value < step ? "bg-[#16A34A] text-white shadow-green-100" :
+              value === step ? "bg-[#16A34A] text-white ring-8 ring-green-50 shadow-green-100 scale-110" :
+              "bg-white text-gray-300 border-2 border-gray-100"
             }`}
           >
             {value < step || (value === 3 && step === 3) ? (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 6 9 17l-5-5" />
               </svg>
             ) : (
-              value
+              <span className="text-lg font-black">{value}</span>
             )}
           </div>
+          
+          <span className={`absolute -bottom-8 whitespace-nowrap text-[12px] font-black uppercase tracking-widest transition-colors ${
+            value <= step ? "text-[#16A34A]" : "text-gray-300"
+          }`}>
+            {value === 1 ? "Location" : value === 2 ? "Identity" : "Finish"}
+          </span>
+
           {value < 3 && (
-            <div className={`hidden sm:block w-20 h-1 rounded ${value < step ? "bg-[#16A34A]" : "bg-gray-300"}`} />
+            <div className={`absolute left-[4.5rem] top-1/2 -translate-y-1/2 hidden lg:block w-20 h-[3px] rounded-full transition-colors duration-500 ${
+              value < step ? "bg-[#16A34A]" : "bg-gray-100"
+            }`} />
           )}
         </div>
       ))}
@@ -310,132 +321,122 @@ export default function CheckOutPage() {
 
   const renderStepContent = () => {
     if (step === 1) {
-      if (gpsStatus === "verified") {
-        return (
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-[#E3F6E5] rounded-2xl border-2 border-[#16A34A] p-8 text-center">
-              <h2 className="text-2xl font-bold text-[#14532D] mb-4">Location Verified</h2>
-              <p className="mb-6 text-gray-700">You are at Igire Rwanda Organisation premises.</p>
-              <button
-                onClick={handleGpsContinue}
-                className="w-full h-12 rounded-xl text-white font-semibold"
-                style={{ background: "#14532D" }}
-              >
-                Continue to Camera
-              </button>
-            </div>
-          </div>
-        );
-      }
-
       return (
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl font-bold mb-6">Step 1: GPS Verification (Check-out)</h2>
-          <button
-            onClick={handleVerifyLocation}
-            disabled={gpsStatus === "checking"}
-            className="w-full h-14 rounded-xl text-white font-semibold disabled:opacity-70 transition-all shadow-sm hover:shadow-md mt-4"
-            style={{ background: "#14532D" }}
-          >
-            {gpsStatus === "checking" ? "Verifying GPS Coordinates..." : "Verify My Location"}
-          </button>
-          
-          {gpsError && (
-            <div className="mt-8 bg-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-sm animate-in fade-in zoom-in duration-300">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="bg-red-100 p-2 rounded-full">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D32F2F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-red-700">Verification Failed</h3>
-              </div>
-              <p className="text-red-900 font-medium mb-2">
-                You are not currently at Igire Rwanda Organisation premises. Please be physically present to record attendance.
-              </p>
-              <div className="bg-white/60 p-4 rounded-xl mt-4">
-                <p className="text-sm text-red-800 font-semibold mb-1">Security Policy:</p>
-                <p className="text-sm text-red-700">
-                  Attendance can only be recorded when you are within the official geofenced headquarters radius. Please commute to the premises and try again.
-                </p>
-              </div>
+          <div className="bg-white rounded-[40px] p-10 md:p-14 border border-gray-100 shadow-[0_4px_25px_rgba(0,0,0,0.03)] text-center">
+            <div className={`w-20 h-20 mx-auto rounded-[24px] flex items-center justify-center mb-8 transition-colors duration-500 ${
+              gpsStatus === "verified" ? "bg-[#F0FDF4]" : "bg-gray-50"
+            }`}>
+              <svg className={`w-10 h-10 ${gpsStatus === "verified" ? "text-[#16A34A]" : "text-gray-300"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
             </div>
-          )}
+
+            <h2 className="text-3xl font-black text-gray-900 mb-4 tracking-tight">Location Verification</h2>
+            <p className="text-gray-500 font-medium mb-10 leading-relaxed">
+              We need to verify you are still at the premises to record your check-out.
+            </p>
+
+            {gpsStatus === "verified" ? (
+              <button
+                onClick={handleGpsContinue}
+                className="w-full h-14 bg-[#16A34A] text-white rounded-2xl font-black text-lg shadow-xl shadow-green-100 hover:shadow-green-200 transition-all hover:-translate-y-1 active:scale-95"
+              >
+                Continue to Photo
+              </button>
+            ) : (
+              <button
+                onClick={handleVerifyLocation}
+                disabled={gpsStatus === "checking"}
+                className="w-full h-14 bg-gray-900 text-white rounded-2xl font-black text-lg shadow-xl shadow-gray-100 hover:shadow-gray-200 transition-all disabled:opacity-50"
+              >
+                {gpsStatus === "checking" ? "Verifying..." : "Verify My Location"}
+              </button>
+            )}
+
+            {gpsError && (
+              <div className="mt-8 p-6 bg-red-50 border border-red-100 rounded-[28px] animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center justify-center gap-3 text-red-600 mb-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  <span className="font-black uppercase tracking-widest text-xs">Verification Failed</span>
+                </div>
+                <p className="text-red-700 font-bold text-sm leading-relaxed">{gpsError}</p>
+              </div>
+            )}
+          </div>
         </div>
       );
     }
 
     if (step === 2) {
       return (
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl font-bold mb-6">Step 2: Take Photo for Check-out</h2>
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-white rounded-[40px] p-8 border border-gray-100 shadow-[0_4px_25px_rgba(0,0,0,0.03)] text-center">
+            <h2 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Identity Verification (Check-out)</h2>
 
-          <div className="relative w-full min-h-[60vh] sm:min-h-[50vh] md:aspect-video md:min-h-0 bg-black rounded-2xl overflow-hidden mb-6 shadow-md">
-            {cameraStatus === "captured" && capturedImage ? (
-              <Image src={capturedImage} alt="Captured Photo" fill className="object-cover" />
-            ) : (
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover absolute inset-0"
-                autoPlay
-                playsInline
-                muted
-              />
-            )}
+            <div className="relative w-full aspect-video bg-gray-900 rounded-[32px] overflow-hidden mb-10 shadow-2xl ring-4 ring-gray-50">
+              {cameraStatus === "captured" && capturedImage ? (
+                <Image src={capturedImage} alt="Captured Photo" fill className="object-cover" />
+              ) : (
+                <video ref={videoRef} className="w-full h-full object-cover absolute inset-0" autoPlay playsInline muted />
+              )}
 
-            {cameraStatus === "active" && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <div className="w-56 h-72 sm:w-64 sm:h-80 border-4 border-white/70 rounded-full mb-4 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]" />
-                <p className="text-white font-semibold text-lg drop-shadow-md bg-black/40 px-4 py-2 rounded-lg">Look straight at the camera</p>
-              </div>
-            )}
-          </div>
+              {cameraStatus === "active" && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="w-48 h-64 border-[3px] border-white/40 border-dashed rounded-[60px] mb-4 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]" />
+                  <p className="text-white font-bold text-sm uppercase tracking-[0.2em] bg-black/20 backdrop-blur-md px-6 py-2 rounded-full">Position Face Clearly</p>
+                </div>
+              )}
+            </div>
 
-          <div className="flex gap-4">
-            {cameraStatus === "captured" ? (
-              <>
+            <div className="flex gap-6 max-w-lg mx-auto">
+              {cameraStatus === "captured" ? (
+                <>
+                  <button onClick={handleRetakePhoto} className="flex-1 h-14 border-2 border-gray-100 rounded-2xl font-black text-gray-500 hover:bg-gray-50 transition-colors">
+                    Retake
+                  </button>
+                  <button
+                    onClick={handleSubmitCheckOut}
+                    disabled={isSubmitting}
+                    className="flex-1 h-14 bg-[#16A34A] text-white rounded-2xl font-black shadow-xl shadow-green-100 hover:shadow-green-200 transition-all disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Saving..." : "Verify & Check-out"}
+                  </button>
+                </>
+              ) : (
                 <button
-                  onClick={handleRetakePhoto}
-                  className="flex-1 h-14 border-2 border-gray-300 rounded-xl font-semibold hover:bg-gray-50"
+                  onClick={handleCapturePhoto}
+                  disabled={cameraStatus !== "active"}
+                  className="w-full h-16 bg-[#16A34A] text-white rounded-2xl font-black text-lg shadow-xl shadow-green-100 hover:shadow-green-200 transition-all active:scale-95 disabled:opacity-50"
                 >
-                  Retake Photo
+                  Capture Photo
                 </button>
-                <button
-                  onClick={handleSubmitCheckOut}
-                  disabled={isSubmitting}
-                  className="flex-1 h-14 bg-[#14532D] text-white rounded-xl font-semibold disabled:opacity-70"
-                >
-                  {isSubmitting ? "Saving..." : "Submit Check-out"}
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={handleCapturePhoto}
-                disabled={cameraStatus !== "active"}
-                className="w-full min-h-[64px] h-16 bg-[#14532D] text-white rounded-xl font-bold text-lg disabled:opacity-70 shadow-lg active:scale-95 transition-transform"
-              >
-                Capture Photo
-              </button>
-            )}
-          </div>
+              )}
+            </div>
 
-          {cameraError && <p className="mt-4 text-red-600 text-center">{cameraError}</p>}
-          <canvas ref={canvasRef} className="hidden" />
+            {cameraError && <p className="mt-6 text-red-500 font-bold text-sm tracking-tight">{cameraError}</p>}
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
         </div>
       );
     }
 
     return (
       <div className="max-w-2xl mx-auto text-center">
-        <div className="bg-[#E3F6E5] rounded-3xl p-12 border border-[#16A34A]">
-          <h2 className="text-4xl font-bold text-[#14532D] mb-3">Session Complete</h2>
-          <p className="text-lg text-gray-700 mb-10">Your check-out has been successfully recorded. You are now free to leave.</p>
+        <div className="bg-white rounded-[40px] p-16 border border-[#16A34A]/20 shadow-[0_10px_40px_rgba(22,163,74,0.05)]">
+          <div className="w-24 h-24 bg-[#F0FDF4] rounded-[32px] flex items-center justify-center mx-auto mb-10 shadow-lg shadow-green-50">
+            <svg className="w-12 h-12 text-[#16A34A]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-4xl font-black text-gray-900 mb-4">Check-out Complete</h2>
+          <p className="text-gray-500 font-medium text-lg mb-12">Your attendance session has been finalized. Thank you for participating!</p>
           <button
             onClick={() => window.location.href = "/dashboard/participant"}
-            className="px-10 py-4 bg-[#14532D] text-white rounded-2xl font-semibold text-lg hover:bg-[#0f3d23]"
+            className="w-full h-16 bg-gray-900 text-white rounded-2xl font-black text-lg shadow-xl shadow-gray-100 hover:shadow-gray-200 transition-all hover:-translate-y-1"
           >
-            Return to Dashboard
+            Return to Home
           </button>
         </div>
       </div>
@@ -445,44 +446,34 @@ export default function CheckOutPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col-reverse md:flex-row">
       <Sidebar />
-      <div className="flex-1 w-full md:ml-[120px] pb-24 md:pb-0">
-        <TopBar />
+      <div className="flex-1 w-full sm:ml-20 md:ml-24 lg:ml-[120px] pb-24 md:pb-0">
+        <TopBar {...userData} />
 
-        <main className="px-4 py-6 md:px-12 md:py-10 bg-[#F5F5F5] min-h-screen">
-          {loading || !userData ? (
-            <div className="max-w-5xl mx-auto flex items-center justify-center min-h-[400px]">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E7D32] mx-auto mb-4"></div>
-                <p>Loading...</p>
-              </div>
-            </div>
-          ) : (
-            <div className="max-w-5xl mx-auto">
-              {renderStepper()}
+        <main className="px-4 py-8 md:px-12 md:py-10 bg-[#F9FAFB] min-h-screen">
+          <div className="max-w-5xl mx-auto">
+            {renderStepper()}
+            
+            <div className="animate-in fade-in slide-in-from-bottom-6 duration-700">
               {renderStepContent()}
-
-              {/* Global notification — visible on ALL steps */}
-              {uiMessage && (
-                <div className={`mt-8 max-w-2xl mx-auto p-6 rounded-2xl text-center font-medium border animate-in fade-in slide-in-from-bottom-4 duration-500 ${
-                  uiMessage.type === "success"
-                    ? "bg-green-50 border-green-200 text-green-800"
-                    : "bg-red-50 border-red-200 text-red-800"
-                }`}>
-                  <div className="flex items-center justify-center gap-3 mb-1">
-                    {uiMessage.type === "success" ? (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    ) : (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    )}
-                    <span className="text-lg">{uiMessage.text}</span>
-                  </div>
-                  {uiMessage.type === "error" && (
-                    <p className="text-sm opacity-80 mt-1">Please try again or visit the Help Desk if you need assistance.</p>
-                  )}
-                </div>
-              )}
             </div>
-          )}
+
+            {uiMessage && (
+              <div className={`mt-10 max-w-2xl mx-auto p-6 rounded-[28px] text-center font-bold border-2 animate-in fade-in zoom-in duration-500 ${
+                uiMessage.type === "success"
+                  ? "bg-green-50 border-green-100 text-green-700"
+                  : "bg-red-50 border-red-100 text-red-700"
+              }`}>
+                <div className="flex items-center justify-center gap-3">
+                  {uiMessage.type === "success" ? (
+                    <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  ) : (
+                    <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  )}
+                  <span className="text-base tracking-tight">{uiMessage.text}</span>
+                </div>
+              </div>
+            )}
+          </div>
         </main>
       </div>
     </div>

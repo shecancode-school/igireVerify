@@ -14,14 +14,14 @@ export default function ProgramOverviewPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col-reverse md:flex-row">
       {/* Sidebar */}
-      <aside className="w-full md:w-[160px] h-16 md:h-screen md:min-h-screen bg-[#7FAF8C] fixed bottom-0 md:bottom-auto left-0 md:top-0 z-40 flex flex-row md:flex-col items-center justify-center md:justify-start gap-4 md:gap-8 py-2 md:py-8 px-2 md:px-0 overflow-x-auto md:overflow-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] md:shadow-none">
-        <div className="hidden md:block mb-12 shrink-0">
-          <h1 className="font-black text-xl md:text-2xl text-white text-center px-1">
-            Igire<span className="text-[#C47D0E]">Verify</span>
+      <aside className="w-full md:w-20 lg:w-[120px] h-16 md:h-screen md:min-h-screen bg-[#7FAF8C] fixed bottom-0 md:bottom-auto left-0 md:top-0 z-40 flex flex-row md:flex-col items-center justify-center md:justify-start gap-4 md:gap-10 py-2 md:py-8 px-2 md:px-0 overflow-x-auto md:overflow-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] md:shadow-none">
+        <div className="hidden md:flex items-center justify-center w-full h-[60px] mb-4 border-b border-white/10 shrink-0">
+          <h1 className="font-black text-[13px] leading-tight text-white text-center flex flex-col items-center">
+            Igire<span className="text-[#F97316]">Verify</span>
           </h1>
         </div>
 
-        <nav className="flex-1 flex flex-row md:flex-col gap-4 md:gap-8 items-center justify-center md:justify-start">
+        <nav className="flex-1 flex flex-row md:flex-col gap-2 items-center justify-center md:justify-start px-1.5">
           <button
             onClick={() => router.push("/dashboard/hr")}
             className="w-14 h-14 rounded-xl hover:bg-white/20 transition-colors flex items-center justify-center"
@@ -42,9 +42,9 @@ export default function ProgramOverviewPage() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 w-full md:ml-[160px] pb-20 md:pb-0 min-w-0">
+      <div className="flex-1 w-full sm:ml-20 md:ml-24 lg:ml-[120px] pb-20 md:pb-0 min-w-0">
         {/* Top Bar */}
-        <header className="bg-[#F5F5F5] border-b border-gray-200 px-4 sm:px-6 md:px-12 py-3 md:py-4 flex items-center justify-between gap-2">
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 md:px-12 h-[90px] flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2">
               <path d="M5 12.55a11 11 0 0 1 14.08 0" />
@@ -87,7 +87,7 @@ export default function ProgramOverviewPage() {
         </header>
 
         {/* Page Content */}
-        <main className="px-4 sm:px-6 md:px-12 py-6 md:py-10 min-h-[calc(100vh-120px)]">
+        <main className="px-4 sm:px-6 md:px-12 py-10 md:py-16 min-h-[calc(100vh-90px)]">
 
           {/* Page Title */}
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#111111] mb-6 md:mb-10">

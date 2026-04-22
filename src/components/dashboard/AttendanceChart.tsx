@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { Activity } from 'lucide-react';
 import { useSocket } from '@/lib/socket';
 
@@ -44,65 +44,70 @@ export default function AttendanceChart({ programId, userId }: ChartProps) {
   if (loading) return <div className="h-64 sm:h-80 md:h-96 bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-4 animate-pulse flex items-center justify-center">Loading Chart...</div>;
 
   return (
-    <div className="bg-white rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-5 py-3 sm:py-4 md:py-6 shadow-sm border border-gray-100 h-full flex flex-col">
+    <div className="bg-white rounded-[32px] px-6 py-6 sm:px-8 sm:py-7 shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-100 flex flex-col h-[280px] sm:h-[300px]">
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-3 sm:mb-4">
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <h3 className="text-base sm:text-lg font-black text-black tracking-[0.2em] uppercase">
+          <h3 className="text-[14px] sm:text-[16px] font-black text-gray-900 tracking-[0.2em] uppercase">
             Attendance Rate
           </h3>
-          <p className="text-xs sm:text-sm text-gray-500 font-medium mt-0.5">Current Week Analysis</p>
+          <p className="text-[12px] text-gray-500 font-medium mt-1">Current Week Analysis</p>
         </div>
-        <div className="p-2 bg-green-50 rounded-lg sm:rounded-xl">
-          <Activity className="w-5 sm:w-6 h-5 sm:h-6 text-[#2E7D32]" />
+        <div className="w-12 h-12 bg-[#F0FDF4] rounded-2xl flex items-center justify-center border border-[#DCFCE7]">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
         </div>
       </div>
 
       {/* Chart - FLEXIBLE HEIGHT */}
-      <div className="relative flex-1 min-h-[200px] sm:min-h-[220px] md:min-h-[280px]">
+      <div className="relative flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+          <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#166534" stopOpacity={0.15}/>
+                <stop offset="95%" stopColor="#166534" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F1F5F9" />
             <XAxis 
               dataKey="name" 
               axisLine={false} 
               tickLine={false} 
-              tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }}
-              dy={8}
+              tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
+              dy={10}
             />
             <YAxis 
+              domain={[0, 100]} 
+              ticks={[0, 25, 50, 75, 100]}
               axisLine={false} 
-              tickLine={false} 
-              tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }}
-              domain={[0, 100]}
+              tickLine={false}
+              tick={{ fill: '#64748B', fontSize: 10, fontWeight: 600 }}
               tickFormatter={(value) => `${value}%`}
             />
             <Tooltip 
-              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-              cursor={{ stroke: '#2E7D32', strokeWidth: 1, strokeDasharray: '5 5' }}
+              contentStyle={{ 
+                borderRadius: '16px', 
+                border: 'none', 
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }} 
             />
-            {/* Previous month / period baseline */}
-            <Line 
-              type="monotone" 
-              dataKey="previous" 
-              name="Previous Avg" 
-              stroke="#9E9E9E" 
-              strokeWidth={2} 
-              dot={false}
-              activeDot={false}
-            />
-            {/* Current period data */}
-            <Line 
+            <Area 
               type="monotone" 
               dataKey="rate" 
               name="Current Rate" 
-              stroke="#2E7D32" 
-              strokeWidth={3} 
-              dot={{ r: 4, fill: '#2E7D32', strokeWidth: 0 }}
-              activeDot={{ r: 6, fill: '#2E7D32', stroke: 'white', strokeWidth: 2 }}
+              stroke="#166534" 
+              strokeWidth={8} 
+              fillOpacity={1} 
+              fill="url(#colorRate)" 
+              dot={{ r: 6, fill: '#166534', strokeWidth: 3, stroke: '#fff' }}
+              activeDot={{ r: 8, strokeWidth: 0 }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
 

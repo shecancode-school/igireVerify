@@ -4,37 +4,28 @@ export default function ProgramCard({
   programName?: string;
 }) {
   return (
-    <div className="bg-[#DCEFE3] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-5 py-3 sm:py-4 flex flex-col sm:flex-row items-center gap-2 sm:gap-3 shadow-sm h-full">
-
-      {/* Icon */}
+    <div className="relative overflow-hidden bg-[#E6F4EA] rounded-[32px] px-6 py-6 sm:px-8 sm:py-7 flex items-center gap-5 sm:gap-8 shadow-sm border border-[#D1FAE5] h-full transition-all hover:shadow-md">
+      
+      {/* Icon Section */}
       <div className="flex-shrink-0">
-        <svg
-          width="40"
-          height="40"
-          viewBox="0 0 48 48"
-          fill="none"
-          stroke="#16A34A"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="sm:w-12 sm:h-12"
-        >
-          <rect x="8" y="10" width="14" height="24" rx="2" />
-          <rect x="26" y="10" width="14" height="24" rx="2" />
-          <path d="M22 14c-2 .5-4 1-6 1s-4-.5-6-1" />
-          <path d="M26 14c2 .5 4 1 6 1s4-.5 6-1" />
-        </svg>
+        <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center bg-white rounded-2xl shadow-sm">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+        </div>
       </div>
 
-      {/* Text */}
-      <div className="text-center sm:text-left">
-        <p className="text-gray-500 text-[10px] sm:text-[11px] font-medium tracking-[0.2em] sm:tracking-[0.25em] uppercase mb-0.5 sm:mb-1">
+      {/* Text Section */}
+      <div className="flex flex-col justify-center">
+        <span className="text-gray-400 text-[11px] sm:text-[12px] font-extrabold uppercase tracking-widest mb-1">
           Your Program
-        </p>
-        <h3 className="text-lg sm:text-xl font-bold text-black break-words">
+        </span>
+        <h3 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">
           {programName}
         </h3>
       </div>
+
 
     </div>
   );

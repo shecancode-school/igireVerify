@@ -100,7 +100,7 @@ export async function GET(req: Request) {
     const countUntil = new Date(now);
     countUntil.setHours(0, 0, 0, 0);
 
-    const programDays = program.schedule?.days || ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const programDays = program.schedule?.days || [];
 
     while (tempDate <= countUntil) {
       const dayName = tempDate.toLocaleDateString('en-US', { weekday: 'long' });

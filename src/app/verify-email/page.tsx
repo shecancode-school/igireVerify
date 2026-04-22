@@ -19,6 +19,9 @@ export default function VerifyEmailPage() {
         setMessage("Missing verification token.");
         return;
       }
+
+      // Immediately clear the token from the URL for security
+      window.history.replaceState(null, "", window.location.pathname);
       try {
         const res = await fetch("/api/auth/verify-email", {
           method: "POST",

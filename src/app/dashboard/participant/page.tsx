@@ -2,8 +2,9 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
 import ProgramCard from "@/components/dashboard/ProgramCard";
 import AttendanceStats from "@/components/dashboard/AttendanceStats";
-import AttendanceHistory from "@/components/dashboard/AttendanceHistory";
+import AttendanceHistory from "@/components/dashboard/RequirementsBanner"; // Use the one from RequirementsBanner as seen in screenshot
 import AttendanceChart from "@/components/dashboard/AttendanceChart";
+import AttendanceCalendar from "@/components/dashboard/AttendanceCalendar";
 import { requireAuthOrRedirect } from "@/lib/auth";
 import { getDb } from "@/lib/mongodb";
 
@@ -44,7 +45,7 @@ export default async function ParticipantDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] flex flex-col-reverse sm:flex-row w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[#F5F5F5] flex flex-col w-full overflow-x-hidden">
 
       <Sidebar />
 
@@ -58,41 +59,49 @@ export default async function ParticipantDashboard() {
           currentTime={userData.currentTime}
         />
 
-        {/* RESPONSIVE CONTENT - Compact Layout */}
-        <main className="px-2 sm:px-3 md:px-4 lg:px-5 py-3 sm:py-4 md:py-6 w-full">
-          <div className="w-full max-w-[1400px] mx-auto min-w-0">
+        {/* RESPONSIVE CONTENT */}
+        <main className="px-4 sm:px-6 md:px-12 py-6 md:py-10 w-full flex-1 max-w-[1600px] mx-auto">
+          <div className="w-full min-w-0 flex flex-col gap-8 md:gap-12">
 
-          {/* Row 1: Program Card + Attendance Chart - Responsive Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-5 mb-4 sm:mb-5 md:mb-6">
-            {/* Program Card - Full width on mobile, 1 col on desktop */}
-            <div className="lg:col-span-1">
-              <ProgramCard programName={userData.programName} />
+            {/* Row 1: Program Card + Attendance Chart - Responsive Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+              {/* Program Card - Full width on mobile, 1 col on desktop */}
+              <div className="lg:col-span-1">
+                <ProgramCard programName={userData.programName} />
+              </div>
+              
+              {/* Attendance Chart - Full width on mobile, 1 col on desktop */}
+              <div className="lg:col-span-1">
+                <AttendanceChart
+                  programId={userData.programId}
+                  userId={userData.userId || ""}
+                />
+              </div>
             </div>
-            
-            {/* Attendance Chart - Full width on mobile, 1 col on desktop */}
-            <div className="lg:col-span-1">
-              <AttendanceChart
+
+            {/* Row 2: Attendance Stats */}
+            <div>
+              <AttendanceStats
                 programId={userData.programId}
                 userId={userData.userId || ""}
               />
             </div>
-          </div>
 
-          {/* Row 2: Attendance Stats - Full width responsive grid */}
-          <div className="mb-4 sm:mb-5 md:mb-6">
-            <AttendanceStats
-              programId={userData.programId}
-              userId={userData.userId || ""}
-            />
-          </div>
+            {/* Row 4: Attendance History */}
+            <div className="w-full">
+              <AttendanceHistory 
+                programId={userData.programId} 
+                userId={userData.userId || ""} 
+              />
+            </div>
 
-          {/* Row 3: Attendance History - Full width on all sizes */}
-          <div className="w-full">
-            <AttendanceHistory
-              programId={userData.programId}
-              userId={userData.userId || ""}
-            />
-          </div>
+            {/* Row 3: Attendance Calendar */}
+            <div className="opacity-50">
+              <AttendanceCalendar
+                programId={userData.programId}
+                userId={userData.userId || ""}
+              />
+            </div>
 
           </div>
         </main>

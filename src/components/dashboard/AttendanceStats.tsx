@@ -110,78 +110,59 @@ export default function AttendanceStats({ programId, userId }: AttendanceStatsPr
   };
 
   return (
-    <div>
-      <h2 className="text-lg sm:text-xl font-semibold text-[#111111] mb-4 sm:mb-6">
+    <div className="w-full">
+      <h2 className="text-xl font-black text-[#111111] mb-6">
         Attendance Overview of this month
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
-
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
         {/* Days Attended */}
-        <div className="bg-[#D1F4DD] rounded-2xl sm:rounded-3xl p-3 sm:p-4 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 shadow-sm">
-          <div className="flex-shrink-0">
-            <div className="w-10 sm:w-12 h-10 sm:h-12 bg-white rounded-full flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
+        <div className="bg-[#E6F4EA] rounded-3xl p-6 flex flex-col relative overflow-hidden group hover:shadow-lg transition-all border border-[#D1FAE5]">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
             </div>
-          </div>
-          <div className="text-center sm:text-left">
-            <p className="text-2xl sm:text-4xl font-black mb-0.5" style={{ color: "#16A34A" }}>
+            <span className="text-5xl font-black text-[#16A34A]">
               {String(stats.daysAttended).padStart(2, '0')}
-            </p>
-            <p className="text-xs sm:text-sm font-semibold text-[#111111]">Days Attended</p>
+            </span>
           </div>
-        </div>
-
-        {/* Today's Status */}
-        <div className="rounded-2xl sm:rounded-3xl p-3 sm:p-4 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 shadow-sm" style={{ backgroundColor: stats.todaysStatus === 'checked-out' ? '#D1F4DD' : stats.todaysStatus === 'checked-in' ? '#FFF4D6' : '#FFE4E4' }}>
-          <div className="flex-shrink-0">
-            <div className="w-10 sm:w-12 h-10 sm:h-12 bg-white rounded-full flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={getStatusColor()} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                {stats.todaysStatus === 'checked-out' ? (
-                  <>
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
-                  </>
-                ) : stats.todaysStatus === 'checked-in' ? (
-                  <circle cx="12" cy="12" r="10"/>
-                ) : (
-                  <>
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="15" y1="9" x2="9" y2="15"/>
-                    <line x1="9" y1="9" x2="15" y2="15"/>
-                  </>
-                )}
-              </svg>
-            </div>
-          </div>
-          <div className="text-center sm:text-left">
-            <p className="text-base sm:text-2xl font-black mb-1" style={{ color: getStatusColor() }}>
-              {getStatusText()}
-            </p>
-            <p className="text-xs sm:text-sm font-semibold text-[#111111]">Today&apos;s Status</p>
-          </div>
+          <p className="text-sm font-bold text-gray-700 ml-1">Days Attended</p>
         </div>
 
         {/* Pending Alerts */}
-        <div className="bg-[#FFF4D6] rounded-2xl sm:rounded-3xl p-3 sm:p-4 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 shadow-sm">
-          <div className="flex-shrink-0">
-            <div className="w-10 sm:w-12 h-10 sm:h-12 bg-white rounded-full flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
+        <div className="bg-[#FEF3C7] rounded-3xl p-6 flex flex-col relative overflow-hidden group hover:shadow-lg transition-all border border-[#FDE68A]">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C47D0E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="1.5"></circle>
+                <circle cx="17" cy="12" r="1.5"></circle>
+                <circle cx="7" cy="12" r="1.5"></circle>
               </svg>
             </div>
+            <span className="text-5xl font-black text-[#C47D0E]">
+              {String(stats.pendingAlerts || 0).padStart(2, '0')}
+            </span>
           </div>
-          <div className="text-center sm:text-left">
-            <p className="text-2xl sm:text-4xl font-black mb-0.5" style={{ color: "#EA580C" }}>
-              {String(stats.pendingAlerts).padStart(2, '0')}
-            </p>
-            <p className="text-xs sm:text-sm font-semibold text-[#111111]">Pending Alerts</p>
+          <p className="text-sm font-bold text-gray-700 ml-1">Pending Alerts</p>
+        </div>
+
+        {/* Missed Days */}
+        <div className="bg-[#FEE2E2] rounded-3xl p-6 flex flex-col relative overflow-hidden group hover:shadow-lg transition-all border border-[#FECACA]">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </div>
+            <span className="text-5xl font-black text-[#DC2626]">
+              {String(stats.missedDays).padStart(2, '0')}
+            </span>
           </div>
+          <p className="text-sm font-bold text-gray-700 ml-1">Missed days</p>
         </div>
 
       </div>
