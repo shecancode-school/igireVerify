@@ -61,14 +61,18 @@ export async function GET(req: NextRequest) {
     // 4. Merge Users and Attendance
     const dayName = format(targetDate, 'EEEE');
 
-    const getDisplayStatus = (checkInStatus?: unknown, hasCheckOut?: boolean) => {
+    const getDisplayStatus = (checkInStatus?: unknown, hasCheckOut?: boolean, checkOutStatus?: unknown) => {
       const raw = typeof checkInStatus === "string" ? checkInStatus : "";
-      if (raw === "late") return "Late";
+      const rawOut = typeof checkOutStatus === "string" ? checkOutStatus : "";
+      // Explicit manual statuses take priority
+      if (raw === "excused" || rawOut === "excused") return "Excused";
+      if (raw === "half-day" || rawOut === "half-day") return "Half-Day";
       if (raw === "absent") return "Absent";
-      if (!hasCheckOut) return "Checked In";
-      // "on-time" => Present
-      if (raw === "on-time" || raw === "present") return "Present";
-      return "Present";
+      if (raw === "late" && hasCheckOut) return "Present (Late)";
+      if (raw === "late") return "Late";
+      if (hasCheckOut) return "Present";
+      if (raw === "on-time" || raw === "present") return "Checked In";
+      return "Checked In";
     };
 
     const formatGps = (gps: any) => {
@@ -114,8 +118,8 @@ export async function GET(req: NextRequest) {
 
       if (record) {
         const checkInStatus = record.checkInStatus ?? record.status;
-        const hasCheckOut = Boolean(record.checkOutTime) || record.type === "completed";
-        const displayStatus = getDisplayStatus(checkInStatus, hasCheckOut);
+        const hasCheckOut = Boolean(record.checkOutTime) || record.type === "completed" || Boolean(record.checkOutStatus && record.checkOutStatus !== "");
+        const displayStatus = getDisplayStatus(checkInStatus, hasCheckOut, record.checkOutStatus);
 
         const gpsLocation = record.checkInGpsLocation ?? record.checkOutGpsLocation;
         const resolvedLocation =
@@ -129,14 +133,17 @@ export async function GET(req: NextRequest) {
             : "Unknown");
 
         return {
-          _id: record._id,
-          userId: user._id,
+          _id: record._id.toString(),
+          userId: user._id.toString(),
+          programId: user.programId?.toString() || programId?.toString() || '',
           userName: user.name,
           userEmail: user.email,
           profilePhotoUrl: user.profilePhotoUrl || null,
           programName: program?.name || 'No Program',
           checkInTime: record.checkInTime ?? null,
           checkOutTime: record.checkOutTime ?? null,
+          checkInPhotoUrl: record.checkInPhotoUrl || null,
+          checkOutPhotoUrl: record.checkOutPhotoUrl || null,
           status: displayStatus,
           location,
         };
@@ -148,7 +155,8 @@ export async function GET(req: NextRequest) {
         
         return {
           _id: `absent-${user._id}`,
-          userId: user._id,
+          userId: user._id.toString(),
+          programId: user.programId?.toString() || '',
           userName: user.name,
           userEmail: user.email,
           profilePhotoUrl: user.profilePhotoUrl || null,

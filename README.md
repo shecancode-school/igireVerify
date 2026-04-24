@@ -1,75 +1,113 @@
-# IgireVerify: Enterprise Attendance & Real-Time Tracking
+# IgireVerify - Professional Attendance Tracking System
 
-IgireVerify is a high-fidelity, enterprise-grade attendance management system designed for **Igire Rwanda Organisation**. It combines geofence-verified check-ins, photo verification, and real-time administrative oversight to ensure 100% data integrity for large-scale programs.
+IgireVerify is a state-of-the-art attendance management platform designed for **Igire Rwanda Organisation**. It ensures high-integrity attendance records by combining **Geolocation Verification** and **Facial Identity Verification**.
 
 ---
 
-## 🚀 The Tech Stack (Core Architecture)
+## 🚀 Key Features
 
-| Component | Technology | Rationale |
+### 1. Geofence Protection
+*   **Logic**: Users can only record attendance if they are physically within **100 meters** of the Igire Rwanda premises.
+*   **Tech**: Uses the browser's Geolocation API to calculate distance using the Haversine formula.
+*   **Coordinates**: Fixed at Igire Rwanda Headquarters (`-1.9305, 30.0747`).
+*   **Code Location**: `src/app/dashboard/participant/attendance/checkin/page.tsx` (`handleVerifyLocation` function).
+
+### 2. Facial Identity Verification
+*   **Logic**: Every check-in/out requires a live photo capture.
+*   **Storage**: Photos are securely uploaded to **Cloudinary** with program-specific organization.
+*   **Prevention**: Discourages proxy attendance (one user checking in for another).
+
+### 3. Real-Time Monitoring
+*   **Socket.io**: The Admin and HR dashboards update instantly when a participant checks in.
+*   **Live Stats**: Instant breakdown of "On-Time", "Late", and "Absent" statuses.
+
+### 4. Smart Scheduling
+*   **Time Windows**: Check-ins are only allowed during specific windows (e.g., 08:00 - 08:30).
+*   **Timezone Aware**: Handles Kigali time (`Africa/Kigali`) strictly, preventing client-side clock manipulation.
+*   **Logic File**: `src/lib/attendance-rules.ts`.
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Framework** | Next.js 15 (App Router) |
+| **Language** | TypeScript |
+| **Database** | MongoDB (NoSQL) |
+| **Storage** | Cloudinary (Images) |
+| **Real-time** | Socket.io |
+| **Styling** | Tailwind CSS + Lucide Icons |
+| **Validation** | Zod (Schema validation) |
+
+---
+
+## 📂 Project Structure & Logic Guide
+
+### 📍 Geolocation Logic
+*   **Frontend**: [`src/app/dashboard/participant/attendance/checkin/page.tsx`](./src/app/dashboard/participant/attendance/checkin/page.tsx)
+    *   Functions: `handleVerifyLocation`, `distanceInMeters`.
+    *   Parameters: `IGIRE_LAT`, `IGIRE_LNG`, `IGIRE_RADIUS_METERS`.
+
+### 🔐 Attendance Rules (On-time vs Late)
+*   **Logic File**: [`src/lib/attendance-rules.ts`](./src/lib/attendance-rules.ts)
+    *   `getAttendanceStatus`: Determines if a user is "on-time" or "late" based on the program schedule.
+    *   `getAttendanceWindowMessage`: Generates user-friendly errors if the user tries to check in outside allowed hours.
+
+### 🗄️ Database & Seeding
+*   **Initialization**: [`src/scripts/init-db.ts`](./src/scripts/init-db.ts)
+    *   Sets up unique indexes for emails and compound indexes for attendance lookups.
+*   **Seeding Programs**: [`seed-programs.js`](./seed-programs.js)
+    *   Populates the database with default programs like "Web Fundamentals" and "Advanced Frontend".
+*   **Admin Creation**: [`src/app/api/auth/create-admin/route.ts`](./src/app/api/auth/create-admin/route.ts)
+    *   One-time setup for the master administrator.
+
+---
+
+## 🌐 API Documentation
+
+### Attendance APIs
+| Endpoint | Method | Description |
 | :--- | :--- | :--- |
-| **Framework** | **Next.js 15+ (App Router)** | industry-standard for speed, SEO, and secure server-side logic. |
-| **Styling** | **Tailwind CSS** | ensures a fully responsive, mobile-first design with professional aesthetics. |
-| **Runtime** | **Turbopack** | Used during the build process to optimize page loading and development speed. |
-| **Database** | **MongoDB Atlas** | A scalable NoSQL database with custom indexing for high-concurrency (100+ users). |
-| **Real-time** | **Socket.io** | Powers the "Live Dashboard" allowing staff to see check-ins instantly without refreshing. |
-| **Storage** | **Cloudinary** | Automates photo storage with intelligent program-specific folder organization. |
-| **Auth** | **JWT + Bcrypt** | Enterprise security (Stateless Tokens and 12-round salted password hashing). |
-| **Email** | **SMTP / Nodemailer** | Handles official email verification and password resets with secure tokens. |
+| `/api/attendance/checkin` | `POST` | Validates time, prevents duplicates, and saves check-in record. |
+| `/api/attendance/checkout` | `POST` | Records the end of session and updates the attendance record. |
+| `/api/attendance/stats` | `GET` | Aggregated stats for dashboards (counts of on-time, late, etc.). |
+| `/api/attendance/user-history`| `GET` | Fetches personalized attendance logs for the participant. |
+
+### Admin & Management
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/api/admin/users` | `GET/POST` | Manage user accounts and roles. |
+| `/api/programs` | `GET/POST` | Create and manage training programs. |
+| `/api/admin/reports` | `GET` | Generate CSV/Excel reports for attendance. |
 
 ---
 
-## 🛠️ Key Feature Breakdown
+## 🔑 User Roles
 
-### 1. Participant Dashboard (Mobile-First)
-- **Geofence Check-in**: Verifies GPS coordinates to ensure the user is physically on-site (within a strictly defined radius).
-- **Photo Verification**: Captures a live photo during check-in, stored securely by Program ID in Cloudinary.
-- **Attendance Calendar**: A high-contrast, professional calendar showing present/absent/late history.
-- **Stable Hydration**: Optimized to prevent "flicker" and errors during the initial load on mobile devices.
-
-### 2. Staff & Admin Dashboard (Command Center)
-- **Live Monitor**: Uses WebSockets to stream check-in events globally in real-time.
-- **Manual Overrides**: Allows staff to record attendance for participants who face technical or timing issues.
-- **Program Breakdown**: Quick-view cards showing enrollment vs. actual attendance for today.
-- **Smart Roster**: Searchable grids for viewing attendance history by program and date.
-
-### 3. Reporting & Enterprise Tools
-- **Multi-Format Export**: One-click generation of **PDF, CSV, and Excel** reports.
-- **Audit Trails**: Every attendance record includes GPS data, timestamps, and photo URLs for total accountability.
+1.  **Admin**: Full system control, program management, and advanced reporting.
+2.  **HR Officer**: Monitors specific programs, manages participant lists.
+3.  **Staff**: Access to staff-specific attendance rules and internal dashboards.
+4.  **Participant**: Can check in/out, view personal attendance history and profile.
 
 ---
 
-## 🛰️ API Routes & Logic
+## 🛠️ Development Setup
 
-### Authentication (`/api/auth`)
-- `POST /register`: Enforces `@igirerwanda.org` for staff and requires official program codes for participants.
-- `POST /login`: Validates role and email domain to route users to their respective dashboards automatically.
-- `POST /verify-email`: Secure, time-limited token verification before account activation.
-
-### Attendance Tracking (`/api/attendance`)
-- `POST /preflight`: Validates attendance rules (e.g., "Cannot check out before checking in" or "Session is closed").
-- `POST /checkin`: Records GPS, Photo URL, and Status (On-time/Late) into the database.
-- `POST /manual`: Secure route for staff to bypass GPS if needed for manual adjustment.
-
----
-
-## 📈 Scalability & Security FAQs
-
-**Q: Can 100+ people check in at once?**  
-**A:** Yes. We use **Database Indexing** on `userId`, `programId`, and `date`. This ensures the database can handle thousands of simultaneous requests without slowing down.
-
-**Q: Where are the passwords stored?**  
-**A:** We never store raw passwords. All credentials are hashed using **Bcrypt** and can only be accessed via secure server-side JWT tokens.
-
-**Q: What happens if the internet is slow?**  
-**A:** The system has localized error handling and high-efficiency photo compression (JPEG 0.85) to ensure uploads succeed even on 3G networks.
+1.  **Environment Variables**:
+    Create a `.env.local` with `MONGODB_URI`, `CLOUDINARY_URL`, and `JWT_SECRET`.
+2.  **Initialize DB**:
+    ```bash
+    npm run db:init
+    ```
+3.  **Seed Data**:
+    ```bash
+    node seed-programs.js
+    ```
+4.  **Run App**:
+    ```bash
+    npm run dev
+    ```
 
 ---
-
-## 🛠️ Developer Commands
-- `npm run dev`: Start development server.
-- **`npm run init-db`**: Custom script to set up all high-performance database indexes.
-- `npm run build`: Generate an optimized production bundle.
-
----
-*Created for Igire Rwanda Organisation — 2026*
+*Created with  for Igire Rwanda Organisation.*

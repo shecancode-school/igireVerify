@@ -30,6 +30,8 @@ export default function StaffAttendancePage() {
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             </svg>
           </button>
+
+
           
           <button className="w-14 h-14 rounded-xl bg-white/90 shadow-lg flex items-center justify-center">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#14532D" strokeWidth="2">

@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Enable external packages for Socket.io
+  
   serverExternalPackages: ['socket.io', 'socket.io-client'],
   poweredByHeader: false,
   async headers() {

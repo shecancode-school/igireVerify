@@ -403,7 +403,7 @@ export default function CheckInPage() {
 
               {cameraStatus === "active" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="w-48 h-64 border-[3px] border-white/40 border-dashed rounded-[60px] mb-4 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]" />
+                  <div className="w-64 h-64 sm:w-80 sm:h-80 border-[3px] border-white/40 border-dashed rounded-full mb-4 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] transition-all" />
                   <p className="text-white font-bold text-sm uppercase tracking-[0.2em] bg-black/20 backdrop-blur-md px-6 py-2 rounded-full">Position Face Here</p>
                 </div>
               )}

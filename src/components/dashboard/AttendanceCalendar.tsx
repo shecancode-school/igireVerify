@@ -18,14 +18,13 @@ interface AttendanceDay {
 }
 
 export default function AttendanceCalendar({ programId, userId }: CalendarProps) {
-  // Use a stable initial value to prevent hydration mismatch (server date vs client date)
+
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [attendanceData, setAttendanceData] = useState<AttendanceDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<AttendanceDay | null>(null);
   const socket = useSocket();
 
-  // Set initial date on client only to avoid hydration errors
   useEffect(() => {
     setCurrentDate(new Date());
   }, []);

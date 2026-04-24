@@ -27,7 +27,7 @@ export default async function ParticipantDashboard() {
     if (program) {
       programName = program.name;
       if (program.schedule) {
-        checkInWindow = `${program.schedule.checkInStart} - ${program.schedule.checkInEnd}`;
+        checkInWindow = `${program.schedule.checkInStart} - ${program.schedule.checkInEnd} and Check-out ${program.schedule.checkOutStart || "10:40"} - ${program.schedule.checkOutEnd || "17:30"}`;
       }
     } else {
         programName = "Program Not Found";
@@ -39,7 +39,7 @@ export default async function ParticipantDashboard() {
     programName,
     programId: programId.toString(),
     userId: user?._id.toString(),
-    sessionDate: `Today: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`,
+    sessionDate: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
     checkInWindow,
     currentTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
   };
@@ -49,7 +49,7 @@ export default async function ParticipantDashboard() {
 
       <Sidebar />
 
-      <div className="flex flex-1 flex-col min-w-0 w-full sm:ml-20 md:ml-24 lg:ml-[120px] pb-24 sm:pb-0">
+      <div className="flex flex-1 flex-col min-w-0 sm:ml-20 md:ml-24 lg:ml-[120px] pb-24 sm:pb-0">
 
         <TopBar
           userName={userData.userName}
@@ -60,7 +60,7 @@ export default async function ParticipantDashboard() {
         />
 
         {/* RESPONSIVE CONTENT */}
-        <main className="px-4 sm:px-6 md:px-12 py-6 md:py-10 w-full flex-1 max-w-[1600px] mx-auto">
+        <main className="px-4 sm:px-6 py-6 md:py-10 flex-1">
           <div className="w-full min-w-0 flex flex-col gap-8 md:gap-12">
 
             {/* Row 1: Program Card + Attendance Chart - Responsive Grid */}
@@ -96,7 +96,7 @@ export default async function ParticipantDashboard() {
             </div>
 
             {/* Row 3: Attendance Calendar */}
-            <div className="opacity-50">
+            <div className="w-full">
               <AttendanceCalendar
                 programId={userData.programId}
                 userId={userData.userId || ""}

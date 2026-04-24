@@ -1,4 +1,3 @@
-// src/scripts/init-db.ts
 import { getDb } from "../lib/mongodb";
 
 async function initializeDatabase() {
@@ -13,7 +12,7 @@ async function initializeDatabase() {
     await db.collection("users").createIndex({ programId: 1 });
 
     console.log("Creating compound index for attendance...");
-    // Crucial for performance with many users checking in simultaneously
+    
     await db.collection("attendance").createIndex(
       { userId: 1, programId: 1, date: 1 },
       { name: "attendance_lookup" }

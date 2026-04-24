@@ -7,17 +7,11 @@ import { manualAttendanceSchema } from "@/lib/validation";
 import { getProgramDateWindowErrorForDate } from "@/lib/program-time";
 import { format } from "date-fns";
 
-/**
- * POST /api/attendance/manual
- * Record attendance manually (Staff/Admin only)
- * Used for late participants or other special cases
- * Required: userId, programId, date, checkInStatus, notes (optional)
- */
 export async function POST(req: NextRequest) {
   try {
     const claims = await requireAuthOrRedirect();
 
-    // Only staff and admin can record manually
+    
     if (!["staff", "admin"].includes(claims.role)) {
       console.warn(
         `[MANUAL_ATTENDANCE] Unauthorized attempt by ${claims.role} user ${claims.userId}`
@@ -50,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     // Verify user and program exist
     const [user, program] = await Promise.all([
-      users.findOne({ _id: new ObjectId(userId), isActive: true }),
+      users.findOne({ _id: new ObjectId(userId) }),
       programs.findOne({ _id: new ObjectId(programId), isActive: true }),
     ]);
 
@@ -101,28 +95,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if record already exists for this date
-    const existing = await attendance.findOne({
-      userId: new ObjectId(userId),
-      programId: new ObjectId(programId),
-      date: attendanceDate,
-    });
-
-    if (existing) {
-      console.warn(
-        `[MANUAL_ATTENDANCE] Record already exists for user ${userId} on ${attendanceDate.toDateString()}`
-      );
-      return NextResponse.json(
-        { error: "Attendance already recorded for this date" },
-        { status: 409 }
-      );
-    }
-
     const recordedBy = new ObjectId(claims.userId);
     const now = new Date();
 
-    // Create manual record
-    const insertResult = await attendance.insertOne({
+    const recordUpdate = {
       userId: new ObjectId(userId),
       programId: new ObjectId(programId),
       type: "manual",
@@ -134,13 +110,27 @@ export async function POST(req: NextRequest) {
       manualNotes: notes,
       recordedBy,
       recordedByName: claims.name,
-      createdAt: now,
       updatedAt: now,
-    });
+    };
 
-    // Verify insertion
+    //Use updateOne with upsert to create or replace the record for that day
+    const updateResult = await attendance.updateOne(
+      {
+        userId: new ObjectId(userId),
+        programId: new ObjectId(programId),
+        date: attendanceDate,
+      },
+      {
+        $set: recordUpdate,
+        $setOnInsert: { createdAt: now },
+      },
+      { upsert: true }
+    );
+
     const verification = await attendance.findOne({
-      _id: insertResult.insertedId,
+      userId: new ObjectId(userId),
+      programId: new ObjectId(programId),
+      date: attendanceDate,
     });
 
     if (!verification) {
@@ -181,7 +171,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         ok: true,
-        attendanceId: insertResult.insertedId,
+        attendanceId: verification._id,
         record: verification,
       },
       { status: 201 }

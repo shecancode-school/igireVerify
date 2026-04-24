@@ -21,7 +21,7 @@ export const useSocket = () => {
         addTrailingSlash: false,
       });
       socketRef.current = client;
-      // Set state asynchronously to avoid cascading renders warning
+      
       setTimeout(() => setSocket(client), 0);
     }
 

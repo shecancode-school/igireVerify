@@ -93,6 +93,7 @@ interface User {
 interface AttendanceRecord {
   _id: string;
   userId: string;
+  programId?: string;
   userName: string;
   userEmail: string;
   profilePhotoUrl?: string;
@@ -102,6 +103,8 @@ interface AttendanceRecord {
   status: string;
   location?: string;
   createdAt: string;
+  checkInPhotoUrl?: string;
+  checkOutPhotoUrl?: string;
 }
 
 type TabType = 'overview' | 'programs' | 'users' | 'attendance' | 'reports' | 'settings';
@@ -118,13 +121,13 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (tabParam && ['overview', 'programs', 'users', 'attendance', 'reports', 'settings'].includes(tabParam)) {
-       setActiveTab(tabParam);
+      setActiveTab(tabParam);
     }
   }, [tabParam]);
 
   const handleTabChange = (tab: TabType) => {
-     setActiveTab(tab);
-     router.push(`/dashboard/admin?tab=${tab}`);
+    setActiveTab(tab);
+    router.push(`/dashboard/admin?tab=${tab}`);
   };
   const [stats, setStats] = useState<Stats>({
     totalPrograms: 0,
@@ -157,9 +160,9 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!socket) return;
-    
+
     joinAdminRoom(socket);
-    
+
     const handleUpdate = () => {
       console.log("Admin Dashboard: Real-time update received");
       fetchInitialData();
@@ -185,17 +188,26 @@ export default function AdminDashboard() {
   const [userName, setUserName] = useState('Admin User');
   const [userRole, setUserRole] = useState('admin');
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [selectedAttendanceRecord, setSelectedAttendanceRecord] = useState<AttendanceRecord | null>(null);
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [manualError, setManualError] = useState<string | null>(null);
+  const [manualForm, setManualForm] = useState({
+    checkInStatus: 'on-time',
+    checkOutStatus: '',
+    notes: ''
+  });
 
   const [showProgramModal, setShowProgramModal] = useState(false);
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const defaultSchedule = {
-      checkInStart: '08:00',
-      checkInEnd: '08:30',
-      classStart: '09:00',
-      checkOutStart: '17:00',
-      checkOutEnd: '17:30',
-      lateAfter: '08:15',
-      days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    checkInStart: '08:00',
+    checkInEnd: '08:30',
+    classStart: '09:00',
+    checkOutStart: '17:00',
+    checkOutEnd: '17:30',
+    lateAfter: '08:15',
+    days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
   };
   const [programForm, setProgramForm] = useState({
     name: '',
@@ -263,12 +275,12 @@ export default function AdminDashboard() {
         const programsData = await programsRes.json();
         setPrograms(programsData);
       }
-      
+
       if (chartRes.ok) {
         const cData = await chartRes.json();
         setChartData(cData.data || []);
       }
-      
+
       if (activityRes.ok) {
         const aData = await activityRes.json();
         setActivity(aData.activity || []);
@@ -417,7 +429,7 @@ export default function AdminDashboard() {
     setDeleteDialog({ ...deleteDialog, isOpen: false });
   };
 
-  const handleDownloadReport = async (formatType: 'csv' | 'excel' | 'pdf' | 'gdoc' = 'csv') => {
+  const handleDownloadReport = async (formatType: 'excel' | 'word' | 'pdf' = 'word') => {
     try {
       let url = `/api/admin/reports?startDate=${reportStartDate}&endDate=${reportEndDate}&format=json`;
       if (reportProgramId) {
@@ -428,7 +440,7 @@ export default function AdminDashboard() {
       if (!response.ok) throw new Error('Failed to fetch report data');
       const resData = await response.json();
       const records = resData.data || [];
-      
+
       const fileNameStr = `Attendance-Report-${reportStartDate}-to-${reportEndDate}`;
 
       const summary = resData.summary || {};
@@ -463,15 +475,15 @@ export default function AdminDashboard() {
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(46, 125, 50); // #2E7D32
         doc.text('Igire Verify', 14, 20);
-        
+
         doc.setFontSize(14);
         doc.setTextColor(100, 100, 100);
         doc.text('Admin Panel', 14, 28);
-        
+
         doc.setFontSize(16);
         doc.setTextColor(0, 0, 0);
         doc.text('Attendance Report' + (reportProgramId ? ' - Specific Program' : ' - All Programs'), 14, 40);
-        
+
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.text(`Date Range: ${reportStartDate} to ${reportEndDate}`, 14, 47);
@@ -480,25 +492,25 @@ export default function AdminDashboard() {
         doc.setDrawColor(200, 200, 200);
         doc.setFillColor(245, 245, 245);
         doc.roundedRect(14, 60, pageWidth - 28, 25, 3, 3, 'FD');
-        
+
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0,0,0);
-        
+        doc.setTextColor(0, 0, 0);
+
         const summaryY = 70;
         doc.text(`Total Records: ${totalParticipants}`, 20, summaryY);
-        
+
         doc.setTextColor(46, 125, 50); // Green
         doc.text(`Present: ${present}`, 60, summaryY);
-        
+
         doc.setTextColor(245, 158, 11); // Orange
         doc.text(`Late: ${late}`, 95, summaryY);
-        
+
         doc.setTextColor(220, 38, 38); // Red
         doc.text(`Absent: ${absent}`, 125, summaryY);
         doc.setTextColor(37, 99, 235); // Blue
         doc.text(`Checked In Only: ${incomplete}`, 20, summaryY + 8);
-        
+
         doc.setTextColor(0, 0, 0);
         doc.text(`Rate: ${attendanceRate}%`, 160, summaryY);
 
@@ -511,28 +523,28 @@ export default function AdminDashboard() {
           bodyStyles: { fontSize: 9 },
           alternateRowStyles: { fillColor: [250, 250, 250] },
           didParseCell: (hookData) => {
-             if (hookData.section === 'body' && hookData.column.index === 5) {
-                const statusStr = hookData.cell.raw as string;
-                if (statusStr === 'Present') hookData.cell.styles.textColor = [46, 125, 50];
-                if (statusStr === 'Late') hookData.cell.styles.textColor = [245, 158, 11];
-                if (statusStr === 'Absent') hookData.cell.styles.textColor = [220, 38, 38];
-                if (statusStr === 'Checked In') hookData.cell.styles.textColor = [37, 99, 235];
-                hookData.cell.styles.fontStyle = 'bold';
-             }
+            if (hookData.section === 'body' && hookData.column.index === 5) {
+              const statusStr = hookData.cell.raw as string;
+              if (statusStr === 'Present') hookData.cell.styles.textColor = [46, 125, 50];
+              if (statusStr === 'Late') hookData.cell.styles.textColor = [245, 158, 11];
+              if (statusStr === 'Absent') hookData.cell.styles.textColor = [220, 38, 38];
+              if (statusStr === 'Checked In') hookData.cell.styles.textColor = [37, 99, 235];
+              hookData.cell.styles.fontStyle = 'bold';
+            }
           },
-          
+
           didDrawPage: (hookData) => {
-      
+
             doc.setTextColor(200, 200, 200);
             doc.setFontSize(40);
             doc.saveGraphicsState();
-            
+
             // @ts-ignore - GState constructor is available at runtime but missing from types
             doc.setGState(new (doc as any).GState({ opacity: 0.1 }));
             doc.text('Confidential - Igire Verify', 40, 150, { angle: 45 });
             doc.restoreGraphicsState();
 
-          
+
             const pageSize = doc.internal.pageSize;
             const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
             doc.setFontSize(8);
@@ -543,7 +555,7 @@ export default function AdminDashboard() {
             doc.text(`Total Records: ${totalParticipants}`, pageWidth / 2, footerY, { align: 'center' });
           }
         });
-        
+
         doc.save(`${fileNameStr}.pdf`);
       } else if (formatType === 'excel') {
         const worksheetData = [
@@ -562,29 +574,79 @@ export default function AdminDashboard() {
           ['Total Records', totalParticipants],
           ['Generated by Igire Verify Admin System']
         ];
-        
+
         const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
         const tableStartRow = 9;
         worksheet['!autofilter'] = { ref: `A${tableStartRow + 1}:J${tableStartRow + 1 + totalParticipants}` };
 
         worksheet['!cols'] = [
-           { wch: 12 }, { wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }, { wch: 10 }, { wch: 30 }, { wch: 8 }
+          { wch: 12 }, { wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 35 }, { wch: 10 }, { wch: 30 }, { wch: 8 }
         ];
 
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance Report");
         XLSX.writeFile(workbook, `${fileNameStr}.xlsx`);
       } else {
-        const csvContent = [
-          tableHeaders.join(','),
-          ...tableRows.map((row: any) => row.map((field: any) => `"${field}"`).join(','))
-        ].join('\n');
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        // Generate Word Document (HTML markup with .doc extension, opens natively in Word and Google Docs)
+        const wordHtml = `
+          <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+          <head>
+            <meta charset="utf-8">
+            <title>Attendance Report</title>
+            <style>
+              body { font-family: 'Arial', sans-serif; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #dddddd; text-align: left; padding: 8px; font-size: 11pt; }
+              th { background-color: #f2f2f2; font-weight: bold; }
+              .header { text-align: center; margin-bottom: 30px; }
+              .title { font-size: 24pt; font-weight: bold; color: #2E7D32; }
+              .subtitle { font-size: 14pt; color: #555555; }
+              .summary { width: 50%; margin: 20px 0; border: none; }
+              .summary td { border: none; padding: 4px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div class="title">Igire Verify - Admin Panel</div>
+              <div class="subtitle">Attendance Report (${reportProgramId ? 'Specific Program' : 'All Programs'})</div>
+              <div>Date Range: ${reportStartDate} to ${reportEndDate}</div>
+              <div>Generated on: ${format(new Date(), 'MMMM dd, yyyy')} by ${userName}</div>
+            </div>
+
+            <h3>Summary Statistics</h3>
+            <table class="summary">
+              <tr><td><b>Total Records:</b></td><td>${totalParticipants}</td></tr>
+              <tr><td><b>Present:</b></td><td style="color: #2E7D32;">${present}</td></tr>
+              <tr><td><b>Late:</b></td><td style="color: #d97706;">${late}</td></tr>
+              <tr><td><b>Absent:</b></td><td style="color: #dc2626;">${absent}</td></tr>
+              <tr><td><b>Checked In Only:</b></td><td style="color: #2563eb;">${incomplete}</td></tr>
+              <tr><td><b>Attendance Rate:</b></td><td><b>${attendanceRate}%</b></td></tr>
+            </table>
+
+            <h3>Detailed Attendance Logs</h3>
+            <table>
+              <thead>
+                <tr>
+                  ${tableHeaders.map(h => `<th>${h}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows.map((row: any) => `
+                  <tr>
+                    ${row.map((cell: any) => `<td>${cell}</td>`).join('')}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </body>
+          </html>
+        `;
+
+        const blob = new Blob(['\\ufeff', wordHtml], { type: 'application/msword;charset=utf-8' });
         const objUrl = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = objUrl;
-        a.download = `${fileNameStr}.csv`;
+        a.download = `${fileNameStr}.doc`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -614,7 +676,13 @@ export default function AdminDashboard() {
       <div className="flex flex-col-reverse lg:flex-row min-h-screen bg-gray-100">
         <AdminSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <AdminTopBar userName={userName} userRole={userRole} profilePhotoUrl={profilePhotoUrl} />
+          <AdminTopBar
+            userName={userName}
+            userRole={userRole}
+            profilePhotoUrl={profilePhotoUrl}
+            sessionDate={liveDate}
+            currentTime={liveTime}
+          />
           <div className="flex-1 p-4 sm:p-6 pb-24 lg:pb-6">
             <div className="animate-pulse">
               <div className="h-8 bg-gray-300 rounded w-1/4 mb-6"></div>
@@ -630,11 +698,76 @@ export default function AdminDashboard() {
     );
   }
 
+  const handleManualSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setManualError(null);
+    if (!selectedAttendanceRecord || !manualForm.notes.trim()) {
+      setManualError('A reason / communication note is required.');
+      return;
+    }
+
+    // Resolve userId — always a plain string from the API now
+    const userId = String(selectedAttendanceRecord.userId);
+
+    // Resolve programId: try from the record first, then look up from the programs list by name
+    let programId = String((selectedAttendanceRecord as any).programId || '');
+    if (!programId || programId.length !== 24) {
+      const matched = programs.find(
+        p => p.name === selectedAttendanceRecord.programName
+      );
+      programId = matched?._id?.toString() || '';
+    }
+
+    if (!programId || programId.length !== 24) {
+      setManualError('Could not resolve the program for this participant. Please refresh the page and try again.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const payload = {
+        userId,
+        programId,
+        date: selectedDate,
+        checkInStatus: manualForm.checkInStatus,
+        checkOutStatus: manualForm.checkOutStatus || undefined,
+        notes: manualForm.notes
+      };
+
+      const response = await fetch('/api/attendance/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setShowManualModal(false);
+        setManualError(null);
+        fetchAttendanceData();
+        fetchInitialData();
+      } else {
+        const err = await response.json();
+        setManualError(err.error || 'Failed to save adjustment. Please try again.');
+      }
+    } catch (error) {
+      console.error('Manual adjustment error:', error);
+      setManualError('A connection error occurred. Please check your internet and try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col sm:flex-col lg:flex-row min-h-screen bg-gray-100 w-full overflow-x-hidden">
+    <div className="flex flex-col sm:flex-col lg:flex-row h-screen bg-gray-100 w-full overflow-hidden">
       <AdminSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <AdminTopBar userName={userName} userRole={userRole} profilePhotoUrl={profilePhotoUrl} />
+      <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
+        <AdminTopBar
+          userName={userName}
+          userRole={userRole}
+          profilePhotoUrl={profilePhotoUrl}
+          sessionDate={liveDate}
+          currentTime={liveTime}
+        />
 
         <div className="flex-1 overflow-y-auto pb-24 sm:pb-0">
           {/* Tab Navigation - Responsive */}
@@ -646,11 +779,10 @@ export default function AdminDashboard() {
                   <button
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`flex items-center px-2 sm:px-3 md:px-4 py-2 border-b-2 font-medium text-xs sm:text-sm transition-colors ${
-                      activeTab === tab.id
+                    className={`flex items-center px-2 sm:px-3 md:px-4 py-2 border-b-2 font-medium text-xs sm:text-sm transition-colors ${activeTab === tab.id
                         ? 'border-[#2E7D32] text-[#2E7D32]'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                      }`}
                   >
                     <Icon className="w-4 h-4 mr-1 sm:mr-2" />
                     <span className="hidden sm:inline">{tab.name}</span>
@@ -672,7 +804,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="mt-3 sm:mt-0 text-right bg-gray-50 px-3 sm:px-5 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-gray-200 whitespace-nowrap">
                     <p className="text-sm sm:text-md font-bold text-gray-900">{liveDate}</p>
-                    <p className="text-[#2E7D32] text-xs sm:text-sm font-bold flex items-center justify-end gap-1 mt-1"><Clock className="w-3 h-3 sm:w-4 sm:h-4"/> {liveTime}</p>
+                    <p className="text-[#2E7D32] text-xs sm:text-sm font-bold flex items-center justify-end gap-1 mt-1"><Clock className="w-3 h-3 sm:w-4 sm:h-4" /> {liveTime}</p>
                   </div>
                 </div>
 
@@ -758,17 +890,17 @@ export default function AdminDashboard() {
                     {/* Quick Stats Row */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                       <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-2xl border border-gray-200 flex flex-col justify-center items-center text-center shadow-sm hover:shadow-md transition-shadow">
-                        <Activity className="w-5 sm:w-6 h-5 sm:h-6 text-blue-500 mb-2"/>
+                        <Activity className="w-5 sm:w-6 h-5 sm:h-6 text-blue-500 mb-2" />
                         <p className="text-gray-500 text-[10px] sm:text-xs font-medium tracking-wide uppercase">Most Active Program</p>
                         <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate max-w-full text-center">{stats.mostActiveProgram}</h3>
                       </div>
                       <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-2xl border border-gray-200 flex flex-col justify-center items-center text-center shadow-sm hover:shadow-md transition-shadow">
-                        <TrendingUp className="w-5 sm:w-6 h-5 sm:h-6 text-green-500 mb-2"/>
+                        <TrendingUp className="w-5 sm:w-6 h-5 sm:h-6 text-green-500 mb-2" />
                         <p className="text-gray-500 text-[10px] sm:text-xs font-medium tracking-wide uppercase">Avg Weekly Rate</p>
                         <h3 className="text-base sm:text-lg font-bold text-gray-900">{stats.avgAttendanceRate}%</h3>
                       </div>
                       <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-2xl border border-gray-200 flex flex-col justify-center items-center text-center shadow-sm hover:shadow-md transition-shadow">
-                        <AlertCircle className="w-5 sm:w-6 h-5 sm:h-6 text-orange-500 mb-2"/>
+                        <AlertCircle className="w-5 sm:w-6 h-5 sm:h-6 text-orange-500 mb-2" />
                         <p className="text-gray-500 text-[10px] sm:text-xs font-medium tracking-wide uppercase">Late This Month</p>
                         <h3 className="text-base sm:text-lg font-bold text-gray-900">{stats.lateThisMonth}</h3>
                       </div>
@@ -795,11 +927,11 @@ export default function AdminDashboard() {
                     {/* Mini Calendar Preview */}
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
                       <div className="flex justify-between items-center mb-4">
-                         <h2 className="text-lg font-bold text-gray-900">Calendar</h2>
-                         <div className="flex gap-2">
-                            <button className="p-1 hover:bg-gray-100 rounded-lg text-gray-600"><ChevronLeft className="w-5 h-5"/></button>
-                            <button className="p-1 hover:bg-gray-100 rounded-lg text-gray-600"><ChevronRight className="w-5 h-5"/></button>
-                         </div>
+                        <h2 className="text-lg font-bold text-gray-900">Calendar</h2>
+                        <div className="flex gap-2">
+                          <button className="p-1 hover:bg-gray-100 rounded-lg text-gray-600"><ChevronLeft className="w-5 h-5" /></button>
+                          <button className="p-1 hover:bg-gray-100 rounded-lg text-gray-600"><ChevronRight className="w-5 h-5" /></button>
+                        </div>
                       </div>
                       <div className="text-center font-semibold text-gray-800 mb-4">{format(new Date(), 'MMMM yyyy')}</div>
                       <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-gray-400 mb-2">
@@ -807,47 +939,46 @@ export default function AdminDashboard() {
                       </div>
                       <div className="grid grid-cols-7 gap-1 text-center text-sm font-medium">
                         {(() => {
-                           const today = new Date();
-                           const monthStart = startOfMonth(today);
-                           const monthEnd = endOfMonth(monthStart);
-                           const startDate = startOfWeek(monthStart);
-                           const endDate = endOfWeek(monthEnd);
-                           
-                           const dateFormat = "d";
-                           const rows = [];
-                           let days = [];
-                           let day = startDate;
-                           let formattedDate = "";
-                           
-                           while (day <= endDate) {
-                             for (let i = 0; i < 7; i++) {
-                               formattedDate = format(day, dateFormat);
-                               const isToday = isSameDay(day, today);
-                               const isCurrentMonth = isSameMonth(day, monthStart);
-                               
-                               days.push(
-                                 <div
-                                   key={day.toString()}
-                                   className={`p-2 rounded-lg ${
-                                      isToday 
-                                       ? 'bg-[#2E7D32] text-white shadow-md font-bold cursor-pointer'
-                                       : isCurrentMonth
-                                         ? 'hover:bg-gray-50 cursor-pointer text-gray-700'
-                                         : 'text-gray-300'
-                                   }`}
-                                 >
-                                   {formattedDate}
-                                 </div>
-                               );
-                               day = addDays(day, 1);
-                             }
-                             rows.push(...days);
-                             days = [];
-                           }
-                           return rows;
+                          const today = new Date();
+                          const monthStart = startOfMonth(today);
+                          const monthEnd = endOfMonth(monthStart);
+                          const startDate = startOfWeek(monthStart);
+                          const endDate = endOfWeek(monthEnd);
+
+                          const dateFormat = "d";
+                          const rows = [];
+                          let days = [];
+                          let day = startDate;
+                          let formattedDate = "";
+
+                          while (day <= endDate) {
+                            for (let i = 0; i < 7; i++) {
+                              formattedDate = format(day, dateFormat);
+                              const isToday = isSameDay(day, today);
+                              const isCurrentMonth = isSameMonth(day, monthStart);
+
+                              days.push(
+                                <div
+                                  key={day.toString()}
+                                  className={`p-2 rounded-lg ${isToday
+                                      ? 'bg-[#2E7D32] text-white shadow-md font-bold cursor-pointer'
+                                      : isCurrentMonth
+                                        ? 'hover:bg-gray-50 cursor-pointer text-gray-700'
+                                        : 'text-gray-300'
+                                    }`}
+                                >
+                                  {formattedDate}
+                                </div>
+                              );
+                              day = addDays(day, 1);
+                            }
+                            rows.push(...days);
+                            days = [];
+                          }
+                          return rows;
                         })()}
                         <div className="col-span-7 w-full mt-2">
-                           <button onClick={() => handleTabChange('attendance')} className="w-full px-4 py-2 text-sm font-semibold text-[#2E7D32] border border-[#BDE4C6] rounded-xl hover:bg-green-50 transition-colors">Expand Calendar</button>
+                          <button onClick={() => handleTabChange('attendance')} className="w-full px-4 py-2 text-sm font-semibold text-[#2E7D32] border border-[#BDE4C6] rounded-xl hover:bg-green-50 transition-colors">Expand Calendar</button>
                         </div>
                       </div>
                     </div>
@@ -880,34 +1011,34 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* Recent Activity Feed */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col" style={{height: "400px"}}>
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col" style={{ height: "400px" }}>
                       <h2 className="text-lg font-bold text-gray-900 mb-4">Live Activity Feed</h2>
                       <div className="overflow-y-auto pr-2 space-y-4 flex-1 custom-scrollbar">
                         {activity.length === 0 ? (
-                           <div className="flex flex-col items-center justify-center h-full text-center">
-                             <Activity className="w-8 h-8 text-gray-300 mb-2"/>
-                             <p className="text-sm text-gray-500">No recent activity found.</p>
-                           </div>
+                          <div className="flex flex-col items-center justify-center h-full text-center">
+                            <Activity className="w-8 h-8 text-gray-300 mb-2" />
+                            <p className="text-sm text-gray-500">No recent activity found.</p>
+                          </div>
                         ) : (
                           activity.map((record) => (
                             <div key={record.id} className="flex gap-3 text-sm pb-4 border-b border-gray-50 last:border-0 last:pb-0">
-                               <div className={`w-2 h-2 mt-1.5 rounded-full shrink-0 ${record.type === 'checkin' ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                               <div>
-                                 <p className="text-gray-900">
-                                   <span className="font-semibold">{record.userName}</span> 
-                                   <span className="text-gray-500"> ({record.programName})</span>
-                                 </p>
-                                 <p className="text-gray-600 mt-0.5">
-                                   {record.type === 'checkin' ? 'Checked in' : 'Checked out'} at <span className="font-medium text-gray-800">{format(new Date(record.time), 'HH:mm')}</span>
-                                   {record.status === 'late' && <span className="ml-2 text-orange-500 text-xs font-semibold bg-orange-100 px-2 py-0.5 rounded-full">LATE</span>}
-                                 </p>
-                               </div>
+                              <div className={`w-2 h-2 mt-1.5 rounded-full shrink-0 ${record.type === 'checkin' ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                              <div>
+                                <p className="text-gray-900">
+                                  <span className="font-semibold">{record.userName}</span>
+                                  <span className="text-gray-500"> ({record.programName})</span>
+                                </p>
+                                <p className="text-gray-600 mt-0.5">
+                                  {record.type === 'checkin' ? 'Checked in' : 'Checked out'} at <span className="font-medium text-gray-800">{format(new Date(record.time), 'HH:mm')}</span>
+                                  {record.status === 'late' && <span className="ml-2 text-orange-500 text-xs font-semibold bg-orange-100 px-2 py-0.5 rounded-full">LATE</span>}
+                                </p>
+                              </div>
                             </div>
                           ))
                         )}
                       </div>
                     </div>
-                    
+
                   </div>
                 </div>
               </div>
@@ -1051,47 +1182,47 @@ export default function AdminDashboard() {
                         filteredUsers
                           .filter(user => !selectedProgram || user.programId === selectedProgram)
                           .map((user) => (
-                          <tr key={user._id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 text-sm">
-                              <div className="flex items-center">
-                                {user.profilePhotoUrl ? (
-                                  <img
-                                    src={user.profilePhotoUrl}
-                                    alt={user.name}
-                                    className="w-8 h-8 rounded-full mr-3"
-                                  />
-                                ) : (
-                                  <div className="w-8 h-8 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
-                                    <Users className="w-4 h-4 text-gray-600" />
-                                  </div>
-                                )}
-                                <span className="text-gray-900 font-medium">{user.name}</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600 capitalize">{user.role}</td>
-                            <td className="px-6 py-4 text-sm">
-                              <select
-                                value={user.programId || ''}
-                                onChange={(e) => handleUserProgramUpdate(user._id, e.target.value || null)}
-                                className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent outline-none"
-                              >
-                                <option value="">No Program</option>
-                                {programs.map(program => (
-                                  <option key={program._id} value={program._id}>{program.name}</option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="px-6 py-4 text-sm">
-                              <button
-                                onClick={() => handleDeleteUser(user._id, user.name)}
-                                className="text-red-600 hover:text-red-800 transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
+                            <tr key={user._id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 text-sm">
+                                <div className="flex items-center">
+                                  {user.profilePhotoUrl ? (
+                                    <img
+                                      src={user.profilePhotoUrl}
+                                      alt={user.name}
+                                      className="w-8 h-8 rounded-full mr-3"
+                                    />
+                                  ) : (
+                                    <div className="w-8 h-8 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
+                                      <Users className="w-4 h-4 text-gray-600" />
+                                    </div>
+                                  )}
+                                  <span className="text-gray-900 font-medium">{user.name}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
+                              <td className="px-6 py-4 text-sm text-gray-600 capitalize">{user.role}</td>
+                              <td className="px-6 py-4 text-sm">
+                                <select
+                                  value={user.programId || ''}
+                                  onChange={(e) => handleUserProgramUpdate(user._id, e.target.value || null)}
+                                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#2E7D32] focus:border-transparent outline-none"
+                                >
+                                  <option value="">No Program</option>
+                                  {programs.map(program => (
+                                    <option key={program._id} value={program._id}>{program.name}</option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="px-6 py-4 text-sm">
+                                <button
+                                  onClick={() => handleDeleteUser(user._id, user.name)}
+                                  className="text-red-600 hover:text-red-800 transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
                       )}
                     </tbody>
                   </table>
@@ -1134,6 +1265,8 @@ export default function AdminDashboard() {
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Check-out</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Location</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Verification</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -1177,21 +1310,60 @@ export default function AdminDashboard() {
                                 : '--:--:--'}
                             </td>
                             <td className="px-6 py-4 text-sm">
-                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                record.status.toLowerCase() === 'on time' || record.status.toLowerCase() === 'present'
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${record.status.toLowerCase() === 'present' || record.status.toLowerCase() === 'on time'
                                   ? 'bg-green-100 text-green-700'
-                                  : record.status.toLowerCase() === 'late'
-                                  ? 'bg-orange-100 text-orange-700'
-                                : record.status.toLowerCase() === 'checked in'
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : record.status.toLowerCase() === 'absent'
-                                  ? 'bg-red-100 text-red-700 font-bold'
-                                  : 'bg-gray-100 text-gray-700'
-                              }`}>
+                                  : record.status.toLowerCase() === 'present (late)'
+                                    ? 'bg-green-50 text-green-600 border border-green-200'
+                                    : record.status.toLowerCase() === 'late'
+                                      ? 'bg-orange-100 text-orange-700'
+                                      : record.status.toLowerCase() === 'checked in'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : record.status.toLowerCase() === 'absent'
+                                          ? 'bg-red-100 text-red-700 font-bold'
+                                          : record.status.toLowerCase() === 'excused'
+                                            ? 'bg-purple-100 text-purple-700 font-bold'
+                                            : record.status.toLowerCase() === 'half-day'
+                                              ? 'bg-yellow-100 text-yellow-700 font-bold'
+                                              : 'bg-gray-100 text-gray-700'
+                                }`}>
                                 {record.status}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-600">{record.location || '-'}</td>
+                            <td className="px-6 py-4 text-sm">
+                              <button
+                                onClick={() => {
+                                  setSelectedAttendanceRecord(record);
+                                  setShowPhotoModal(true);
+                                }}
+                                disabled={!record.checkInPhotoUrl && !record.checkOutPhotoUrl}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${record.checkInPhotoUrl || record.checkOutPhotoUrl
+                                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm'
+                                    : 'bg-gray-50 text-gray-400 cursor-not-allowed grayscale'
+                                  }`}
+                              >
+                                <Users className="w-3.5 h-3.5" />
+                                <span>{record.checkOutPhotoUrl ? 'View All' : record.checkInPhotoUrl ? 'View In' : 'No Photo'}</span>
+                              </button>
+                            </td>
+                            <td className="px-6 py-4 text-sm">
+                              <button
+                                onClick={() => {
+                                  setSelectedAttendanceRecord(record);
+                                  setManualError(null);
+                                  setManualForm({
+                                    checkInStatus: record.status.toLowerCase() === 'absent' ? 'on-time' : (record.status.toLowerCase().replace(' ', '-') as any),
+                                    checkOutStatus: record.checkOutTime ? 'on-time' : '',
+                                    notes: (record as any).manualNotes || ''
+                                  });
+                                  setShowManualModal(true);
+                                }}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 transition-all shadow-sm"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                                <span>Adjust</span>
+                              </button>
+                            </td>
                           </tr>
                         ))
                       )}
@@ -1209,7 +1381,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-8">
-                  
+
                   {/* Left Side: Professional Presets & Calendar Concept */}
                   <div className="flex-1 space-y-6">
                     <div>
@@ -1218,7 +1390,7 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                      <button 
+                      <button
                         onClick={() => {
                           const d = format(new Date(), 'yyyy-MM-dd');
                           setReportStartDate(d); setReportEndDate(d);
@@ -1227,7 +1399,7 @@ export default function AdminDashboard() {
                       >
                         Today
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           const y = new Date(); y.setDate(y.getDate() - 1);
                           const d = format(y, 'yyyy-MM-dd');
@@ -1237,7 +1409,7 @@ export default function AdminDashboard() {
                       >
                         Yesterday
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           const d = new Date(); d.setDate(d.getDate() - 7);
                           setReportStartDate(format(d, 'yyyy-MM-dd')); setReportEndDate(format(new Date(), 'yyyy-MM-dd'));
@@ -1246,7 +1418,7 @@ export default function AdminDashboard() {
                       >
                         Last 7 Days
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           const d = new Date();
                           setReportStartDate(format(startOfWeek(d), 'yyyy-MM-dd')); setReportEndDate(format(endOfWeek(d), 'yyyy-MM-dd'));
@@ -1255,7 +1427,7 @@ export default function AdminDashboard() {
                       >
                         This Week
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           const d = new Date();
                           setReportStartDate(format(startOfMonth(d), 'yyyy-MM-dd')); setReportEndDate(format(endOfMonth(d), 'yyyy-MM-dd'));
@@ -1264,7 +1436,7 @@ export default function AdminDashboard() {
                       >
                         This Month
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           const d = new Date(); d.setMonth(d.getMonth() - 1);
                           setReportStartDate(format(startOfMonth(d), 'yyyy-MM-dd')); setReportEndDate(format(endOfMonth(d), 'yyyy-MM-dd'));
@@ -1273,7 +1445,7 @@ export default function AdminDashboard() {
                       >
                         Last Month
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           setReportStartDate('2020-01-01'); setReportEndDate(format(new Date(), 'yyyy-MM-dd'));
                         }}
@@ -1318,32 +1490,32 @@ export default function AdminDashboard() {
                           <option key={p._id} value={p._id}>{p.name}</option>
                         ))}
                       </select>
-                      
+
                       <div className="text-sm text-gray-500 bg-white p-4 rounded-lg border border-gray-100 mb-6 shadow-sm">
                         <span className="block font-bold text-gray-700 mb-1">Selected Scope:</span>
                         {reportStartDate === reportEndDate ? (
-                           <span>Single day track for {format(new Date(reportStartDate), 'MMM dd, yyyy')}.</span>
+                          <span>Single day track for {format(new Date(reportStartDate), 'MMM dd, yyyy')}.</span>
                         ) : reportStartDate === '2020-01-01' ? (
-                           <span>Comprehensive historic dataset from inception up to {format(new Date(reportEndDate), 'MMM dd, yyyy')}.</span>
+                          <span>Comprehensive historic dataset from inception up to {format(new Date(reportEndDate), 'MMM dd, yyyy')}.</span>
                         ) : (
-                           <span>From {format(new Date(reportStartDate), 'MMM dd, yyyy')} till {format(new Date(reportEndDate), 'MMM dd, yyyy')}.</span>
+                          <span>From {format(new Date(reportStartDate), 'MMM dd, yyyy')} till {format(new Date(reportEndDate), 'MMM dd, yyyy')}.</span>
                         )}
                       </div>
                     </div>
 
                     <div className="space-y-3">
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider text-center">Export Formats</p>
-                      
+
                       <button onClick={() => handleDownloadReport('pdf')} className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md active:scale-95">
-                        <Download className="w-5 h-5"/> Download PDF
+                        <Download className="w-5 h-5" /> Download PDF
                       </button>
 
                       <button onClick={() => handleDownloadReport('excel')} className="w-full flex items-center justify-center gap-2 bg-[#1B5E20] hover:bg-[#134316] text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md active:scale-95">
-                        <FileText className="w-5 h-5"/> Download Excel
+                        <FileText className="w-5 h-5" /> Download Excel
                       </button>
 
-                      <button onClick={() => handleDownloadReport('gdoc')} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md active:scale-95">
-                        <FileText className="w-5 h-5"/> Google Document (CSV)
+                      <button onClick={() => handleDownloadReport('word')} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md active:scale-95 ">
+                        <FileText className="w-5 h-5" /> Download Word Document
                       </button>
                     </div>
                   </div>
@@ -1461,27 +1633,27 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Check-in Start</label>
-                    <input type="time" required value={programForm.schedule.checkInStart} onChange={(e) => setProgramForm({...programForm, schedule: {...programForm.schedule, checkInStart: e.target.value}})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#2E7D32]"/>
+                    <input type="time" required value={programForm.schedule.checkInStart} onChange={(e) => setProgramForm({ ...programForm, schedule: { ...programForm.schedule, checkInStart: e.target.value } })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#2E7D32]" />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Check-in End</label>
-                    <input type="time" required value={programForm.schedule.checkInEnd} onChange={(e) => setProgramForm({...programForm, schedule: {...programForm.schedule, checkInEnd: e.target.value}})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#2E7D32]"/>
+                    <input type="time" required value={programForm.schedule.checkInEnd} onChange={(e) => setProgramForm({ ...programForm, schedule: { ...programForm.schedule, checkInEnd: e.target.value } })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#2E7D32]" />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1 text-orange-600">Late After</label>
-                    <input type="time" required value={programForm.schedule.lateAfter} onChange={(e) => setProgramForm({...programForm, schedule: {...programForm.schedule, lateAfter: e.target.value}})} className="w-full bg-orange-50 px-3 py-2 border border-orange-200 rounded-lg text-sm outline-none focus:ring-1 focus:ring-orange-400"/>
+                    <input type="time" required value={programForm.schedule.lateAfter} onChange={(e) => setProgramForm({ ...programForm, schedule: { ...programForm.schedule, lateAfter: e.target.value } })} className="w-full bg-orange-50 px-3 py-2 border border-orange-200 rounded-lg text-sm outline-none focus:ring-1 focus:ring-orange-400" />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Class Start</label>
-                    <input type="time" required value={programForm.schedule.classStart} onChange={(e) => setProgramForm({...programForm, schedule: {...programForm.schedule, classStart: e.target.value}})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#2E7D32]"/>
+                    <input type="time" required value={programForm.schedule.classStart} onChange={(e) => setProgramForm({ ...programForm, schedule: { ...programForm.schedule, classStart: e.target.value } })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#2E7D32]" />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Check-out Start</label>
-                    <input type="time" required value={programForm.schedule.checkOutStart} onChange={(e) => setProgramForm({...programForm, schedule: {...programForm.schedule, checkOutStart: e.target.value}})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#2E7D32]"/>
+                    <input type="time" required value={programForm.schedule.checkOutStart} onChange={(e) => setProgramForm({ ...programForm, schedule: { ...programForm.schedule, checkOutStart: e.target.value } })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#2E7D32]" />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Check-out End</label>
-                    <input type="time" required value={programForm.schedule.checkOutEnd} onChange={(e) => setProgramForm({...programForm, schedule: {...programForm.schedule, checkOutEnd: e.target.value}})} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#2E7D32]"/>
+                    <input type="time" required value={programForm.schedule.checkOutEnd} onChange={(e) => setProgramForm({ ...programForm, schedule: { ...programForm.schedule, checkOutEnd: e.target.value } })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#2E7D32]" />
                   </div>
                 </div>
 
@@ -1490,16 +1662,16 @@ export default function AdminDashboard() {
                   <div className="flex flex-wrap gap-3">
                     {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
                       <label key={day} className="flex items-center gap-1.5 text-sm bg-gray-50 px-3 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100">
-                        <input 
-                          type="checkbox" 
-                          checked={programForm.schedule.days.includes(day)} 
+                        <input
+                          type="checkbox"
+                          checked={programForm.schedule.days.includes(day)}
                           onChange={(e) => {
-                            const newDays = e.target.checked 
+                            const newDays = e.target.checked
                               ? [...programForm.schedule.days, day]
                               : programForm.schedule.days.filter(d => d !== day);
                             setProgramForm({ ...programForm, schedule: { ...programForm.schedule, days: newDays } });
-                          }} 
-                          className="w-4 h-4 text-[#2E7D32] rounded focus:ring-[#2E7D32]" 
+                          }}
+                          className="w-4 h-4 text-[#2E7D32] rounded focus:ring-[#2E7D32]"
                         />
                         {day.substring(0, 3)}
                       </label>
@@ -1536,8 +1708,8 @@ export default function AdminDashboard() {
       {deleteDialog.isOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-200">
-            <button 
-              onClick={() => setDeleteDialog({ ...deleteDialog, isOpen: false })} 
+            <button
+              onClick={() => setDeleteDialog({ ...deleteDialog, isOpen: false })}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
             >
               <XCircle className="w-6 h-6" />
@@ -1548,7 +1720,7 @@ export default function AdminDashboard() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Delete {deleteDialog.type === 'program' ? 'Program' : 'User'}</h3>
               <p className="text-gray-500 mb-6 px-4">
-                Are you sure you want to delete <span className="font-bold text-gray-900">"{deleteDialog.name}"</span>? 
+                Are you sure you want to delete <span className="font-bold text-gray-900">"{deleteDialog.name}"</span>?
                 This action cannot be undone.
               </p>
               <div className="flex gap-3 w-full">
@@ -1568,6 +1740,188 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Photo Verification Modal */}
+      {showPhotoModal && selectedAttendanceRecord && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[60] overflow-y-auto p-4 sm:p-6">
+          <div className="bg-white rounded-[32px] w-full max-w-4xl shadow-2xl relative animate-in zoom-in-95 duration-300 overflow-hidden">
+            <div className="absolute top-6 right-6 z-10">
+              <button
+                onClick={() => setShowPhotoModal(false)}
+                className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500 transition-colors shadow-sm"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-8 sm:p-10">
+              <div className="flex flex-col sm:flex-row items-center gap-6 mb-10 border-b border-gray-100 pb-8">
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-[32px] overflow-hidden ring-4 ring-green-50 shadow-lg">
+                    {selectedAttendanceRecord.profilePhotoUrl ? (
+                      <img src={selectedAttendanceRecord.profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                        <Users className="w-10 h-10 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-1.5 rounded-xl shadow-lg border-2 border-white">
+                    <UserCheck className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-center sm:text-left">
+                  <h3 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">{selectedAttendanceRecord.userName}</h3>
+                  <p className="text-gray-500 font-bold uppercase tracking-widest text-xs mt-1">{selectedAttendanceRecord.programName} · {selectedAttendanceRecord.status}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Check-in Photo */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between px-2">
+                    <span className="text-sm font-black uppercase tracking-widest text-[#2E7D32]">Check-In Photo</span>
+                    <span className="text-xs font-bold text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                      {selectedAttendanceRecord.checkInTime ? format(new Date(selectedAttendanceRecord.checkInTime), 'hh:mm:ss a') : 'Not captures'}
+                    </span>
+                  </div>
+                  <div className="aspect-[4/3] bg-gray-900 rounded-[32px] overflow-hidden shadow-2xl ring-4 ring-gray-50 relative group">
+                    {selectedAttendanceRecord.checkInPhotoUrl ? (
+                      <img src={selectedAttendanceRecord.checkInPhotoUrl} alt="Check-in" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
+                        <Clock className="w-12 h-12 mb-3 opacity-20" />
+                        <p className="font-bold text-sm tracking-tight">No check-in photo</p>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
+                      <p className="text-white text-xs font-bold">{selectedAttendanceRecord.location || 'Location verified'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Check-out Photo */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between px-2">
+                    <span className="text-sm font-black uppercase tracking-widest text-orange-600">Check-Out Photo</span>
+                    <span className="text-xs font-bold text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                      {selectedAttendanceRecord.checkOutTime ? format(new Date(selectedAttendanceRecord.checkOutTime), 'hh:mm:ss a') : 'Pending'}
+                    </span>
+                  </div>
+                  <div className="aspect-[4/3] bg-gray-900 rounded-[32px] overflow-hidden shadow-2xl ring-4 ring-gray-50 relative group">
+                    {selectedAttendanceRecord.checkOutPhotoUrl ? (
+                      <img src={selectedAttendanceRecord.checkOutPhotoUrl} alt="Check-out" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
+                        <Clock className="w-12 h-12 mb-3 opacity-20" />
+                        <p className="font-bold text-sm tracking-tight text-center px-6">Participant has not checked out yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-12 bg-gray-50 p-6 rounded-[24px] border border-gray-100">
+                <div className="flex items-center gap-3 text-gray-500 mb-2">
+                  <AlertCircle className="w-5 h-5 text-gray-400" />
+                  <span className="font-black uppercase tracking-widest text-[10px]">Verification Audit</span>
+                </div>
+                <p className="text-sm text-gray-600 leading-relaxed font-medium">
+                  Review these images relative to the official profile photo to ensure identity integrity. If images appear suspicious or do not match, please contact the program coordinator.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Manual Attendance Adjustment Modal */}
+      {showManualModal && selectedAttendanceRecord && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[70] overflow-y-auto p-4">
+          <div className="bg-white rounded-[24px] w-full max-w-lg shadow-2xl relative animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-[24px]">
+              <div>
+                <h3 className="text-xl font-black text-gray-900 leading-none">Manual Adjustment</h3>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1.5">{selectedAttendanceRecord.userName}</p>
+              </div>
+              <button onClick={() => setShowManualModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                <XCircle className="w-6 h-6 text-gray-400" />
+              </button>
+            </div>
+
+            <form onSubmit={handleManualSubmit} className="p-6 space-y-6">
+              <div>
+                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Adjust Check-In Status</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['on-time', 'late', 'absent', 'half-day', 'excused'].map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => setManualForm({ ...manualForm, checkInStatus: status })}
+                      className={`px-3 py-2.5 rounded-xl border-2 text-[10px] font-black uppercase tracking-tight transition-all ${manualForm.checkInStatus === status
+                          ? 'bg-[#E8F5E9] border-[#16A34A] text-[#16A34A] shadow-sm'
+                          : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
+                        }`}
+                    >
+                      {status.replace('-', ' ')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Adjust Check-Out Status (Optional)</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['', 'on-time', 'early', 'half-day', 'excused'].map((status) => (
+                    <button
+                      key={status || 'none'}
+                      type="button"
+                      onClick={() => setManualForm({ ...manualForm, checkOutStatus: status })}
+                      className={`px-3 py-2.5 rounded-xl border-2 text-[10px] font-black uppercase tracking-tight transition-all ${manualForm.checkOutStatus === status
+                          ? 'bg-blue-50 border-blue-600 text-blue-600 shadow-sm'
+                          : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
+                        }`}
+                    >
+                      {status === '' ? 'None' : status.replace('-', ' ')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2 font-black">Reason / Communication Note (Mandatory)</label>
+                <textarea
+                  required
+                  value={manualForm.notes}
+                  onChange={(e) => setManualForm({ ...manualForm, notes: e.target.value })}
+                  placeholder="e.g. User sent sick note via WhatsApp, or permission given for business meeting..."
+                  className="w-full h-32 p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:bg-white focus:ring-2 focus:ring-[#16A34A] focus:border-transparent transition-all outline-none"
+                />
+              </div>
+
+              {manualError && (
+                <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-sm font-semibold text-red-700 leading-relaxed">{manualError}</p>
+                </div>
+              )}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowManualModal(false)}
+                  className="flex-1 px-6 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest text-gray-500 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3.5 rounded-xl font-black text-xs uppercase tracking-widest text-white bg-gray-900 hover:bg-[#111111] shadow-lg transition-all active:scale-95"
+                >
+                  Save Adjustment
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

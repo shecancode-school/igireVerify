@@ -8,16 +8,10 @@ import { getUserTimezone, formatTimeWithZone } from "@/lib/timezone-utils";
 import { toZonedTime } from 'date-fns-tz';
 import { getProgramDateWindowError } from "@/lib/program-time";
 
-/**
- * POST /api/attendance/checkin
- * Record check-in for a participant
- * Required: userId, programId, userName, programName, checkInTime, photoUrl
- */
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // Validate input
     const result = checkInSchema.safeParse(body);
     if (!result.success) {
       const issues = result.error.issues;
@@ -41,11 +35,10 @@ export async function POST(req: Request) {
     const nowUTC = new Date();
     let schedule;
     let program;
-    let programTimeZone = 'Africa/Kigali'; // Default timezone
+    let programTimeZone = 'Africa/Kigali';
     if (role === 'staff') {
       schedule = STAFF_RULES;
     } else {
-      // Validate programId format before conversion
       if (!/^[0-9a-fA-F]{24}$/.test(programId)) {
         return NextResponse.json({ error: "Invalid program selected for participant" }, { status: 400 });
       }
@@ -74,16 +67,11 @@ export async function POST(req: Request) {
       }
     }
 
-    // Server time is the source of truth for attendance validation.
-    // Client-sent timestamps can be wrong/manipulated; we only keep them for debugging.
     const checkInDateTime = toZonedTime(nowUTC, programTimeZone);
     const clientReportedCheckInTimeUTC = new Date(checkInTime);
 
-    // The schedule is validated on program creation and update, so it is always correct.
-    // The check-in window is strictly enforced by getAttendanceWindowMessage.
     const windowMessage = getAttendanceWindowMessage('checkin', schedule, checkInDateTime);
     if (windowMessage) {
-      // Show both session and user time for clarity
       const sessionTime = formatTimeWithZone(checkInDateTime, programTimeZone);
       const userTime = formatTimeWithZone(new Date(), req.headers.get('x-timezone') || 'UTC');
       return NextResponse.json({
@@ -91,13 +79,11 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // Check if already checked in today
     const today = new Date(checkInDateTime);
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Helper to safely create ObjectId
     const toObjectId = (id: string): ObjectId | string =>
       /^[0-9a-fA-F]{24}$/.test(id) ? new ObjectId(id) : id;
 
@@ -118,7 +104,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Determine check-in status
     const status = getAttendanceStatus(checkInDateTime, schedule);
 
     const record = {
@@ -133,7 +118,6 @@ export async function POST(req: Request) {
       checkInPhotoUrl: photoUrl,
       checkInGpsLocation: gpsLocation,
       clientReportedCheckInTimeUTC,
-      // Check-in is only allowed after location verification near Igire premises.
       locationLabel: "Igire Rwanda Organisation premises",
       checkInMethod: "AUTO",
       createdAt: nowUTC,
@@ -144,7 +128,6 @@ export async function POST(req: Request) {
     const insertResult = await attendance.insertOne(record);
 
 
-    // Verify insertion
     const verification = await attendance.findOne({ _id: insertResult.insertedId });
     if (!verification) {
       throw new Error("Check-in data not persisted");
@@ -154,7 +137,6 @@ export async function POST(req: Request) {
       `[CHECKIN] User ${userName} checked in. ID: ${insertResult.insertedId}, Status: ${status}`
     );
 
-    // Emit real-time update to the program room
     emitAttendanceUpdate(programId, {
       type: "checkin",
       userId,
@@ -165,7 +147,6 @@ export async function POST(req: Request) {
       timestamp: checkInDateTime.toISOString(),
     });
 
-    // Emit to user's dashboard
     const user = await users.findOne({ _id: new ObjectId(userId) });
     if (user) {
       emitAttendanceUpdate(userId, {
@@ -179,7 +160,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // Emit to HR officer if assigned (only for participants with programs)
     if (program && program.hrOfficer) {
       emitAttendanceUpdate(program.hrOfficer.toString(), {
         type: "checkin",

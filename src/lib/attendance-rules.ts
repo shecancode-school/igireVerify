@@ -27,11 +27,11 @@ export function isValidAttendanceDay(rules: AttendanceRules, date: Date): boolea
 export function getAttendanceStatus(checkInTime: Date, rules: AttendanceRules): 'on-time' | 'late' | 'absent' {
   const checkInTimeStr = formatTimeToHHMM(checkInTime);
 
-  // On-time: checked in before or at lateAfter
+
   if (checkInTimeStr <= rules.lateAfter) {
     return 'on-time';
   }
-  // Late: checked in after lateAfter but before class ends (or end of day)
+
   else {
     return 'late';
   }
@@ -39,7 +39,7 @@ export function getAttendanceStatus(checkInTime: Date, rules: AttendanceRules): 
 
 export function canCheckOut(rules: AttendanceRules, currentTime: Date): boolean {
   const currentTimeStr = formatTimeToHHMM(currentTime);
-  // Must be after class start
+
   return currentTimeStr >= rules.classStart;
 }
 
@@ -55,7 +55,7 @@ export function formatTimeToHHMM(date: Date): string {
 }
 
 function toDisplayTime(value: string): string {
-  // Handle 24h values coming from <input type="time">, e.g. "20:25".
+
   const m = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
   if (!m) return value;
   const h = Number(m[1]);
@@ -74,7 +74,7 @@ export function getAttendanceWindowMessage(
   const timeStr = formatTimeToHHMM(currentTime);
   const dayName = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
 
-  // 1. Check if it's a scheduled day
+
   if (!rules.days.includes(dayName)) {
     return `Today (${dayName}) is not a scheduled working day for your program. Please check back during scheduled sessions: ${rules.days.join(", ")}.`;
   }
@@ -87,7 +87,7 @@ export function getAttendanceWindowMessage(
       return `Check-in window closed at ${toDisplayTime(rules.checkInEnd)}. Please check in during the scheduled window (${toDisplayTime(rules.checkInStart)} - ${toDisplayTime(rules.checkInEnd)}).`;
     }
   } else {
-    // Checkout
+
     if (timeStr < rules.classStart) {
       return `It's too early to check out. Session officially started at ${toDisplayTime(rules.classStart)}.`;
     }
@@ -98,18 +98,14 @@ export function getAttendanceWindowMessage(
       return `Check-out is only allowed between ${toDisplayTime(rules.checkOutStart)} and ${toDisplayTime(rules.checkOutEnd)}. Please return during the scheduled window.`;
     }
   }
-
-  return null; // All good
+  return null;
 }
 
-/**
- * Quick client-side check to see if submission should even be attempted
- */
 export function isWindowOpenNow(
   type: 'checkin' | 'checkout',
   rules: AttendanceRules | null | undefined
 ): { isOpen: boolean; message: string | null } {
-  if (!rules) return { isOpen: true, message: null }; // Fallback to server validation if rules missing
+  if (!rules) return { isOpen: true, message: null }; 
   
   const now = new Date();
   const message = getAttendanceWindowMessage(type, rules, now);

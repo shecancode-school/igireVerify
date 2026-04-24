@@ -1,4 +1,3 @@
-// src/app/api/auth/me/route.ts
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getAuthClaimsFromCookies } from "@/lib/auth";
