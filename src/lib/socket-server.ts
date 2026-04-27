@@ -1,4 +1,3 @@
-// src/lib/socket-server.ts
 import { Server as ServerIO } from 'socket.io';
 
 let io: ServerIO | null = null;

@@ -8,7 +8,7 @@ export default function WelcomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    
+
     sessionStorage.setItem("hasSeenWelcome", "true");
 
     const timer = setTimeout(() => {
@@ -20,36 +20,19 @@ export default function WelcomePage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
-      
-  
-      <div 
-        className="absolute inset-0"
-        style={{
-          background: `
-            repeating-linear-gradient(
-              90deg,
-              #2E7D32 0px,
-              #2E7D32 60px,
-              #4CAF50 60px,
-              #4CAF50 120px,
-              #66BB6A 120px,
-              #66BB6A 180px,
-              #81C784 180px,
-              #81C784 240px
-            )
-          `
-        }}
-      />
+
+
+      <div className="absolute inset-0 bg-[#2E7D32]" />
 
       {/* Overlay for depth */}
-      <div className="absolute inset-0 bg-black/5" />
+      <div className="absolute inset-0 bg-black/10" />
 
       {/* Main Content */}
       <div className="relative z-10 text-center px-6">
-        
+
         {/* Welcome Text - Fade In */}
         <div className="mb-12 animate-fade-in">
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight text-gray-800 mb-2">
+          <h1 className="text-5xl md:text-7xl font-black tracking-tight text-black mb-2 drop-shadow-md">
             WELCOME TO
           </h1>
         </div>
@@ -68,35 +51,22 @@ export default function WelcomePage() {
                 priority
               />
             </div>
-            
+
             {/* Glow effect */}
-            <div className="absolute inset-0 rounded-full bg-white/30 blur-2xl -z-10 animate-pulse-glow" />
+            <div className="absolute inset-0 rounded-full bg-white/20 blur-2xl -z-10 animate-pulse-glow" />
           </div>
         </div>
 
-        {/* IRO Text - Slide Up */}
-        <div className="animate-slide-up-delayed">
-          <h2 className="text-6xl md:text-8xl font-black tracking-wider mb-4"
-              style={{ 
-                color: "#5D4037",
-                textShadow: "2px 2px 4px rgba(0,0,0,0.1)"
-              }}>
-            IRO
-          </h2>
-          <p className="text-xl md:text-2xl font-semibold text-gray-700">
-            Igire Rwanda Organisation
-          </p>
-        </div>
 
         {/* Loading Bar - Fade In Delayed */}
         <div className="mt-16 animate-fade-in-slow">
           <div className="max-w-xs mx-auto">
             {/* Loading bar container */}
             <div className="h-2 bg-white/30 rounded-full overflow-hidden">
-              <div className="h-full bg-white rounded-full animate-loading-bar" 
-                   style={{ 
-                     background: "linear-gradient(90deg, #C47D0E, #FFA726)"
-                   }} 
+              <div className="h-full bg-white rounded-full animate-loading-bar"
+                style={{
+                  background: "linear-gradient(90deg, #C47D0E, #FFA726)"
+                }}
               />
             </div>
             <p className="text-white/90 text-sm mt-3 font-medium">

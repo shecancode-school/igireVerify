@@ -48,7 +48,7 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password required"),
 });
 
-/** Used only by the secured create-admin API (requires ADMIN_SECRET_KEY). */
+
 export const createAdminSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").trim(),
   email: z.string().email("Invalid email").toLowerCase(),
@@ -90,9 +90,9 @@ export const manualAttendanceSchema = z.object({
   userId: z.string().regex(/^[0-9a-f]{24}$/, "Invalid user ID"),
   programId: z.string().regex(/^[0-9a-f]{24}$/, "Invalid program ID"),
   date: z.coerce.date(),
-  checkInStatus: z.enum(["on-time", "late", "absent"]),
-  checkOutStatus: z.enum(["on-time", "early"]).optional(),
-  notes: z.string().max(500, "Notes must be under 500 characters").optional(),
+  checkInStatus: z.enum(["on-time", "late", "absent", "half-day", "excused"]),
+  checkOutStatus: z.enum(["on-time", "early", "half-day", "excused"]).optional(),
+  notes: z.string().min(1, "Notes are mandatory for manual records").max(500),
 });
 
 export const programScheduleSchema = z.object({

@@ -13,10 +13,10 @@ type CameraStatus = "idle" | "active" | "captured" | "error";
 // Igire Rwanda Organization Headquarters - More accurate coordinates
 const IGIRE_LAT = -1.9305;
 const IGIRE_LNG = 30.0747;
-// Increased radius to account for GPS variance (100m is reasonable for indoor/outdoor)
-const IGIRE_RADIUS_METERS = 100;
-// GPS accuracy threshold - more lenient for real-world conditions
-const MIN_GPS_ACCURACY = 100;
+// Increased radius to account for realistic GPS drift
+const IGIRE_RADIUS_METERS = 150;
+// Relaxed accuracy requirement for web browsers and indoor check-ins
+const MIN_GPS_ACCURACY = 200;
 
 interface UserData {
   userName: string;
@@ -132,6 +132,16 @@ export default function CheckOutPage() {
     };
   }, [step]);
 
+  const watchIdRef = useRef<number | null>(null);
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+    };
+  }, []);
+
   const handleVerifyLocation = () => {
     if (!navigator.geolocation) {
       setGpsStatus("error");
@@ -142,15 +152,27 @@ export default function CheckOutPage() {
     setGpsStatus("checking");
     setGpsError(null);
 
-    navigator.geolocation.getCurrentPosition(
+    if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+    if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+
+    timeoutIdRef.current = setTimeout(() => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      setGpsStatus("error");
+      setGpsError("Could not get an accurate GPS signal. Please move outside or near a window and try again.");
+    }, 15000);
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
 
         if (accuracy > MIN_GPS_ACCURACY) {
-          setGpsStatus("error");
-          setGpsError(`GPS accuracy too low (${Math.round(accuracy)}m).`);
+          // Ignore inaccurate readings and wait for a better one
           return;
         }
+
+        // Highly accurate reading acquired
+        if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+        if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
 
         const distance = distanceInMeters(latitude, longitude, IGIRE_LAT, IGIRE_LNG);
 
@@ -163,10 +185,12 @@ export default function CheckOutPage() {
         }
       },
       () => {
+        if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+        if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
         setGpsStatus("error");
-        setGpsError("Failed to get location. Please enable GPS.");
+        setGpsError("Failed to get location. Please ensure GPS/Location Services are enabled.");
       },
-      { enableHighAccuracy: true, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
     );
   };
 
@@ -384,7 +408,7 @@ export default function CheckOutPage() {
 
               {cameraStatus === "active" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="w-48 h-64 border-[3px] border-white/40 border-dashed rounded-[60px] mb-4 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]" />
+                  <div className="w-64 h-64 sm:w-80 sm:h-80 border-[3px] border-white/40 border-dashed rounded-full mb-4 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] transition-all" />
                   <p className="text-white font-bold text-sm uppercase tracking-[0.2em] bg-black/20 backdrop-blur-md px-6 py-2 rounded-full">Position Face Clearly</p>
                 </div>
               )}

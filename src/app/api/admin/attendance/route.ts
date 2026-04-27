@@ -61,14 +61,41 @@ export async function GET(req: NextRequest) {
     // 4. Merge Users and Attendance
     const dayName = format(targetDate, 'EEEE');
 
-    const getDisplayStatus = (checkInStatus?: unknown, hasCheckOut?: boolean) => {
-      const raw = typeof checkInStatus === "string" ? checkInStatus : "";
-      if (raw === "late") return "Late";
-      if (raw === "absent") return "Absent";
-      if (!hasCheckOut) return "Checked In";
-      // "on-time" => Present
-      if (raw === "on-time" || raw === "present") return "Present";
-      return "Present";
+    const getStrictStatus = (record: any) => {
+      if (record.type === "manual") {
+        const inStatus = record.checkInStatus || "";
+        const outStatus = record.checkOutStatus || "";
+        
+        if (inStatus === "excused" || outStatus === "excused") return "Excused";
+        if (inStatus === "half-day" || outStatus === "half-day") return "Half-Day";
+        if (inStatus === "absent" || outStatus === "absent") return "Absent";
+        if (inStatus === "late") return "Late";
+        return "Present";
+      }
+      
+      if (record.type === "absent") return "Absent";
+      
+      const hasCheckIn = Boolean(record.checkInTime);
+      const hasCheckOut = Boolean(record.checkOutTime) || record.type === "completed";
+      
+      if (hasCheckIn && hasCheckOut) {
+         return (record.status === "late" || record.checkInStatus === "late") ? "Late" : "Present";
+      }
+      
+      if (hasCheckIn && !hasCheckOut) {
+         const recordDateObj = new Date(record.date || record.checkInTime);
+         recordDateObj.setHours(0,0,0,0);
+         const todayObj = new Date();
+         todayObj.setHours(0,0,0,0);
+         
+         if (recordDateObj < todayObj) {
+            return "Half-Day";
+         } else {
+            return "Checked In";
+         }
+      }
+      
+      return "Absent";
     };
 
     const formatGps = (gps: any) => {
@@ -113,9 +140,7 @@ export async function GET(req: NextRequest) {
       const isWorkingDay = workingDays.includes(dayName);
 
       if (record) {
-        const checkInStatus = record.checkInStatus ?? record.status;
-        const hasCheckOut = Boolean(record.checkOutTime) || record.type === "completed";
-        const displayStatus = getDisplayStatus(checkInStatus, hasCheckOut);
+        const displayStatus = getStrictStatus(record);
 
         const gpsLocation = record.checkInGpsLocation ?? record.checkOutGpsLocation;
         const resolvedLocation =
@@ -129,14 +154,17 @@ export async function GET(req: NextRequest) {
             : "Unknown");
 
         return {
-          _id: record._id,
-          userId: user._id,
+          _id: record._id.toString(),
+          userId: user._id.toString(),
+          programId: user.programId?.toString() || programId?.toString() || '',
           userName: user.name,
           userEmail: user.email,
           profilePhotoUrl: user.profilePhotoUrl || null,
           programName: program?.name || 'No Program',
           checkInTime: record.checkInTime ?? null,
           checkOutTime: record.checkOutTime ?? null,
+          checkInPhotoUrl: record.checkInPhotoUrl || null,
+          checkOutPhotoUrl: record.checkOutPhotoUrl || null,
           status: displayStatus,
           location,
         };
@@ -148,7 +176,8 @@ export async function GET(req: NextRequest) {
         
         return {
           _id: `absent-${user._id}`,
-          userId: user._id,
+          userId: user._id.toString(),
+          programId: user.programId?.toString() || '',
           userName: user.name,
           userEmail: user.email,
           profilePhotoUrl: user.profilePhotoUrl || null,

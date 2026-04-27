@@ -26,7 +26,6 @@ export async function GET(req: Request) {
 
     const now = new Date();
 
-    // Helper to get stats for a range
     async function getStatsForRange(start: Date, end: Date) {
       const records = await attendance
         .find({
@@ -61,7 +60,7 @@ export async function GET(req: Request) {
         onTimeCount: onTime,
         uniqueDays,
         onTimeStatus: onTime > 0 ? "On-Time" : "Needs Improvement",
-        percentage: 0, // Will handle via UI or further logic
+        percentage: 0,
         records: records.sort((a, b) => {
           const dateA = new Date((a.date as string) || (a.checkInTime as string) || (a.createdAt as string)).getTime();
           const dateB = new Date((b.date as string) || (b.checkInTime as string) || (b.createdAt as string)).getTime();
@@ -91,7 +90,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       week: weekStats,
       month: monthStats,
-      records: monthStats.records // Adding this to fix backward compatibility with Calendar
+      records: monthStats.records
     });
 
   } catch (error) {

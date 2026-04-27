@@ -32,8 +32,6 @@ export async function GET() {
         }),
       ]);
 
-    // Professional rule:
-    // Present = completed session only (has check-in + check-out).
     const [presentToday, lateToday, checkedInToday, incompleteToday] = await Promise.all([
       attendance.distinct("userId", {
         type: "completed",
@@ -56,7 +54,7 @@ export async function GET() {
       }).then((usersToday) => Array.isArray(usersToday) ? usersToday.length : 0),
     ]);
     
-    // Checkins in last hour
+  
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
     const checkinsLastHour = await attendance.countDocuments({
       type: "checkin",
@@ -83,7 +81,7 @@ export async function GET() {
     const totalParticipantsCount = await users.countDocuments({ role: "participant" });
     const absentTodayCount = Math.max(0, totalParticipantsCount - checkedInToday);
 
-    // Calculate real average attendance rate this month
+    
     const monthRecordCount = await attendance.countDocuments({
       createdAt: { $gte: startOfMonth, $lte: now },
       type: "completed"

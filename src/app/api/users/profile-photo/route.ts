@@ -16,14 +16,14 @@ export async function POST(req: NextRequest) {
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
-    // Read file as buffer
+
     let buffer: Buffer;
     if (typeof file === "object" && "arrayBuffer" in file) {
       buffer = Buffer.from(await (file as Blob).arrayBuffer());
     } else {
       return NextResponse.json({ error: "Invalid file upload" }, { status: 400 });
     }
-    // Upload to Cloudinary
+  
     const upload = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream({
         folder: "igireverify/profiles",

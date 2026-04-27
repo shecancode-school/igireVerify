@@ -29,16 +29,16 @@ export async function POST(req: NextRequest) {
     }
 
     const { name, email, password, programId, position } = result.data;
-    const role = "participant"; // STRICT RULE: All new public registrations are participants
+    const role = "participant"; 
 
 
-    // Normalize email for consistent storage and comparison
+    
     const normalizedEmail = email.toLowerCase().trim();
 
     const db = await getDb();
     const users = db.collection("users");
 
-    // Check if email already exists (case-insensitive)
+    
     const existing = await users.findOne({
       email: normalizedEmail,
     });
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
         if (program) {
           resolvedProgramId = program._id;
         } else {
-          // STRICT RULE: No fallback to string. Must exist in DB.
+  
           return NextResponse.json(
             { error: "Selected program is invalid" },
             { status: 400 }
@@ -91,10 +91,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Validate hash format before storing
+   
     if (!passwordHash.startsWith("$2") && !passwordHash.startsWith("$2a$") && !passwordHash.startsWith("$2b$")) {
       console.error("[REGISTER] Invalid bcrypt hash format generated");
       throw new Error("Password hashing failed");
@@ -119,21 +118,19 @@ export async function POST(req: NextRequest) {
       updatedAt: now,
       lastLogin: undefined,
 
-      // Participant fields (all registrations are participants)
+   
       programId: resolvedProgramId,
       enrollmentDate: now,
     };
 
     const insertResult = await users.insertOne(userData);
 
-    // Verify insertion
+ 
     const inserted = await users.findOne({ _id: insertResult.insertedId });
     if (!inserted) {
       console.error("[REGISTER] Data not persisted after insertion");
       throw new Error("User creation failed - data not persisted");
     }
-
-    // Send verification email; rollback created account when delivery fails.
     try {
       const verifyUrl = buildVerifyUrl(verification.raw);
       await sendWelcomeVerificationEmail({

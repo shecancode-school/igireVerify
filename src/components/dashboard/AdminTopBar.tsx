@@ -7,9 +7,19 @@ interface AdminTopBarProps {
   userName: string;
   userRole: string;
   profilePhotoUrl?: string | null;
+  sessionDate?: string;
+  checkInWindow?: string;
+  currentTime?: string;
 }
 
-export default function AdminTopBar({ userName, userRole, profilePhotoUrl }: AdminTopBarProps) {
+export default function AdminTopBar({ 
+  userName, 
+  userRole, 
+  profilePhotoUrl,
+  sessionDate = "Wednesday, April 22, 2026",
+  checkInWindow = "System Wide",
+  currentTime = "00:00 AM"
+}: AdminTopBarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [editName, setEditName] = useState(userName);
@@ -67,9 +77,27 @@ export default function AdminTopBar({ userName, userRole, profilePhotoUrl }: Adm
   };
 
   return (
-    <div className="bg-white shadow-sm border-b border-gray-200 px-2 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 w-full min-w-0 sticky top-0 z-40">
-      <div className="flex items-center w-full sm:w-auto min-w-0">
-        <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">Admin Dashboard</h1>
+    <div className="bg-white shadow-sm border-b border-gray-200 px-4 sm:px-12 py-5 flex items-center justify-between w-full min-w-0 sticky top-0 z-40 min-h-[90px]">
+      <div className="flex items-center gap-x-6 min-w-0">
+        <div className="hidden sm:flex items-center gap-1.5 whitespace-nowrap">
+          <span className="text-sm text-gray-900">{sessionDate}</span>
+        </div>
+        
+        <div className="hidden lg:flex items-center gap-6">
+          <div className="h-6 w-[1px] bg-gray-300" />
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <span className="text-sm font-medium text-gray-900">Check-In Window:</span>
+            <span className="text-sm text-gray-900">{checkInWindow}</span>
+          </div>
+        </div>
+
+        <div className="hidden xl:flex items-center gap-6">
+          <div className="h-6 w-[1px] bg-gray-300" />
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <span className="text-sm font-medium text-gray-900">Current Time:</span>
+            <span className="text-sm text-gray-900">{currentTime}</span>
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 flex-1 sm:flex-initial justify-end w-full sm:w-auto min-w-0">

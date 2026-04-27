@@ -13,8 +13,8 @@ type CameraStatus = "idle" | "active" | "captured" | "error";
 
 const IGIRE_LAT = -1.9305;
 const IGIRE_LNG = 30.0747;
-const IGIRE_RADIUS_METERS = 100;
-const MIN_GPS_ACCURACY = 100;
+const IGIRE_RADIUS_METERS = 150; // Increased radius to account for realistic GPS drift
+const MIN_GPS_ACCURACY = 200; // Relaxed accuracy requirement for web browsers and indoor check-ins
 
 interface UserData {
   userName: string;
@@ -140,6 +140,16 @@ export default function CheckInPage() {
     };
   }, [step]);
 
+  const watchIdRef = useRef<number | null>(null);
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+    };
+  }, []);
+
   if (loading || !userData) {
     return (
       <div className="min-h-screen bg-[#F5F5F5] flex flex-col-reverse md:flex-row">
@@ -164,15 +174,27 @@ export default function CheckInPage() {
     setGpsStatus("checking");
     setGpsError(null);
 
-    navigator.geolocation.getCurrentPosition(
+    if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+    if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+
+    timeoutIdRef.current = setTimeout(() => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      setGpsStatus("error");
+      setGpsError("Could not get an accurate GPS signal. Please move outside or near a window and try again.");
+    }, 15000);
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
 
         if (accuracy > MIN_GPS_ACCURACY) {
-          setGpsStatus("error");
-          setGpsError(`GPS accuracy too low (${Math.round(accuracy)}m).`);
+          // Ignore inaccurate readings and wait for a better one
           return;
         }
+
+        // Highly accurate reading acquired
+        if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+        if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
 
         const distance = distanceInMeters(latitude, longitude, IGIRE_LAT, IGIRE_LNG);
         setGpsInfo(`Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}, Accuracy: ${Math.round(accuracy)}m`);
@@ -186,10 +208,12 @@ export default function CheckInPage() {
         }
       },
       () => {
+        if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+        if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
         setGpsStatus("error");
-        setGpsError("Failed to get location. Please enable GPS.");
+        setGpsError("Failed to get location. Please ensure GPS/Location Services are enabled.");
       },
-      { enableHighAccuracy: true, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
     );
   };
 
@@ -307,11 +331,10 @@ export default function CheckInPage() {
       {[1, 2, 3].map((value) => (
         <div key={value} className="relative flex flex-col items-center group">
           <div
-            className={`flex h-14 w-14 items-center justify-center rounded-[20px] transition-all duration-500 shadow-lg ${
-              value < step ? "bg-[#16A34A] text-white shadow-green-100" :
-              value === step ? "bg-[#16A34A] text-white ring-8 ring-green-50 shadow-green-100 scale-110" :
-              "bg-white text-gray-300 border-2 border-gray-100"
-            }`}
+            className={`flex h-14 w-14 items-center justify-center rounded-[20px] transition-all duration-500 shadow-lg ${value < step ? "bg-[#16A34A] text-white shadow-green-100" :
+                value === step ? "bg-[#16A34A] text-white ring-8 ring-green-50 shadow-green-100 scale-110" :
+                  "bg-white text-gray-300 border-2 border-gray-100"
+              }`}
           >
             {value < step || (value === 3 && step === 3) ? (
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -321,17 +344,15 @@ export default function CheckInPage() {
               <span className="text-lg font-black">{value}</span>
             )}
           </div>
-          
-          <span className={`absolute -bottom-8 whitespace-nowrap text-[12px] font-black uppercase tracking-widest transition-colors ${
-            value <= step ? "text-[#16A34A]" : "text-gray-300"
-          }`}>
+
+          <span className={`absolute -bottom-8 whitespace-nowrap text-[12px] font-black uppercase tracking-widest transition-colors ${value <= step ? "text-[#16A34A]" : "text-gray-300"
+            }`}>
             {value === 1 ? "Location" : value === 2 ? "Identity" : "Finish"}
           </span>
 
           {value < 3 && (
-            <div className={`absolute left-[4.5rem] top-1/2 -translate-y-1/2 hidden lg:block w-20 h-[3px] rounded-full transition-colors duration-500 ${
-              value < step ? "bg-[#16A34A]" : "bg-gray-100"
-            }`} />
+            <div className={`absolute left-[4.5rem] top-1/2 -translate-y-1/2 hidden lg:block w-20 h-[3px] rounded-full transition-colors duration-500 ${value < step ? "bg-[#16A34A]" : "bg-gray-100"
+              }`} />
           )}
         </div>
       ))}
@@ -343,9 +364,8 @@ export default function CheckInPage() {
       return (
         <div className="max-w-2xl mx-auto">
           <div className="bg-white rounded-[40px] p-10 md:p-14 border border-gray-100 shadow-[0_4px_25px_rgba(0,0,0,0.03)] text-center">
-            <div className={`w-20 h-20 mx-auto rounded-[24px] flex items-center justify-center mb-8 transition-colors duration-500 ${
-              gpsStatus === "verified" ? "bg-[#F0FDF4]" : "bg-gray-50"
-            }`}>
+            <div className={`w-20 h-20 mx-auto rounded-[24px] flex items-center justify-center mb-8 transition-colors duration-500 ${gpsStatus === "verified" ? "bg-[#F0FDF4]" : "bg-gray-50"
+              }`}>
               <svg className={`w-10 h-10 ${gpsStatus === "verified" ? "text-[#16A34A]" : "text-gray-300"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -403,7 +423,7 @@ export default function CheckInPage() {
 
               {cameraStatus === "active" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="w-48 h-64 border-[3px] border-white/40 border-dashed rounded-[60px] mb-4 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]" />
+                  <div className="w-64 h-64 sm:w-80 sm:h-80 border-[3px] border-white/40 border-dashed rounded-full mb-4 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] transition-all" />
                   <p className="text-white font-bold text-sm uppercase tracking-[0.2em] bg-black/20 backdrop-blur-md px-6 py-2 rounded-full">Position Face Here</p>
                 </div>
               )}
@@ -471,17 +491,16 @@ export default function CheckInPage() {
         <main className="px-4 py-4 md:px-12 md:py-6 bg-[#F9FAFB] min-h-screen">
           <div className="max-w-5xl mx-auto">
             {renderStepper()}
-            
+
             <div className="animate-in fade-in slide-in-from-bottom-6 duration-700">
               {renderStepContent()}
             </div>
 
             {uiMessage && (
-              <div className={`mt-10 max-w-2xl mx-auto p-6 rounded-[28px] text-center font-bold border-2 animate-in fade-in zoom-in duration-500 ${
-                uiMessage.type === "success"
+              <div className={`mt-10 max-w-2xl mx-auto p-6 rounded-[28px] text-center font-bold border-2 animate-in fade-in zoom-in duration-500 ${uiMessage.type === "success"
                   ? "bg-green-50 border-green-100 text-green-700"
                   : "bg-red-50 border-red-100 text-red-700"
-              }`}>
+                }`}>
                 <div className="flex items-center justify-center gap-3">
                   {uiMessage.type === "success" ? (
                     <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>

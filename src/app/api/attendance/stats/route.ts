@@ -1,4 +1,3 @@
-// src/app/api/attendance/stats/route.ts
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
@@ -16,15 +15,12 @@ export async function GET(req: Request) {
     const db = await getDb();
     const attendance = db.collection("attendance");
 
-    // Default to today if no date provided
     const targetDate = date ? new Date(date) : new Date();
     const startOfDay = new Date(targetDate);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Get all attendance records for the program and date.
-    // Support legacy callers that accidentally pass `programName` by falling back only if needed.
     const isObjectId = ObjectId.isValid(programId);
     const baseDateMatch = {
       $or: [
@@ -63,8 +59,6 @@ export async function GET(req: Request) {
         .map((r) => String(r.userId))
     );
 
-    // Calculate statistics with professional attendance semantics.
-    // Present = complete session only (check-in + check-out).
     const stats = {
       totalParticipants: new Set(records.filter(r => r.role === 'participant').map(r => r.userId)).size,
       totalStaff: new Set(records.filter(r => r.role === 'staff').map(r => r.userId)).size,
@@ -72,7 +66,7 @@ export async function GET(req: Request) {
       checkedOut: userHasCompleteSession.size,
       onTime: records.filter(r => (r.type === 'checkin' || r.type === "completed") && r.checkInStatus === 'on-time').length,
       late: records.filter(r => (r.type === 'checkin' || r.type === "completed") && r.checkInStatus === 'late').length,
-      absent: 0, // Would need to calculate based on enrolled users vs checked in
+      absent: 0,
       present: userHasCompleteSession.size,
       checkedInOnly: [...userHasCheckIn].filter((id) => !userHasCompleteSession.has(id)).length,
       lastUpdate: new Date().toISOString()

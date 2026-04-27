@@ -122,19 +122,44 @@ export async function GET(req: NextRequest) {
             checkOutStr = format(new Date(record.checkOutTime), 'HH:mm');
           }
 
-          const statusRaw =
-            record.checkInStatus || record.status || (record.type === "absent" ? "absent" : "on-time");
-          const hasCheckOut = Boolean(record.checkOutTime) || record.type === "completed";
-          const hasCheckIn = Boolean(record.checkInTime) || record.type === "manual" || record.type === "checkin";
+          const getStrictStatus = () => {
+            if (record.type === "manual") {
+              const inStatus = record.checkInStatus || "";
+              const outStatus = record.checkOutStatus || "";
+              
+              if (inStatus === "excused" || outStatus === "excused") return "Excused";
+              if (inStatus === "half-day" || outStatus === "half-day") return "Half-Day";
+              if (inStatus === "absent" || outStatus === "absent") return "Absent";
+              if (inStatus === "late") return "Late";
+              return "Present";
+            }
+            
+            if (record.type === "absent") return "Absent";
+            
+            const hasCheckIn = Boolean(record.checkInTime);
+            const hasCheckOut = Boolean(record.checkOutTime) || record.type === "completed";
+            
+            if (hasCheckIn && hasCheckOut) {
+               return (record.status === "late" || record.checkInStatus === "late") ? "Late" : "Present";
+            }
+            
+            if (hasCheckIn && !hasCheckOut) {
+               const recordDateObj = new Date(record.date || record.checkInTime);
+               recordDateObj.setHours(0,0,0,0);
+               const todayObj = new Date();
+               todayObj.setHours(0,0,0,0);
+               
+               if (recordDateObj < todayObj) {
+                  return "Half-Day";
+               } else {
+                  return "Checked In";
+               }
+            }
+            
+            return "Absent";
+          };
 
-          const statusDisplay =
-            !hasCheckIn || statusRaw === "absent" || record.type === "absent"
-              ? "Absent"
-              : !hasCheckOut
-                ? "Checked In"
-                : statusRaw === "late"
-                  ? "Late"
-                  : "Present";
+          const statusDisplay = getStrictStatus();
           const gps = record.checkInGpsLocation || record.checkOutGpsLocation;
           const location =
             record.locationLabel ||
@@ -145,7 +170,7 @@ export async function GET(req: NextRequest) {
 
           // Calculate Late By (dynamic)
           let lateBy = '-';
-          if (statusRaw === 'late' && checkInTime && program.schedule?.lateAfter) {
+          if (statusDisplay === 'Late' && checkInTime && program.schedule?.lateAfter) {
             const [h, m] = program.schedule.lateAfter.split(':').map(Number);
             const expected = new Date(checkInTime);
             expected.setHours(h, m, 0, 0);
@@ -167,13 +192,19 @@ export async function GET(req: NextRequest) {
             status: statusDisplay,
             lateBy: lateBy,
             statusExplanation:
-              statusDisplay === "Present"
-                ? "Full attendance (check-in + check-out)"
-                : statusDisplay === "Late"
-                  ? "Completed session with late arrival"
-                  : statusDisplay === "Checked In"
-                    ? "Checked in only (no check-out yet)"
-                    : "No attendance record for scheduled session",
+              record.type === "manual" && record.manualNotes
+                ? `Admin Adjustment: ${record.manualNotes}`
+                : statusDisplay === "Present"
+                  ? "Full attendance (check-in + check-out)"
+                  : statusDisplay === "Late"
+                    ? "Completed session with late arrival"
+                    : statusDisplay === "Checked In"
+                      ? "Checked in only (no check-out yet)"
+                      : statusDisplay === "Half-Day"
+                        ? "Checked in, but never checked out"
+                        : statusDisplay === "Excused"
+                          ? "Manually excused"
+                          : "No attendance record for scheduled session",
             location,
             photo: record.checkInPhotoUrl || record.checkOutPhotoUrl || "-"
           });
@@ -206,6 +237,8 @@ export async function GET(req: NextRequest) {
     const lateCount = reportData.filter((r) => r.status === "Late").length;
     const absentCount = reportData.filter((r) => r.status === "Absent").length;
     const incompleteCount = reportData.filter((r) => r.status === "Checked In").length;
+    const halfDayCount = reportData.filter((r) => r.status === "Half-Day").length;
+    const excusedCount = reportData.filter((r) => r.status === "Excused").length;
     const totalExpectedSessions = reportData.length;
     const attendanceRate =
       totalExpectedSessions > 0
@@ -221,6 +254,8 @@ export async function GET(req: NextRequest) {
           late: lateCount,
           absent: absentCount,
           incomplete: incompleteCount,
+          halfDay: halfDayCount,
+          excused: excusedCount,
           attendanceRate,
         },
       });

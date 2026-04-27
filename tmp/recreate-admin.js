@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Load environment variables from .env.local
+
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
 
 async function recreateAdmin() {
@@ -17,12 +17,17 @@ async function recreateAdmin() {
 
   try {
     await client.connect();
-    const db = client.db('IgireVerify'); 
+    const db = client.db('igireverify'); 
     const users = db.collection('users');
 
-    const email = 'thierry@igirerwanda.org';
-    const password = '@@@@@@@@@@@@@@1234567890THIERRYadmin@RIO.com';
-    const name = 'Thierry Admin';
+    const email = process.env.ADMIN_EMAIL;
+    const password = process.env.ADMIN_PASSWORD;
+    const name = process.env.ADMIN_NAME || 'Admin';
+
+    if (!email || !password) {
+      console.error('ADMIN_EMAIL and ADMIN_PASSWORD must be set in .env.local');
+      process.exit(1);
+    }
 
     console.log(`Checking if user ${email} already exists...`);
     const existing = await users.findOne({ email });
