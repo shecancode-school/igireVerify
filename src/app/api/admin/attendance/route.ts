@@ -61,18 +61,41 @@ export async function GET(req: NextRequest) {
     // 4. Merge Users and Attendance
     const dayName = format(targetDate, 'EEEE');
 
-    const getDisplayStatus = (checkInStatus?: unknown, hasCheckOut?: boolean, checkOutStatus?: unknown) => {
-      const raw = typeof checkInStatus === "string" ? checkInStatus : "";
-      const rawOut = typeof checkOutStatus === "string" ? checkOutStatus : "";
-      // Explicit manual statuses take priority
-      if (raw === "excused" || rawOut === "excused") return "Excused";
-      if (raw === "half-day" || rawOut === "half-day") return "Half-Day";
-      if (raw === "absent") return "Absent";
-      if (raw === "late" && hasCheckOut) return "Present (Late)";
-      if (raw === "late") return "Late";
-      if (hasCheckOut) return "Present";
-      if (raw === "on-time" || raw === "present") return "Checked In";
-      return "Checked In";
+    const getStrictStatus = (record: any) => {
+      if (record.type === "manual") {
+        const inStatus = record.checkInStatus || "";
+        const outStatus = record.checkOutStatus || "";
+        
+        if (inStatus === "excused" || outStatus === "excused") return "Excused";
+        if (inStatus === "half-day" || outStatus === "half-day") return "Half-Day";
+        if (inStatus === "absent" || outStatus === "absent") return "Absent";
+        if (inStatus === "late") return "Late";
+        return "Present";
+      }
+      
+      if (record.type === "absent") return "Absent";
+      
+      const hasCheckIn = Boolean(record.checkInTime);
+      const hasCheckOut = Boolean(record.checkOutTime) || record.type === "completed";
+      
+      if (hasCheckIn && hasCheckOut) {
+         return (record.status === "late" || record.checkInStatus === "late") ? "Late" : "Present";
+      }
+      
+      if (hasCheckIn && !hasCheckOut) {
+         const recordDateObj = new Date(record.date || record.checkInTime);
+         recordDateObj.setHours(0,0,0,0);
+         const todayObj = new Date();
+         todayObj.setHours(0,0,0,0);
+         
+         if (recordDateObj < todayObj) {
+            return "Half-Day";
+         } else {
+            return "Checked In";
+         }
+      }
+      
+      return "Absent";
     };
 
     const formatGps = (gps: any) => {
@@ -117,9 +140,7 @@ export async function GET(req: NextRequest) {
       const isWorkingDay = workingDays.includes(dayName);
 
       if (record) {
-        const checkInStatus = record.checkInStatus ?? record.status;
-        const hasCheckOut = Boolean(record.checkOutTime) || record.type === "completed" || Boolean(record.checkOutStatus && record.checkOutStatus !== "");
-        const displayStatus = getDisplayStatus(checkInStatus, hasCheckOut, record.checkOutStatus);
+        const displayStatus = getStrictStatus(record);
 
         const gpsLocation = record.checkInGpsLocation ?? record.checkOutGpsLocation;
         const resolvedLocation =

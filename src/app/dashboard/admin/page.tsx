@@ -449,6 +449,8 @@ export default function AdminDashboard() {
       const late = summary.late ?? records.filter((r: any) => r.status === 'Late').length;
       const absent = summary.absent ?? records.filter((r: any) => r.status === 'Absent').length;
       const incomplete = summary.incomplete ?? records.filter((r: any) => r.status === 'Checked In').length;
+      const halfDay = summary.halfDay ?? records.filter((r: any) => r.status === 'Half-Day').length;
+      const excused = summary.excused ?? records.filter((r: any) => r.status === 'Excused').length;
       const attendanceRate =
         summary.attendanceRate ??
         (totalParticipants > 0 ? Math.round((present / totalParticipants) * 100) : 0);
@@ -506,13 +508,19 @@ export default function AdminDashboard() {
         doc.setTextColor(245, 158, 11); // Orange
         doc.text(`Late: ${late}`, 95, summaryY);
 
+        doc.setTextColor(147, 51, 234); // Purple
+        doc.text(`Half-Day: ${halfDay}`, 125, summaryY);
+        
+        doc.setTextColor(14, 165, 233); // Light Blue
+        doc.text(`Excused: ${excused}`, 160, summaryY);
+
         doc.setTextColor(220, 38, 38); // Red
-        doc.text(`Absent: ${absent}`, 125, summaryY);
+        doc.text(`Absent: ${absent}`, 20, summaryY + 8);
         doc.setTextColor(37, 99, 235); // Blue
-        doc.text(`Checked In Only: ${incomplete}`, 20, summaryY + 8);
+        doc.text(`Checked In Only: ${incomplete}`, 60, summaryY + 8);
 
         doc.setTextColor(0, 0, 0);
-        doc.text(`Rate: ${attendanceRate}%`, 160, summaryY);
+        doc.text(`Rate: ${attendanceRate}%`, 160, summaryY + 8);
 
         autoTable(doc, {
           head: [tableHeaders],
@@ -529,6 +537,8 @@ export default function AdminDashboard() {
               if (statusStr === 'Late') hookData.cell.styles.textColor = [245, 158, 11];
               if (statusStr === 'Absent') hookData.cell.styles.textColor = [220, 38, 38];
               if (statusStr === 'Checked In') hookData.cell.styles.textColor = [37, 99, 235];
+              if (statusStr === 'Half-Day') hookData.cell.styles.textColor = [147, 51, 234];
+              if (statusStr === 'Excused') hookData.cell.styles.textColor = [14, 165, 233];
               hookData.cell.styles.fontStyle = 'bold';
             }
           },
@@ -565,8 +575,8 @@ export default function AdminDashboard() {
           [`Generated on: ${format(new Date(), 'MMMM dd, yyyy \\a\\t hh:mm a')} by ${userName}`],
           [],
           ['Summary Statistics'],
-          ['Total Records', 'Present', 'Late', 'Absent', 'Checked In Only', 'Attendance Rate'],
-          [totalParticipants, present, late, absent, incomplete, `${attendanceRate}%`],
+          ['Total Records', 'Present', 'Late', 'Absent', 'Checked In Only', 'Half-Day', 'Excused', 'Attendance Rate'],
+          [totalParticipants, present, late, absent, incomplete, halfDay, excused, `${attendanceRate}%`],
           [],
           tableHeaders,
           ...tableRows,
@@ -618,6 +628,8 @@ export default function AdminDashboard() {
               <tr><td><b>Total Records:</b></td><td>${totalParticipants}</td></tr>
               <tr><td><b>Present:</b></td><td style="color: #2E7D32;">${present}</td></tr>
               <tr><td><b>Late:</b></td><td style="color: #d97706;">${late}</td></tr>
+              <tr><td><b>Half-Day:</b></td><td style="color: #9333ea;">${halfDay}</td></tr>
+              <tr><td><b>Excused:</b></td><td style="color: #0ea5e9;">${excused}</td></tr>
               <tr><td><b>Absent:</b></td><td style="color: #dc2626;">${absent}</td></tr>
               <tr><td><b>Checked In Only:</b></td><td style="color: #2563eb;">${incomplete}</td></tr>
               <tr><td><b>Attendance Rate:</b></td><td><b>${attendanceRate}%</b></td></tr>
@@ -780,8 +792,8 @@ export default function AdminDashboard() {
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id)}
                     className={`flex items-center px-2 sm:px-3 md:px-4 py-2 border-b-2 font-medium text-xs sm:text-sm transition-colors ${activeTab === tab.id
-                        ? 'border-[#2E7D32] text-[#2E7D32]'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-[#2E7D32] text-[#2E7D32]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                       }`}
                   >
                     <Icon className="w-4 h-4 mr-1 sm:mr-2" />
@@ -961,10 +973,10 @@ export default function AdminDashboard() {
                                 <div
                                   key={day.toString()}
                                   className={`p-2 rounded-lg ${isToday
-                                      ? 'bg-[#2E7D32] text-white shadow-md font-bold cursor-pointer'
-                                      : isCurrentMonth
-                                        ? 'hover:bg-gray-50 cursor-pointer text-gray-700'
-                                        : 'text-gray-300'
+                                    ? 'bg-[#2E7D32] text-white shadow-md font-bold cursor-pointer'
+                                    : isCurrentMonth
+                                      ? 'hover:bg-gray-50 cursor-pointer text-gray-700'
+                                      : 'text-gray-300'
                                     }`}
                                 >
                                   {formattedDate}
@@ -1266,7 +1278,7 @@ export default function AdminDashboard() {
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Location</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Verification</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Action required</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -1311,20 +1323,20 @@ export default function AdminDashboard() {
                             </td>
                             <td className="px-6 py-4 text-sm">
                               <span className={`px-2 py-1 rounded-full text-xs font-semibold ${record.status.toLowerCase() === 'present' || record.status.toLowerCase() === 'on time'
-                                  ? 'bg-green-100 text-green-700'
-                                  : record.status.toLowerCase() === 'present (late)'
-                                    ? 'bg-green-50 text-green-600 border border-green-200'
-                                    : record.status.toLowerCase() === 'late'
-                                      ? 'bg-orange-100 text-orange-700'
-                                      : record.status.toLowerCase() === 'checked in'
-                                        ? 'bg-blue-100 text-blue-700'
-                                        : record.status.toLowerCase() === 'absent'
-                                          ? 'bg-red-100 text-red-700 font-bold'
-                                          : record.status.toLowerCase() === 'excused'
-                                            ? 'bg-purple-100 text-purple-700 font-bold'
-                                            : record.status.toLowerCase() === 'half-day'
-                                              ? 'bg-yellow-100 text-yellow-700 font-bold'
-                                              : 'bg-gray-100 text-gray-700'
+                                ? 'bg-green-100 text-green-700'
+                                : record.status.toLowerCase() === 'present (late)'
+                                  ? 'bg-green-50 text-green-600 border border-green-200'
+                                  : record.status.toLowerCase() === 'late'
+                                    ? 'bg-orange-100 text-orange-700'
+                                    : record.status.toLowerCase() === 'checked in'
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : record.status.toLowerCase() === 'absent'
+                                        ? 'bg-red-100 text-red-700 font-bold'
+                                        : record.status.toLowerCase() === 'excused'
+                                          ? 'bg-purple-100 text-purple-700 font-bold'
+                                          : record.status.toLowerCase() === 'half-day'
+                                            ? 'bg-yellow-100 text-yellow-700 font-bold'
+                                            : 'bg-gray-100 text-gray-700'
                                 }`}>
                                 {record.status}
                               </span>
@@ -1338,8 +1350,8 @@ export default function AdminDashboard() {
                                 }}
                                 disabled={!record.checkInPhotoUrl && !record.checkOutPhotoUrl}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${record.checkInPhotoUrl || record.checkOutPhotoUrl
-                                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm'
-                                    : 'bg-gray-50 text-gray-400 cursor-not-allowed grayscale'
+                                  ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-sm'
+                                  : 'bg-gray-50 text-gray-400 cursor-not-allowed grayscale'
                                   }`}
                               >
                                 <Users className="w-3.5 h-3.5" />
@@ -1860,8 +1872,8 @@ export default function AdminDashboard() {
                       type="button"
                       onClick={() => setManualForm({ ...manualForm, checkInStatus: status })}
                       className={`px-3 py-2.5 rounded-xl border-2 text-[10px] font-black uppercase tracking-tight transition-all ${manualForm.checkInStatus === status
-                          ? 'bg-[#E8F5E9] border-[#16A34A] text-[#16A34A] shadow-sm'
-                          : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
+                        ? 'bg-[#E8F5E9] border-[#16A34A] text-[#16A34A] shadow-sm'
+                        : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
                         }`}
                     >
                       {status.replace('-', ' ')}
@@ -1879,8 +1891,8 @@ export default function AdminDashboard() {
                       type="button"
                       onClick={() => setManualForm({ ...manualForm, checkOutStatus: status })}
                       className={`px-3 py-2.5 rounded-xl border-2 text-[10px] font-black uppercase tracking-tight transition-all ${manualForm.checkOutStatus === status
-                          ? 'bg-blue-50 border-blue-600 text-blue-600 shadow-sm'
-                          : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
+                        ? 'bg-blue-50 border-blue-600 text-blue-600 shadow-sm'
+                        : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
                         }`}
                     >
                       {status === '' ? 'None' : status.replace('-', ' ')}
