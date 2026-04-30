@@ -12,7 +12,8 @@ import { eachDayOfInterval, format, isSameDay } from "date-fns";
 export async function GET(req: NextRequest) {
   try {
     const claims = await requireAuthOrRedirect();
-    if (claims.role !== "admin") {
+    const allowedRoles = ["admin", "super-admin", "manager", "facilitator"];
+    if (!allowedRoles.includes(claims.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -39,19 +40,29 @@ export async function GET(req: NextRequest) {
 
     const datesInRange = eachDayOfInterval({ start: startDate, end: endDate });
 
-    // 2. Fetch Programs & Users
-    let programs;
-    if (programId && ObjectId.isValid(programId)) {
-      programs = await programsCol.find({ _id: new ObjectId(programId) }).toArray();
-    } else {
-      programs = await programsCol.find({ isActive: true }).toArray();
+    // 2. Fetch Programs & Users (Scoped by Role)
+    const programQuery: any = { isActive: true };
+    if (claims.role !== "admin" && claims.role !== "super-admin") {
+      const assignedIds = (claims.assignedPrograms || []).map(id => new ObjectId(id));
+      programQuery._id = { $in: assignedIds };
     }
-    const programMap = new Map(programs.map(p => [p._id.toString(), p]));
 
-    const userQuery: any = { role: "participant" };
     if (programId && ObjectId.isValid(programId)) {
-      userQuery.programId = new ObjectId(programId);
+      // Validate access if scoped
+      if (claims.role !== "admin" && claims.role !== "super-admin" && !claims.assignedPrograms?.includes(programId)) {
+        return NextResponse.json({ error: "Forbidden: You do not have access to this program" }, { status: 403 });
+      }
+      programQuery._id = new ObjectId(programId);
     }
+
+    const programs = await programsCol.find(programQuery).toArray();
+    const programMap = new Map(programs.map(p => [p._id.toString(), p]));
+    const visibleProgramIds = programs.map(p => p._id);
+
+    const userQuery: any = { 
+      role: "participant",
+      programId: { $in: visibleProgramIds }
+    };
     const users = await usersCol.find(userQuery).toArray();
 
     // 3. Fetch attendance records for the range based on attendance day.
@@ -168,13 +179,23 @@ export async function GET(req: NextRequest) {
               ? "Igire Rwanda Organisation premises"
               : "Unknown");
 
-          // Calculate Late By (dynamic)
+          // Calculate Late By (dynamic and timezone-aware)
           let lateBy = '-';
           if (statusDisplay === 'Late' && checkInTime && program.schedule?.lateAfter) {
+            const tz = program.timeZone || 'Africa/Kigali';
+            const { toZonedTime } = require('date-fns-tz');
+            
+            // Convert check-in time to program timezone
+            const zonedCheckIn = toZonedTime(checkInTime, tz);
+            
+            // Parse lateAfter (HH:MM)
             const [h, m] = program.schedule.lateAfter.split(':').map(Number);
-            const expected = new Date(checkInTime);
-            expected.setHours(h, m, 0, 0);
-            const diffMins = Math.floor((checkInTime.getTime() - expected.getTime()) / 60000);
+            
+            // Create target time object in the SAME timezone/day
+            const expected = new Date(zonedCheckIn);
+            expected.setUTCHours(h, m, 0, 0); // Use UTC methods on zoned date
+            
+            const diffMins = Math.floor((zonedCheckIn.getTime() - expected.getTime()) / 60000);
             if (diffMins > 0) {
               lateBy = diffMins >= 60 
                 ? `${Math.floor(diffMins / 60)}h ${diffMins % 60}m` 

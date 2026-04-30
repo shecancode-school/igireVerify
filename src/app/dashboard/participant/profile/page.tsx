@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ShieldCheck, ShieldAlert } from "lucide-react";
 
 export default function ParticipantProfilePage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
+  const [isFaceRegistered, setIsFaceRegistered] = useState(false);
   const [newPhoto, setNewPhoto] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -19,6 +20,7 @@ export default function ParticipantProfilePage() {
         const data = await res.json();
         setName(data.name || "");
         setProfilePhotoUrl(data.profilePhotoUrl || null);
+        setIsFaceRegistered(data.isFaceRegistered || false);
       }
     });
   }, []);
@@ -105,6 +107,27 @@ export default function ParticipantProfilePage() {
         {saving ? "Saving changes..." : "Save Changes"}
       </button>
       {message && <div className={`mt-4 text-center text-sm font-medium p-3 rounded-lg ${message.includes('successfully') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{message}</div>}
+
+      <div className="mt-8 pt-6 border-t border-gray-100">
+        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">AI Identity Security</h3>
+        <div className={`p-5 rounded-3xl border transition-all ${isFaceRegistered ? 'bg-emerald-50/50 border-emerald-100' : 'bg-amber-50/50 border-amber-100'} flex items-center justify-between gap-4`}>
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${isFaceRegistered ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white'}`}>
+              {isFaceRegistered ? <ShieldCheck className="w-6 h-6" /> : <ShieldAlert className="w-6 h-6" />}
+            </div>
+            <div>
+              <p className="font-black text-slate-900 leading-tight">{isFaceRegistered ? 'Identity Secured' : 'Identity Incomplete'}</p>
+              <p className="text-[13px] text-slate-500 font-medium">{isFaceRegistered ? 'Biometric anchor is active.' : 'Register face for secure check-ins.'}</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => router.push('/dashboard/profile/face-enrollment')} 
+            className="shrink-0 px-5 py-2.5 bg-white border border-slate-200 rounded-[18px] text-[13px] font-black text-slate-700 hover:bg-slate-50 hover:shadow-lg hover:shadow-slate-200/50 transition-all active:scale-95"
+          >
+            {isFaceRegistered ? 'Update Face' : 'Register Now'}
+          </button>
+        </div>
+      </div>
       </div>
     </div>
   );

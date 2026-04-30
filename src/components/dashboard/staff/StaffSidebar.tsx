@@ -15,6 +15,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard/staff', tabMatch: null as string | null },
   { name: 'Live', href: '/dashboard/staff?tab=live', tabMatch: 'live' },
   { name: 'Programs', href: '/dashboard/staff?tab=programs', tabMatch: 'programs' },
+  { name: 'Manual', href: '/dashboard/staff?tab=manual', tabMatch: 'manual' },
   { name: 'Reports', href: '/dashboard/staff?tab=reports', tabMatch: 'reports' },
   { name: 'My attendance', href: '/dashboard/staff?tab=attendance', tabMatch: 'attendance' },
   { name: 'Settings', href: '/dashboard/staff?tab=settings', tabMatch: 'settings' },

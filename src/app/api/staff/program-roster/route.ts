@@ -10,7 +10,9 @@ import { requireAuthOrRedirect } from "@/lib/auth";
 export async function GET(req: NextRequest) {
   try {
     const claims = await requireAuthOrRedirect();
-    if (claims.role !== "staff") {
+    const isStaffRole = ["admin", "super-admin", "manager", "facilitator", "academic", "communication"].includes(claims.role);
+    
+    if (!isStaffRole) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -20,6 +22,11 @@ export async function GET(req: NextRequest) {
 
     if (!programIdStr || !ObjectId.isValid(programIdStr)) {
       return NextResponse.json({ error: "Valid programId is required" }, { status: 400 });
+    }
+
+    // Scoping check
+    if (claims.role !== "admin" && claims.role !== "super-admin" && !claims.assignedPrograms?.includes(programIdStr)) {
+      return NextResponse.json({ error: "Access denied to this program" }, { status: 403 });
     }
 
     const day = dateStr ? new Date(dateStr) : new Date();

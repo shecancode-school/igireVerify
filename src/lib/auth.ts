@@ -9,6 +9,7 @@ export type AuthClaims = {
   email: string;
   name: string;
   position?: StaffPosition | null;
+  assignedPrograms?: string[];
 };
 
 type JwtPayload = {
@@ -17,6 +18,7 @@ type JwtPayload = {
   email: string;
   name: string;
   position?: StaffPosition | null;
+  assignedPrograms?: string[];
 };
 
 function requireEnv(name: string): string {
@@ -30,9 +32,11 @@ function jwtSecret(): string {
 }
 
 export function getDashboardPath(claims: Pick<AuthClaims, "role" | "position">): string {
-  if (claims.role === "admin") return "/dashboard/admin";
+  if (claims.role === "super-admin" || claims.role === "admin") return "/dashboard/admin";
   if (claims.role === "participant") return "/dashboard/participant";
-  if (claims.position === "HR") return "/dashboard/hr";
+  
+  // All other staff roles (manager, facilitator, academic, communication) 
+  // share the Staff Dashboard, which renders contextual widgets based on role.
   return "/dashboard/staff";
 }
 
@@ -45,6 +49,7 @@ export function getAuthClaimsFromToken(token: string): AuthClaims | null {
       email: payload.email,
       name: payload.name,
       position: payload.position ?? null,
+      assignedPrograms: payload.assignedPrograms ?? [],
     };
   } catch {
     return null;

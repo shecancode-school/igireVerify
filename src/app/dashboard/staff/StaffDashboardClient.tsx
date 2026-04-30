@@ -90,6 +90,9 @@ export default function StaffDashboardClient() {
     userName: string;
     programName: string;
     checkInWindow: string;
+    role: string;
+    position?: string;
+    assignedPrograms: string[];
   } | null>(null);
 
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -127,6 +130,10 @@ export default function StaffDashboardClient() {
   const [manualBusy, setManualBusy] = useState(false);
   const [manualMessage, setManualMessage] = useState("");
 
+  // Specialized Widget States
+  const [activeSession, setActiveSession] = useState<{ programId: string, name: string } | null>(null);
+  const [studentSearch, setStudentSearch] = useState("");
+
   const overviewQuery = useMemo(() => {
     const params = new URLSearchParams({ range });
     if (scopeProgramId !== "all") params.set("programId", scopeProgramId);
@@ -148,6 +155,9 @@ export default function StaffDashboardClient() {
             userName: d.userName,
             programName: d.programName,
             checkInWindow: d.checkInWindow || "N/A",
+            role: d.role,
+            position: d.position,
+            assignedPrograms: d.assignedPrograms || [],
           });
       })
       .catch(() => { });
@@ -453,11 +463,145 @@ export default function StaffDashboardClient() {
         <main className="flex-1 px-4 sm:px-6 md:px-10 py-6 md:py-10 w-full">
           {activeTab === "overview" && (
             <>
-              <div className="mb-8">
-                <h1 className="text-2xl font-bold text-black">Staff dashboard</h1>
-                <p className="text-gray-600 text-sm mt-1">
-                  Participant attendance across Admin-managed programs · {dateRangeLabel}
-                </p>
+              <div className="mb-8 flex justify-between items-start">
+                <div>
+                  <h1 className="text-2xl font-black text-slate-900 tracking-tight">Staff Dashboard</h1>
+                  <p className="text-slate-500 text-sm mt-1 font-medium italic">
+                    {topUser?.position || "Staff"} · Professional Management Portal
+                  </p>
+                </div>
+                <div className="bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+                   <div className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
+                   <span className="text-[11px] font-black uppercase tracking-widest text-slate-500">Live Scoping Active</span>
+                </div>
+              </div>
+
+              {/* ROLE-SPECIFIC WIDGETS (PHASE 2) */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                 
+                 {/* FACILITATOR / ACADEMIC TOOLS */}
+                 {["facilitator", "academic"].includes(topUser?.role || "") && (
+                    <div className="lg:col-span-2 bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm shadow-slate-200/50">
+                       <div className="flex items-center justify-between mb-6">
+                          <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                             <Activity className="w-5 h-5 text-[#16A34A]" />
+                             Active Session Log
+                          </h3>
+                          <button className="text-[11px] font-black uppercase text-[#16A34A] tracking-widest hover:underline">View All Logs</button>
+                       </div>
+                       <div className="space-y-4">
+                          {programs.map((p, i) => (
+                             <div key={p._id} className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 flex items-center justify-between group hover:bg-slate-100/50 transition-colors">
+                                <div className="flex items-center gap-4">
+                                   <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center font-black text-[#16A34A]">
+                                      {p.code || i + 1}
+                                   </div>
+                                   <div>
+                                      <p className="font-bold text-slate-800 text-sm">{p.name}</p>
+                                      <p className="text-xs text-slate-500 font-medium">Session ends in 2h 15m</p>
+                                   </div>
+                                </div>
+                                <Link href={`/dashboard/staff?tab=programs&programId=${p._id}`} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 opacity-0 group-hover:opacity-100 transition-all">
+                                   Open Roster
+                                </Link>
+                             </div>
+                          ))}
+                          {programs.length === 0 && <p className="text-center py-8 text-slate-400 font-medium italic">No programs assigned to your profile.</p>}
+                       </div>
+                    </div>
+                 )}
+
+                 {/* MANAGER / CEO OVERVIEW TOOLS */}
+                 {["manager", "admin", "super-admin"].includes(topUser?.role || "") && (
+                    <div className="lg:col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 rounded-[32px] p-8 border border-slate-800 shadow-2xl shadow-slate-900/20 text-white relative overflow-hidden">
+                       <div className="relative z-10">
+                          <div className="flex items-center justify-between mb-8">
+                             <h3 className="text-lg font-bold flex items-center gap-2">
+                                <Building2 className="w-5 h-5 text-[#16A34A]" />
+                                Institutional Health
+                             </h3>
+                             <span className="bg-[#16A34A]/20 text-[#16A34A] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-[#16A34A]/30">Global Scoping</span>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                             <div className="space-y-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Growth</p>
+                                <p className="text-2xl font-black">+12%</p>
+                             </div>
+                             <div className="space-y-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Efficiency</p>
+                                <p className="text-2xl font-black">94.2%</p>
+                             </div>
+                             <div className="space-y-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Alerts</p>
+                                <p className="text-2xl font-black text-amber-400">03</p>
+                             </div>
+                             <div className="space-y-1">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Staff Online</p>
+                                <p className="text-2xl font-black text-[#16A34A]">12</p>
+                             </div>
+                          </div>
+
+                          <div className="mt-8 pt-8 border-t border-white/5 flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                             {programBreakdown.slice(0, 4).map(p => (
+                                <div key={p._id} className="shrink-0 bg-white/5 border border-white/10 rounded-2xl p-4 min-w-[160px]">
+                                   <p className="text-xs font-black text-slate-400 truncate mb-2">{p.name}</p>
+                                   <div className="h-1 w-full bg-white/5 rounded-full mb-3">
+                                      <div className="h-full bg-[#16A34A] rounded-full" style={{ width: `${(p.checkInsToday / (p.enrolled || 1)) * 100}%` }} />
+                                   </div>
+                                   <p className="text-lg font-black">{Math.round((p.checkInsToday / (p.enrolled || 1)) * 100)}% <span className="text-[10px] font-medium text-slate-500 uppercase tracking-tighter">Rate</span></p>
+                                </div>
+                             ))}
+                          </div>
+                       </div>
+                       {/* Background decoration */}
+                       <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-[#16A34A]/10 rounded-full blur-[100px]" />
+                    </div>
+                 )}
+
+                 {/* COMMON SIDE TOOLS (Student Lookup) */}
+                 <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm shadow-slate-200/50 flex flex-col">
+                    <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">
+                       <Users className="w-5 h-5 text-[#16A34A]" />
+                       Quick Lookup
+                    </h3>
+                    <div className="relative mb-6">
+                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                       <input 
+                          type="text" 
+                          placeholder="Search participant..." 
+                          className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-[#16A34A]/20 transition-all outline-none"
+                          value={studentSearch}
+                          onChange={(e) => setStudentSearch(e.target.value)}
+                       />
+                    </div>
+                    
+                    <div className="flex-1 space-y-3 overflow-y-auto max-h-[200px] pr-2 custom-scrollbar">
+                       {participants
+                         .filter(p => !studentSearch || p.userName.toLowerCase().includes(studentSearch.toLowerCase()))
+                         .slice(0, 5)
+                         .map(p => (
+                          <div key={p.userId} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+                             <div className="w-10 h-10 rounded-full bg-[#E8F5E9] text-[#16A34A] flex items-center justify-center font-bold text-xs uppercase">
+                                {p.userName.charAt(0)}
+                             </div>
+                             <div>
+                                <p className="text-sm font-bold text-slate-800 leading-tight">{p.userName}</p>
+                                <p className="text-[11px] text-slate-500 font-medium truncate max-w-[120px]">{p.programName}</p>
+                             </div>
+                             <div className={`ml-auto w-2 h-2 rounded-full ${p.attendanceRate > 80 ? 'bg-[#16A34A]' : p.attendanceRate > 50 ? 'bg-amber-400' : 'bg-red-500'}`} />
+                          </div>
+                       ))}
+                       {(studentSearch && participants.filter(p => p.userName.toLowerCase().includes(studentSearch.toLowerCase())).length === 0) && (
+                          <p className="text-center py-4 text-xs text-slate-400 font-medium italic">No matches found</p>
+                       )}
+                    </div>
+                    
+                    <button className="mt-6 w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-sm hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-900/20">
+                       View All Participants
+                    </button>
+                 </div>
+
               </div>
 
               <div className="flex flex-wrap gap-2 mb-6">

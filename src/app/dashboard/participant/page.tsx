@@ -27,7 +27,11 @@ export default async function ParticipantDashboard() {
     if (program) {
       programName = program.name;
       if (program.schedule) {
-        checkInWindow = `${program.schedule.checkInStart} - ${program.schedule.checkInEnd} and Check-out ${program.schedule.checkOutStart || "10:40"} - ${program.schedule.checkOutEnd || "17:30"}`;
+        const s = program.schedule;
+        checkInWindow = `${s.checkInStart} - ${s.checkInEnd} (Late after ${s.lateAfter || s.checkInEnd})`;
+        if (s.checkOutStart) {
+          checkInWindow += ` | Check-out: ${s.checkOutStart} - ${s.checkOutEnd || "17:30"}`;
+        }
       }
     } else {
         programName = "Program Not Found";

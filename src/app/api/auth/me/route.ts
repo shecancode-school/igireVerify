@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getAuthClaimsFromCookies } from "@/lib/auth";
 import { getDb } from "@/lib/mongodb";
+import { STAFF_RULES } from "@/lib/attendance-rules";
 
 
 export async function GET() {
@@ -23,39 +24,44 @@ export async function GET() {
     let programName = "N/A";
     let programId = user.programId?.toString() || "";
 
-    if (user.role === "staff") {
-      if (user.programId) {
+    const isStaffRole = ["admin", "super-admin", "manager", "facilitator", "academic", "communication"].includes(user.role);
+
+    if (isStaffRole && user.role !== "admin" && user.role !== "super-admin") {
+      if (user.assignedPrograms && user.assignedPrograms.length > 0) {
         const programs = db.collection("programs");
-        const programObj = await programs.findOne({ _id: user.programId });
-        programName = programObj?.name || "Assigned program";
-        programId = user.programId.toString();
+        const prog = await programs.findOne({ _id: user.assignedPrograms[0] });
+        programName = prog ? `${prog.name}${user.assignedPrograms.length > 1 ? " (+)" : ""}` : "Assigned programs";
+        programId = user.assignedPrograms[0].toString();
       } else {
-        programName = "Staff — ask Admin to assign a program";
-        programId = "staff-mon";
+        programName = "Staff — No programs assigned";
+        programId = "staff-unassigned";
       }
-    } else if (user.role === 'admin') {
-      programName = 'System Administrator';
-      programId = 'admin-sys';
+    } else if (user.role === 'admin' || user.role === 'super-admin') {
+      programName = user.role === 'super-admin' ? 'Chief Executive Officer' : 'System Administrator';
+      programId = user.role === 'super-admin' ? 'ceo-global' : 'admin-sys';
     } else if (user.programId) {
       const programs = db.collection("programs");
       const programObj = await programs.findOne({ _id: user.programId });
-      if (programObj) {
-        programName = programObj.name;
-      } else {
-        programName = user.programId.toString();
-      }
+      programName = programObj?.name || user.programId.toString();
     }
 
     let checkInWindow = "N/A";
-    if (user.programId && ObjectId.isValid(String(user.programId))) {
+    const programIdStr = user.programId?.toString() || programId;
+    
+    if (programIdStr && ObjectId.isValid(programIdStr) && !["staff-unassigned", "ceo-global", "admin-sys"].includes(programIdStr)) {
       const programDoc = await db
         .collection("programs")
-        .findOne({ _id: user.programId as ObjectId });
+        .findOne({ _id: new ObjectId(programIdStr) });
+        
       if (programDoc?.schedule) {
-        checkInWindow = `${programDoc.schedule.checkInStart} - ${programDoc.schedule.checkInEnd} and Check-out ${programDoc.schedule.checkOutStart || "16:00"} - ${programDoc.schedule.checkOutEnd || "17:30"}`;
+        const s = programDoc.schedule;
+        checkInWindow = `${s.checkInStart} - ${s.checkInEnd} (Late after ${s.lateAfter || s.checkInEnd})`;
+        if (s.checkOutStart) {
+          checkInWindow += ` | Check-out: ${s.checkOutStart} - ${s.checkOutEnd || "17:30"}`;
+        }
       }
-    } else if (user.role === "staff" && programId === "staff-mon") {
-      checkInWindow = "Staff default window";
+    } else if (isStaffRole) {
+      checkInWindow = `${STAFF_RULES.checkInStart} - ${STAFF_RULES.checkInEnd} (Staff Default)`;
     }
 
     return NextResponse.json({
@@ -64,9 +70,13 @@ export async function GET() {
       programId,
       userId: user._id.toString(),
       role: user.role,
+      position: user.position,
+      assignedPrograms: (user.assignedPrograms || []).map((id: any) => id.toString()),
       email: user.email,
       profilePhotoUrl: user.profilePhotoUrl || null,
       checkInWindow,
+      isFaceRegistered: user.isFaceRegistered || false,
+      faceDescriptor: user.faceDescriptor || null,
     });
 
   } catch (error) {

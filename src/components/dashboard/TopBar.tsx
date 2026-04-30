@@ -25,6 +25,8 @@ export default function TopBar({
   const [liveDate, setLiveDate] = useState(sessionDate);
   const [liveTime, setLiveTime] = useState(currentTime);
   const [networkStatus, setNetworkStatus] = useState<boolean>(true);
+  const [userRole, setUserRole] = useState<string>("");
+  const [userPosition, setUserPosition] = useState<string>("");
 
   useEffect(() => {
     const nameToUse = initialUserName || initialName;
@@ -57,6 +59,8 @@ export default function TopBar({
             setUserName(foundName);
             if (data.programName) setProgramName(data.programName);
             if (data.profilePhotoUrl) setProfilePhotoUrl(data.profilePhotoUrl);
+            setUserRole(data.role);
+            setUserPosition(data.position || "");
           }
         } catch (error) {
           console.error("TopBar fetch error:", error);
@@ -82,6 +86,12 @@ export default function TopBar({
     }
     window.location.href = "/home";
   };
+
+  const profileLink = userRole === "admin" || userRole === "super-admin" 
+    ? "/dashboard/admin/profile" 
+    : userRole === "participant" 
+        ? "/dashboard/participant/profile" 
+        : "/dashboard/staff/profile";
 
   return (
     <header className="relative z-[60] w-full shrink-0 border-b border-gray-100 bg-white px-4 sm:px-12 py-5 shadow-sm min-h-[90px] flex items-center">
@@ -130,7 +140,7 @@ export default function TopBar({
                   {userName || "User"}
                 </span>
                 <span className="text-sm text-gray-500 font-medium">
-                  {programName || "Program"}
+                  {userPosition || programName || (userRole === 'admin' ? 'Admin' : "Program")}
                 </span>
               </div>
               <div className="w-12 h-12 rounded-full border-2 border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden relative transition-all group-hover:border-[#22c55e]">
@@ -153,10 +163,10 @@ export default function TopBar({
                 <div className="absolute right-0 top-full z-[70] mt-5 w-64 rounded-[32px] border border-gray-100 bg-white p-2 shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
                   <div className="px-6 py-5 border-b border-gray-50">
                     <p className="text-[15px] font-black text-gray-900 leading-none mb-1.5">{userName}</p>
-                    <p className="text-[11px] text-[#22c55e] font-black uppercase tracking-widest">{programName || "Participant"}</p>
+                    <p className="text-[11px] text-[#22c55e] font-black uppercase tracking-widest">{userPosition || programName || userRole}</p>
                   </div>
                   <div className="p-2 space-y-1">
-                    <a href="/dashboard/participant/profile" className="flex items-center gap-4 px-5 py-4 text-[14px] font-bold text-gray-600 hover:bg-gray-50 rounded-[20px] transition-colors">
+                    <a href={profileLink} className="flex items-center gap-4 px-5 py-4 text-[14px] font-bold text-gray-600 hover:bg-gray-50 rounded-[20px] transition-colors">
                       <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>
                       Profile Management
                     </a>

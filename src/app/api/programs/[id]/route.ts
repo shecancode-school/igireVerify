@@ -62,7 +62,21 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { name, code, description, startDate, endDate, schedule, facilitators, hrOfficer, isActive, timeZone } = body;
+    
+    // Validate input using a schema (partial validation for PUT)
+    // We import createProgramSchema and use .partial() for updates, or just reuse the full one if we expect full bodies.
+    // Given the AdminDashboard sends the full form, we can use createProgramSchema.
+    const { createProgramSchema } = await import("@/lib/validation");
+    const validation = createProgramSchema.safeParse(body);
+    
+    if (!validation.success) {
+      return NextResponse.json({ 
+        error: "Validation failed", 
+        issues: validation.error.issues 
+      }, { status: 400 });
+    }
+
+    const { name, code, description, startDate, endDate, schedule, facilitators, hrOfficer, isActive, timeZone } = validation.data;
 
     const db = await getDb();
     const programs = db.collection("programs");

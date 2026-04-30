@@ -1109,7 +1109,9 @@ export default function AdminDashboard() {
                                     description: (program as any).description || '',
                                     startDate: program.startDate ? program.startDate.split('T')[0] : '',
                                     endDate: program.endDate ? program.endDate.split('T')[0] : '',
-                                    schedule: (program as any).schedule ? { ...(program as any).schedule } : { ...defaultSchedule }
+                                    schedule: (program as any).schedule 
+                                      ? { ...defaultSchedule, ...(program as any).schedule } 
+                                      : { ...defaultSchedule }
                                   });
                                   setShowProgramModal(true);
                                 }}

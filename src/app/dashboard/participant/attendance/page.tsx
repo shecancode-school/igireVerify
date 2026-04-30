@@ -55,7 +55,7 @@ export default function AttendanceLandingPage() {
 
         <main className="px-4 md:px-12 py-10 bg-white min-h-[calc(100vh-90px)] flex flex-col items-center">
           <div className="max-w-4xl w-full flex-1">
-            
+
             <div className="mb-12">
               <h2 className="text-[34px] font-black text-gray-700 mb-6 tracking-tight">Take Attendance</h2>
               <p className="text-[17px] text-gray-800 font-medium leading-relaxed max-w-2xl">

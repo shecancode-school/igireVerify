@@ -11,7 +11,9 @@ import { requireAuthOrRedirect } from "@/lib/auth";
 export async function GET(req: NextRequest) {
   try {
     const claims = await requireAuthOrRedirect();
-    if (claims.role !== "staff") {
+    const isStaffRole = ["admin", "super-admin", "manager", "facilitator", "academic", "communication"].includes(claims.role);
+    
+    if (!isStaffRole) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -41,7 +43,18 @@ export async function GET(req: NextRequest) {
     const attendanceCol = db.collection("attendance");
 
     const programQuery: Record<string, unknown> = { isActive: true };
+    
+    // Scoping for non-admins
+    if (claims.role !== "admin" && claims.role !== "super-admin") {
+      const assignedIds = (claims.assignedPrograms || []).map(id => new ObjectId(id));
+      programQuery._id = { $in: assignedIds };
+    }
+
     if (programFilter && ObjectId.isValid(programFilter)) {
+      // Validate access if scoped
+      if (claims.role !== "admin" && claims.role !== "super-admin" && !claims.assignedPrograms?.includes(programFilter)) {
+        return NextResponse.json({ error: "Access denied to this program" }, { status: 403 });
+      }
       programQuery._id = new ObjectId(programFilter);
     }
 

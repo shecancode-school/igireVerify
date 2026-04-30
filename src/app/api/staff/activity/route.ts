@@ -10,7 +10,9 @@ import { requireAuthOrRedirect } from "@/lib/auth";
 export async function GET(req: NextRequest) {
   try {
     const claims = await requireAuthOrRedirect();
-    if (claims.role !== "staff") {
+    const isStaffRole = ["admin", "super-admin", "manager", "facilitator", "academic", "communication"].includes(claims.role);
+    
+    if (!isStaffRole) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -26,15 +28,29 @@ export async function GET(req: NextRequest) {
     const attendanceCol = db.collection("attendance");
 
     let programIds: ObjectId[];
+
+    // Scoping logic
+    const assignedProgramIds = (claims.assignedPrograms || []).map(id => new ObjectId(id));
+
     if (programIdParam && ObjectId.isValid(programIdParam)) {
+      // Validate access
+      if (claims.role !== "admin" && claims.role !== "super-admin" && !claims.assignedPrograms?.includes(programIdParam)) {
+        return NextResponse.json({ error: "Access denied to this program" }, { status: 403 });
+      }
+
       const p = await programsCol.findOne({
         _id: new ObjectId(programIdParam),
         isActive: true,
       });
       programIds = p ? [p._id] : [];
     } else {
+      const query: any = { isActive: true };
+      if (claims.role !== "admin" && claims.role !== "super-admin") {
+        query._id = { $in: assignedProgramIds };
+      }
+
       const active = await programsCol
-        .find({ isActive: true })
+        .find(query)
         .project({ _id: 1 })
         .toArray();
       programIds = active.map((x) => x._id);

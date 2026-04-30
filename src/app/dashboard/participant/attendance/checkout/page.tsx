@@ -5,10 +5,13 @@ import Image from "next/image";
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import * as faceapi from "face-api.js";
+import { loadFaceApiModels, isEyeClosed, getFaceDescriptor, compareFaces } from "@/lib/face-api-utils";
+import { ShieldCheck, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 
 type Step = 1 | 2 | 3;
 type GpsStatus = "idle" | "checking" | "verified" | "error";
-type CameraStatus = "idle" | "active" | "captured" | "error";
+type CameraStatus = "idle" | "active" | "detecting" | "blinking" | "captured" | "error";
 
 // Igire Rwanda Organization Headquarters - More accurate coordinates
 const IGIRE_LAT = -1.9305;
@@ -24,6 +27,8 @@ interface UserData {
   programId: string;
   userId: string;
   role: string;
+  isFaceRegistered: boolean;
+  faceDescriptor?: number[];
 }
 
 function distanceInMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
@@ -57,6 +62,8 @@ export default function CheckOutPage() {
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>("idle");
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [faceMatchScore, setFaceMatchScore] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -78,15 +85,21 @@ export default function CheckOutPage() {
 
   useEffect(() => {
     if (step !== 2 || cameraStatus !== "idle") return;
+    if (userData && !userData.isFaceRegistered) {
+      setCameraStatus("error");
+      setCameraError("Biometric identity not found. Please register your face in your profile settings first.");
+      return;
+    }
 
     let mounted = true;
     let localStream: MediaStream | null = null;
 
-    async function startCamera() {
+    async function initAI() {
+      setAiLoading(true);
       try {
-        setCameraError(null);
+        await loadFaceApiModels();
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+          video: { width: 640, height: 480, facingMode: "user" },
           audio: false,
         });
 
@@ -101,27 +114,28 @@ export default function CheckOutPage() {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
-             if (videoRef.current && mounted) {
-               videoRef.current.play().catch(e => console.error("Video play failed:", e));
-               setCameraStatus("active");
-             }
+            if (videoRef.current && mounted) {
+              videoRef.current.play().catch(e => console.error("Video play failed:", e));
+              setCameraStatus("active");
+            }
           };
         }
       } catch (error) {
         if (mounted) {
-          console.error("Camera access failed:", error);
           setCameraStatus("error");
-          setCameraError("Camera access denied or unavailable. Please check permissions.");
+          setCameraError("Camera or AI models failed. Please ensure camera access is allowed.");
         }
+      } finally {
+        setAiLoading(false);
       }
     }
 
-    startCamera();
+    initAI();
 
     return () => {
       mounted = false;
     };
-  }, [step, cameraStatus]);
+  }, [step, cameraStatus, userData]);
 
   useEffect(() => {
     return () => {
@@ -196,28 +210,49 @@ export default function CheckOutPage() {
 
   const handleGpsContinue = () => setStep(2);
 
-  const handleCapturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
+  const handleCaptureAndVerify = async () => {
+    if (!videoRef.current || !canvasRef.current || !userData?.faceDescriptor) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
-
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
-    if (ctx) ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx?.drawImage(video, 0, 0);
 
     const imageData = canvas.toDataURL("image/jpeg", 0.85);
     setCapturedImage(imageData);
-    setCameraStatus("captured");
 
-    streamRef.current?.getTracks().forEach((track) => track.stop());
+    try {
+      const descriptor = await getFaceDescriptor(video);
+      if (!descriptor) throw new Error("Face not detected clearly.");
+
+      const distance = compareFaces(descriptor, userData.faceDescriptor);
+      setFaceMatchScore(distance);
+
+      if (distance < 0.6) {
+        setCameraStatus("captured");
+        streamRef.current?.getTracks().forEach(t => t.stop());
+        // Auto-submit after small delay
+        setTimeout(() => {
+          handleSubmitCheckOut();
+        }, 1500);
+      } else {
+        setCameraStatus("error");
+        setCameraError("Identity mismatch. Face does not match the registered Master Face.");
+      }
+    } catch (err) {
+      setCameraStatus("error");
+      setCameraError("Verification failed. Please ensure your face is well-lit and clearly visible.");
+    }
   };
+
+  const startVerification = () => setCameraStatus("detecting");
 
   const handleRetakePhoto = () => {
     setCapturedImage(null);
     setCameraStatus("idle");
+    setFaceMatchScore(null);
   };
 
   const handleSubmitCheckOut = async () => {
@@ -397,51 +432,107 @@ export default function CheckOutPage() {
       return (
         <div className="max-w-3xl mx-auto">
           <div className="bg-white rounded-[40px] p-8 border border-gray-100 shadow-[0_4px_25px_rgba(0,0,0,0.03)] text-center">
-            <h2 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Identity Verification (Check-out)</h2>
+            <h2 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Identity Verification (Check-out)</h2>
+            <p className="text-slate-500 text-sm mb-8 font-medium italic">Master Face + Liveness Challenge</p>
 
             <div className="relative w-full aspect-video bg-gray-900 rounded-[32px] overflow-hidden mb-10 shadow-2xl ring-4 ring-gray-50">
-              {cameraStatus === "captured" && capturedImage ? (
+              {aiLoading && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-900 text-white gap-4">
+                  <RefreshCw className="w-10 h-10 animate-spin text-[#16A34A]" />
+                  <p className="font-bold text-xs uppercase tracking-widest">Initializing AI...</p>
+                </div>
+              )}
+
+              {capturedImage && (cameraStatus === "captured" || cameraStatus === "error") ? (
                 <Image src={capturedImage} alt="Captured Photo" fill className="object-cover" />
               ) : (
                 <video ref={videoRef} className="w-full h-full object-cover absolute inset-0" autoPlay playsInline muted />
               )}
 
-              {cameraStatus === "active" && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="w-64 h-64 sm:w-80 sm:h-80 border-[3px] border-white/40 border-dashed rounded-full mb-4 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] transition-all" />
-                  <p className="text-white font-bold text-sm uppercase tracking-[0.2em] bg-black/20 backdrop-blur-md px-6 py-2 rounded-full">Position Face Clearly</p>
+              <div className="absolute inset-0 border-[12px] border-transparent pointer-events-none">
+                <div className="w-full h-full border-2 border-white/20 rounded-2xl relative flex items-center justify-center">
+                  {cameraStatus === "detecting" && (
+                    <div className="absolute top-0 left-0 w-full h-1 bg-[#16A34A] shadow-[0_0_20px_#16A34A] animate-scan" />
+                  )}
+                  {cameraStatus === "active" && (
+                     <div className="w-80 h-80 sm:w-96 sm:h-96 border-4 border-white/40 border-dashed rounded-full shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] transition-all" />
+                  )}
+                </div>
+              </div>
+
+              {cameraStatus === 'blinking' && (
+                <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-[#16A34A] text-white px-6 py-2 rounded-full flex items-center gap-2 animate-bounce shadow-lg">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span className="font-black text-xs uppercase tracking-widest">Blink Detected!</span>
                 </div>
               )}
             </div>
 
-            <div className="flex gap-6 max-w-lg mx-auto">
-              {cameraStatus === "captured" ? (
-                <>
-                  <button onClick={handleRetakePhoto} className="flex-1 h-14 border-2 border-gray-100 rounded-2xl font-black text-gray-500 hover:bg-gray-50 transition-colors">
-                    Retake
-                  </button>
+            <div className="flex flex-col items-center gap-6 max-w-lg mx-auto">
+              {cameraStatus === "active" && (
+                <button 
+                  onClick={startVerification}
+                  className="w-full h-16 bg-[#16A34A] text-white rounded-2xl font-black text-lg shadow-xl shadow-green-100 hover:shadow-green-200 transition-all active:scale-95 flex items-center justify-center gap-3"
+                >
+                  <ShieldCheck className="w-6 h-6" />
+                  Begin Liveness Check
+                </button>
+              )}
+
+              {cameraStatus === "detecting" && (
+                 <div className="flex flex-col items-center gap-3">
+                   <div className="w-12 h-12 rounded-full border-4 border-t-[#16A34A] border-slate-100 animate-spin" />
+                   <p className="font-black text-[#16A34A] uppercase tracking-widest text-sm animate-pulse">Look into camera & Blink</p>
+                 </div>
+              )}
+
+              {cameraStatus === "captured" && (
+                <div className="w-full space-y-4">
+                  <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3">
+                    <CheckCircle2 className="text-[#16A34A] w-6 h-6" />
+                    <div className="text-left">
+                      <p className="font-black text-emerald-900 text-sm">Identity Confirmed</p>
+                      <p className="text-xs text-emerald-600 font-bold">Face match score: {(100 - (faceMatchScore || 0) * 100).toFixed(1)}%</p>
+                    </div>
+                  </div>
                   <button
                     onClick={handleSubmitCheckOut}
                     disabled={isSubmitting}
-                    className="flex-1 h-14 bg-[#16A34A] text-white rounded-2xl font-black shadow-xl shadow-green-100 hover:shadow-green-200 transition-all disabled:opacity-50"
+                    className="w-full h-16 bg-gray-900 text-white rounded-2xl font-black text-lg shadow-xl shadow-gray-100 hover:shadow-gray-200 transition-all disabled:opacity-50"
                   >
-                    {isSubmitting ? "Saving..." : "Verify & Check-out"}
+                    {isSubmitting ? "Finalizing Check-out..." : "Submit Check-out"}
                   </button>
-                </>
-              ) : (
-                <button
-                  onClick={handleCapturePhoto}
-                  disabled={cameraStatus !== "active"}
-                  className="w-full h-16 bg-[#16A34A] text-white rounded-2xl font-black text-lg shadow-xl shadow-green-100 hover:shadow-green-200 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  Capture Photo
-                </button>
+                </div>
+              )}
+
+              {cameraStatus === "error" && (
+                <div className="w-full space-y-4">
+                   <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3">
+                    <AlertCircle className="text-red-600 w-6 h-6" />
+                    <p className="text-left font-bold text-red-700 text-sm leading-tight">{cameraError}</p>
+                  </div>
+                  <button 
+                    onClick={() => { setCameraStatus("idle"); setCameraError(null); setCapturedImage(null); }}
+                    className="w-full h-14 border-2 border-slate-200 rounded-2xl font-black text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    Retry Verification
+                  </button>
+                </div>
               )}
             </div>
-
-            {cameraError && <p className="mt-6 text-red-500 font-bold text-sm tracking-tight">{cameraError}</p>}
             <canvas ref={canvasRef} className="hidden" />
           </div>
+          <style jsx global>{`
+            @keyframes scan {
+              0% { top: 0%; opacity: 0; }
+              5% { opacity: 1; }
+              95% { opacity: 1; }
+              100% { top: 100%; opacity: 0; }
+            }
+            .animate-scan {
+              animation: scan 3s linear infinite;
+            }
+          `}</style>
         </div>
       );
     }
@@ -466,6 +557,51 @@ export default function CheckOutPage() {
       </div>
     );
   };
+
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+    };
+  }, []);
+
+  // Blink Detection Loop
+  useEffect(() => {
+    let animationId: number;
+    if (cameraStatus !== "detecting") return;
+
+    async function detect() {
+      if (!videoRef.current || cameraStatus !== "detecting") return;
+
+      const detections = await faceapi
+        .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks();
+
+      if (detections && isEyeClosed(detections.landmarks)) {
+        setCameraStatus("blinking");
+        handleCaptureAndVerify();
+        return;
+      }
+
+      animationId = requestAnimationFrame(detect);
+    }
+    detect();
+    return () => cancelAnimationFrame(animationId);
+  }, [cameraStatus]);
+
+  if (loading || !userData) {
+    return (
+      <div className="min-h-screen bg-[#F5F5F5] flex flex-col-reverse md:flex-row">
+        <Sidebar />
+        <div className="flex-1 w-full sm:ml-20 md:ml-24 lg:ml-[120px] pb-24 md:pb-0 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E7D32] mx-auto mb-4"></div>
+            <p>Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col-reverse md:flex-row">

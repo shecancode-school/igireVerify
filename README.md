@@ -110,4 +110,26 @@ IgireVerify is a state-of-the-art attendance management platform designed for **
     ```
 
 ---
-*Created with  for Igire Rwanda Organisation.*
+
+## 🏗️ Phase 2 Evolution: Intelligence & Security
+
+Following the successful implementation of the core foundation (Phase 1), the system is evolving to meet enterprise-grade security and institutional management standards.
+
+### 1. AI-Powered Verification (TensorFlow.js)
+*   **Active Liveness Detection**: Replaces static photos with a "Challenge-Response" flow (e.g., *Blink Eyes*, *Turn Head*).
+*   **Identity Matching**: Real-time 1:1 comparison between check-in, check-out, and the registered profile anchor.
+*   **Liveness Score**: Only marks attendance if the AI confirms a >90% match and verified human movement.
+
+### 2. Multi-Tier RBAC (Role-Based Access Control)
+*   **Super-Admin (CEO)**: Global read-only oversight and high-level trend analytics.
+*   **Admin (HR)**: Full system management, scheduling, and staff assignments.
+*   **Facilitators**: Classroom-scoped data feeds and student support management.
+*   **Audit Logging**: Every report download and data modification is tracked and logged for accountability.
+
+### 3. Integrated Communication Hub
+*   **Real-Time Alerts**: WebSocket-based notification system for quizzes, announcements, and urgent messages.
+*   **Help Desk Ticketing**: A professional support lifecycle for students, monitored by HR and resolved by Facilitators.
+*   **Audit Trail**: Every interaction is logged to ensure transparency across all levels of the organization.
+
+---
+*Created with ♥ for Igire Rwanda Organisation.*

@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
       email: user.email,
       name: user.name,
       position: user.position || null,
+      assignedPrograms: (user.assignedPrograms || []).map((id: any) => id.toString()),
     };
 
     const token = jwt.sign(payload, JWT_SECRET as string, { expiresIn: "7d" });
@@ -98,11 +99,11 @@ export async function POST(req: NextRequest) {
     const isIgireEmail = normalizedEmail.endsWith("@igirerwanda.org");
     
     const redirectTo =
-      user.role === "admin"
+      (user.role === "admin" || user.role === "super-admin")
         ? "/dashboard/admin"
-        : (user.role === "staff" || isIgireEmail)
-          ? "/dashboard/staff"
-          : "/dashboard/participant";
+        : user.role === "participant"
+          ? "/dashboard/participant"
+          : "/dashboard/staff";
 
     const response = NextResponse.json(
       {

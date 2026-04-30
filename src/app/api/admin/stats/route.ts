@@ -5,7 +5,7 @@ import { requireAuthOrRedirect } from "@/lib/auth";
 export async function GET() {
   try {
     const claims = await requireAuthOrRedirect();
-    if (claims.role !== "admin") {
+    if (claims.role !== "admin" && claims.role !== "super-admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

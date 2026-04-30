@@ -36,34 +36,40 @@ export async function POST(req: Request) {
     let schedule;
     let program;
     let programTimeZone = 'Africa/Kigali';
-    if (role === 'staff') {
-      schedule = STAFF_RULES;
-    } else {
-      if (!/^[0-9a-fA-F]{24}$/.test(programId)) {
-        return NextResponse.json({ error: "Invalid program selected for participant" }, { status: 400 });
-      }
 
+    // Fetch program if provided (for both participants and assigned staff)
+    if (programId && /^[0-9a-fA-F]{24}$/.test(programId)) {
       program = await programs.findOne({
         _id: new ObjectId(programId),
         isActive: true,
       });
+      
+      if (program) {
+        schedule = program.schedule;
+        if (program.timeZone) {
+          programTimeZone = program.timeZone;
+        }
 
-      if (!program) {
-        console.warn(`[CHECKIN] Program not found: ${programId}`);
-        return NextResponse.json({ error: "The selected program could not be found. Please contact support if this issue persists." }, { status: 404 });
+        const programDateError = getProgramDateWindowError(
+          nowUTC,
+          program as unknown as { startDate?: Date; endDate?: Date },
+          programTimeZone
+        );
+        if (programDateError) {
+          return NextResponse.json({ error: programDateError }, { status: 400 });
+        }
       }
-      schedule = program.schedule;
-      if (program.timeZone) {
-        programTimeZone = program.timeZone;
-      }
+    }
 
-      const programDateError = getProgramDateWindowError(
-        nowUTC,
-        program as unknown as { startDate?: Date; endDate?: Date },
-        programTimeZone
-      );
-      if (programDateError) {
-        return NextResponse.json({ error: programDateError }, { status: 400 });
+    // Determine final schedule
+    if (!schedule) {
+      if (role === 'staff') {
+        schedule = STAFF_RULES;
+      } else {
+        console.warn(`[CHECKIN] No schedule found for program: ${programId}`);
+        return NextResponse.json({ 
+          error: "The selected program could not be found or has no schedule. Please contact support." 
+        }, { status: 404 });
       }
     }
 
@@ -113,7 +119,7 @@ export async function POST(req: Request) {
       programName,
       role: role || "participant",
       type: "checkin",
-      checkInTime: checkInDateTime,
+      checkInTime: nowUTC,
       checkInStatus: status,
       checkInPhotoUrl: photoUrl,
       checkInGpsLocation: gpsLocation,

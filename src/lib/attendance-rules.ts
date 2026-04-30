@@ -26,13 +26,12 @@ export function isValidAttendanceDay(rules: AttendanceRules, date: Date): boolea
 
 export function getAttendanceStatus(checkInTime: Date, rules: AttendanceRules): 'on-time' | 'late' | 'absent' {
   const checkInTimeStr = formatTimeToHHMM(checkInTime);
-
+  
+  if (!rules || !rules.lateAfter) return 'on-time';
 
   if (checkInTimeStr <= rules.lateAfter) {
     return 'on-time';
-  }
-
-  else {
+  } else {
     return 'late';
   }
 }
@@ -49,6 +48,10 @@ export function isWithinCheckOutWindow(rules: AttendanceRules, currentTime: Date
 }
 
 export function formatTimeToHHMM(date: Date): string {
+  // Use local methods because the date objects passed to this function 
+  // are already shifted to the target timezone (e.g., Africa/Kigali) 
+  // by toZonedTime in the API routes. 
+  // Using getUTCHours would return the original UTC time, which breaks comparisons.
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
   return `${hours}:${minutes}`;
