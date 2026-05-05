@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "react-router-dom"; // Wait, this is Next.js, should use next/link
 import Navbar from "@/components/Navbar";
 import { useRouter } from "next/navigation";
 import LinkNext from "next/link";

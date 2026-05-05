@@ -45,8 +45,11 @@ function appBaseUrl() {
 }
 
 export function buildVerifyUrl(rawToken: string) {
-
   return `${appBaseUrl()}/verify-email#token=${encodeURIComponent(rawToken)}`;
+}
+
+export function buildResetUrl(rawToken: string) {
+  return `${appBaseUrl()}/auth/reset-password#token=${encodeURIComponent(rawToken)}`;
 }
 
 function getTransport() {
@@ -64,8 +67,7 @@ function getTransport() {
 }
 
 export async function sendWelcomeVerificationEmail(payload: VerifyEmailPayload) {
-  const from =
-    process.env.SMTP_FROM || `Igire Verify <${required("SMTP_USER")}>`;
+  const from = process.env.SMTP_FROM || `Igire Verify <${required("SMTP_USER")}>`;
   const transport = getTransport();
   const base = appBaseUrl().replace(/\/+$/, "");
   const safeName = escapeHtml(payload.name);
@@ -78,17 +80,13 @@ export async function sendWelcomeVerificationEmail(payload: VerifyEmailPayload) 
   }> = [];
 
   try {
-    const igireLogo = await readFile(
-      path.join(process.cwd(), "public", "logo-igire.webp")
-    );
+    const igireLogo = await readFile(path.join(process.cwd(), "public", "logo-igire.webp"));
     attachments.push({
       filename: "logo-igire.webp",
       content: igireLogo,
       cid: "igire-logo",
     });
-  } catch {
-    // Keep email sending resilient even if local assets are unavailable.
-  }
+  } catch {}
 
   try {
     const hero = await readFile(path.join(process.cwd(), "public", "Real.png"));
@@ -97,22 +95,13 @@ export async function sendWelcomeVerificationEmail(payload: VerifyEmailPayload) 
       content: hero,
       cid: "igire-hero",
     });
-  } catch {
-    // Keep email sending resilient even if local assets are unavailable.
-  }
+  } catch {}
 
   await transport.sendMail({
     from,
     to: payload.to,
     subject: "Welcome to Igire Verify - Verify your email address",
-    text: `Hi ${payload.name},
-
-Welcome to Igire Verify.
-Please verify your account by using the "Verify Email Address" button in this email.
-Fallback page: ${fallbackVerifyPage}
-
-If you did not create this account, ignore this email.
-`,
+    text: `Hi ${payload.name},\n\nWelcome to Igire Verify.\nPlease verify your account by using the "Verify Email Address" button in this email.\nFallback page: ${fallbackVerifyPage}\n\nIf you did not create this account, ignore this email.`,
     html: `
 <div style="margin:0;padding:0;background:#f3f5f7;font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f5f7;padding:28px 12px;">
@@ -129,8 +118,6 @@ If you did not create this account, ignore this email.
                   <td valign="middle">
                     <div style="font-size:30px;font-weight:800;line-height:1.1;">
                       <span style="color:#C47D0E;">Igire</span><span style="color:#2E7D32;">Verify</span>
-                    </div>
-                    <div style="margin-top:6px;color:#4b5563;font-size:14px;">
                     </div>
                   </td>
                 </tr>
@@ -173,8 +160,84 @@ If you did not create this account, ignore this email.
               <p style="margin:0;font-size:12px;line-height:1.6;color:#6b7280;">
                 If you did not create this account, you can safely ignore this email.
               </p>
-              <p style="margin:8px 0 0 0;font-size:12px;color:#9ca3af;">
-                This email was sent by Igire Verify.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</div>`,
+    attachments,
+  });
+}
+
+export async function sendPasswordResetEmail(payload: { to: string; name: string; resetUrl: string }) {
+  const from = process.env.SMTP_FROM || `Igire Verify <${required("SMTP_USER")}>`;
+  const transport = getTransport();
+  const safeName = escapeHtml(payload.name);
+
+  const attachments: Array<{
+    filename: string;
+    content: Buffer;
+    cid: string;
+  }> = [];
+
+  try {
+    const igireLogo = await readFile(path.join(process.cwd(), "public", "logo-igire.webp"));
+    attachments.push({
+      filename: "logo-igire.webp",
+      content: igireLogo,
+      cid: "igire-logo",
+    });
+  } catch {}
+
+  await transport.sendMail({
+    from,
+    to: payload.to,
+    subject: "Reset your Igire Verify password",
+    text: `Hi ${payload.name},\n\nYou requested to reset your password. Please use the link below to set a new password:\n${payload.resetUrl}\n\nIf you did not request this, please ignore this email.`,
+    html: `
+<div style="margin:0;padding:0;background:#f3f5f7;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f5f7;padding:28px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="640" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+          <tr>
+            <td style="padding:24px 28px 18px 28px;background:linear-gradient(135deg,#F7FAF8 0%,#EDF7F0 100%);border-bottom:1px solid #e5e7eb;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td valign="middle" style="width:70px;">
+                    <img src="cid:igire-logo" width="58" height="58" alt="Igire Rwanda logo" style="display:block;border:0;outline:none;">
+                  </td>
+                  <td valign="middle">
+                    <div style="font-size:30px;font-weight:800;line-height:1.1;">
+                      <span style="color:#C47D0E;">Igire</span><span style="color:#2E7D32;">Verify</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:30px 28px 8px 28px;color:#111827;">
+              <div style="font-size:20px;font-weight:700;margin-bottom:10px;">Password Reset Request</div>
+              <p style="margin:0 0 14px 0;font-size:15px;line-height:1.6;color:#374151;">
+                Hi ${safeName}, we received a request to reset your password. 
+                Click the button below to choose a new password.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:8px 28px 18px 28px;">
+              <a href="${payload.resetUrl}" style="display:inline-block;background:#2E7D32;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:13px 22px;border-radius:10px;">
+                Reset Password
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:14px 28px 24px 28px;border-top:1px solid #e5e7eb;">
+              <p style="margin:0;font-size:12px;line-height:1.6;color:#6b7280;">
+                If you did not request a password reset, you can safely ignore this email. This link will expire in 1 hour.
               </p>
             </td>
           </tr>
