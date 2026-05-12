@@ -1,270 +1,194 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import * as faceapi from "face-api.js";
-import { loadFaceApiModels, isEyeClosed, getFaceDescriptor } from "@/lib/face-api-utils";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
-import { Camera, ShieldCheck, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
+import { uploadToCloudinary } from "@/lib/cloudinary";
+import * as faceapi from "face-api.js";
+import { loadFaceApiModels } from "@/lib/face-api-utils";
+import { CheckCircle2, RefreshCw, Scan, AlertCircle } from "lucide-react";
 
 export default function FaceEnrollmentPage() {
-  const router = useRouter();
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<"loading" | "ready" | "detecting" | "blinking" | "captured" | "saving" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [progress, setProgress] = useState(0);
-  const [hasBlinked, setHasBlinked] = useState(false);
   const [userData, setUserData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<any>("idle");
+  const [error, setError] = useState<any>(null);
+  const [capturedImage, setCapturedImage] = useState<any>(null);
+  const [livenessStep, setLivenessStep] = useState<"match" | "blink" | "left" | "right">("match");
+  const [progress, setProgress] = useState(0);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
-    async function init() {
-      try {
-        // 1. Fetch user data for TopBar
-        const userRes = await fetch("/api/auth/me");
-        if (userRes.ok) setUserData(await userRes.json());
-
-        // 2. Load AI Models
-        await loadFaceApiModels();
-        
-        // 3. Start Camera
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-        
-        setStatus("ready");
-      } catch (err) {
-        console.error("Initialization error:", err);
-        setStatus("error");
-        setErrorMessage("Camera access denied or models failed to load. Please ensure camera permissions are granted.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    init();
-
-    return () => {
-      // Stop camera on unmount
-      if (videoRef.current && videoRef.current.srcObject) {
-        (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
-      }
-    };
+    fetch('/api/auth/me').then(res => res.json()).then(data => {
+      setUserData(data);
+      setLoading(false);
+    });
   }, []);
 
-  // Detection Loop for Liveness (Blink)
   useEffect(() => {
-    let animationId: number;
-    
-    async function detect() {
-      if (status !== "detecting" && status !== "blinking") return;
-      if (!videoRef.current) return;
-
-      const detections = await faceapi
-        .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 }))
-        .withFaceLandmarks();
-
-      if (detections) {
-        const closed = isEyeClosed(detections.landmarks);
-        
-        if (closed && !hasBlinked) {
-          setHasBlinked(true);
-          setStatus("blinking");
-          setProgress(100);
-          
-          // Small delay to show "Blinked" status
-          setTimeout(() => {
-            captureDescriptor();
-          }, 800);
-        }
-      }
-
-      animationId = requestAnimationFrame(detect);
-    }
-
-    if (status === "detecting") {
-      detect();
-    }
-
-    return () => cancelAnimationFrame(animationId);
-  }, [status, hasBlinked]);
-
-  async function startDetection() {
-    setHasBlinked(false);
-    setProgress(0);
-    setStatus("detecting");
-  }
-
-  async function captureDescriptor() {
-    if (!videoRef.current) return;
-    setStatus("saving");
-
-    try {
-      const descriptor = await getFaceDescriptor(videoRef.current);
-      if (!descriptor) {
-        setStatus("detecting");
-        setErrorMessage("Could not capture face clearly. Please try again.");
-        return;
-      }
-
-      const res = await fetch("/api/auth/register-face", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ descriptor: Array.from(descriptor) }),
+    if (!loading) {
+      setAiLoading(true);
+      loadFaceApiModels().finally(() => {
+        setAiLoading(false);
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 1280, height: 720 } }).then(stream => {
+          streamRef.current = stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.onloadedmetadata = () => {
+              videoRef.current?.play();
+              setStatus("detecting");
+            };
+          }
+        });
       });
-
-      if (res.ok) {
-        setStatus("captured");
-        setTimeout(() => {
-          router.push("/dashboard/participant/profile");
-        }, 2000);
-      } else {
-        throw new Error("Failed to save to database");
-      }
-    } catch (err) {
-      setStatus("error");
-      setErrorMessage("System error during registration. Please refresh and try again.");
     }
-  }
+  }, [loading]);
+
+  useEffect(() => {
+    if (status !== "detecting" || aiLoading) return;
+    let active = true;
+    const loop = async () => {
+      if (!active || !videoRef.current || status !== "detecting") return;
+      try {
+        const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 128 })).withFaceLandmarks().withFaceDescriptor();
+        if (detection) {
+          setError(null);
+          const nose = detection.landmarks.getNose();
+          const leftEye = detection.landmarks.getLeftEye();
+          const rightEye = detection.landmarks.getRightEye();
+          const distL = Math.abs(nose[0].x - leftEye[3].x);
+          const distR = Math.abs(nose[0].x - rightEye[0].x);
+          const yaw = (distL / distR) - 1;
+
+          if (livenessStep === "match") {
+            if (Math.abs(yaw) < 0.15) { setProgress(25); setLivenessStep("blink"); }
+            else { setError("Align face in center."); }
+          }
+          else if (livenessStep === "blink") {
+            const getEAR = (eye: any) => {
+              const v1 = Math.sqrt(Math.pow(eye[1].x - eye[5].x, 2) + Math.pow(eye[1].y - eye[5].y, 2));
+              const v2 = Math.sqrt(Math.pow(eye[2].x - eye[4].x, 2) + Math.pow(eye[2].y - eye[4].y, 2));
+              const h = Math.sqrt(Math.pow(eye[0].x - eye[3].x, 2) + Math.pow(eye[0].y - eye[3].y, 2));
+              return (v1 + v2) / (2 * h);
+            };
+            if ((getEAR(leftEye) + getEAR(rightEye)) / 2 < 0.25) { setProgress(50); setLivenessStep("left"); }
+          }
+          else if (livenessStep === "left" && yaw > 0.45) { setProgress(75); setLivenessStep("right"); }
+          else if (livenessStep === "right" && yaw < -0.45) {
+            setProgress(100); setStatus("captured");
+            handleSave(detection.descriptor);
+            return;
+          }
+        } else { setError("Face not detected."); }
+      } catch (e) {}
+      if (active) setTimeout(loop, 80);
+    };
+    loop();
+    return () => { active = false; };
+  }, [status, aiLoading, livenessStep]);
+
+  const handleSave = async (descriptor: any) => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = videoRef.current.videoWidth; canvas.height = videoRef.current.videoHeight;
+    canvas.getContext("2d")?.drawImage(videoRef.current, 0, 0);
+    const img = canvas.toDataURL("image/jpeg", 0.9);
+    setCapturedImage(img);
+    streamRef.current?.getTracks().forEach(t => t.stop());
+
+    const photoUrl = await uploadToCloudinary(img, "enrollment");
+    await fetch("/api/users/face-enroll", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: userData.userId, faceDescriptor: Array.from(descriptor), photoUrl })
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col-reverse md:flex-row">
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col-reverse md:flex-row">
       <Sidebar />
-      <div className="flex-1 w-full sm:ml-20 md:ml-24 lg:ml-[120px] pb-24 md:pb-0">
+      <div className="flex-1 w-full sm:ml-20 md:ml-24 lg:ml-[120px]">
         <TopBar {...userData} />
-
-        <main className="p-4 md:p-12 flex flex-col items-center">
-          <div className="max-w-3xl w-full">
-            <div className="mb-8 text-center md:text-left">
-              <h1 className="text-3xl font-black text-slate-900 mb-2">Facial Enrollment</h1>
-              <p className="text-slate-500 font-medium italic">Step 1 of Phase 2: Secure Identity Verification</p>
+        <main className="p-8 max-w-5xl mx-auto">
+          <div className="bg-white rounded-[70px] mt-10 shadow-3xl border border-slate-50 text-center p-12 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-slate-50">
+               <div className="h-full bg-emerald-500 transition-all duration-1000 shadow-[0_0_15px_#10b981]" style={{ width: `${progress}%` }} />
             </div>
 
-            <div className="bg-white rounded-[32px] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden relative">
-              
-              {/* Camera Container */}
-              <div className="aspect-[4/3] bg-slate-900 relative flex items-center justify-center overflow-hidden">
-                {loading && (
-                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-900 text-white gap-4">
-                    <RefreshCw className="w-12 h-12 animate-spin text-[#16A34A]" />
-                    <p className="font-bold tracking-widest text-sm uppercase">Loading AI Models...</p>
-                  </div>
-                )}
-
-                <video 
-                  ref={videoRef} 
-                  autoPlay 
-                  muted 
-                  playsInline 
-                  className={`w-full h-full object-cover transform transition-opacity duration-700 ${loading ? 'opacity-0' : 'opacity-100'}`}
-                />
-                
-                {/* Face Overlay UI */}
-                <div className="absolute inset-0 border-[16px] border-transparent pointer-events-none">
-                  <div className="w-full h-full border-2 border-white/20 rounded-2xl flex items-center justify-center relative">
-                    {/* Corner accents */}
-                    <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-[#16A34A] rounded-tl-xl" />
-                    <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-[#16A34A] rounded-tr-xl" />
-                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-[#16A34A] rounded-bl-xl" />
-                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-[#16A34A] rounded-br-xl" />
-
-                    {/* Scan Line Animation */}
-                    {(status === 'detecting' || status === 'blinking') && (
-                      <div className="absolute top-0 left-0 w-full h-1 bg-[#16A34A] shadow-[0_0_20px_#16A34A] animate-scan" />
-                    )}
-                  </div>
+            <div className="mb-12">
+               <h2 className="text-4xl font-black mb-4 tracking-tighter text-slate-900">Biometric Identity Setup</h2>
+               <p className="text-slate-500 font-medium max-w-xl mx-auto">Establish your secure digital identity. This high-fidelity scan will be used for all future attendance verifications.</p>
+            </div>
+            
+            <div className="relative aspect-video bg-slate-950 rounded-[55px] overflow-hidden mb-12 shadow-3xl group">
+              {aiLoading && (
+                <div className="absolute inset-0 z-30 bg-slate-950 flex flex-col items-center justify-center text-white">
+                  <RefreshCw className="animate-spin text-emerald-500 w-16 h-16 mb-6" />
+                  <p className="font-black text-xs tracking-[0.4em] uppercase opacity-40">Initialising Quantum Optics...</p>
                 </div>
+              )}
+              {capturedImage ? <Image src={capturedImage} alt="Face" fill className="object-cover" /> : <video ref={videoRef} className="w-full h-full object-cover opacity-80" autoPlay playsInline muted />}
+              
+              {/* PRECISION HUD */}
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                 {/* Precision Corners */}
+                 <div className="absolute top-12 left-12 w-20 h-20 border-t-2 border-l-2 border-emerald-500/30 rounded-tl-[40px]" />
+                 <div className="absolute top-12 right-12 w-20 h-20 border-t-2 border-r-2 border-emerald-500/30 rounded-tr-[40px]" />
+                 <div className="absolute bottom-12 left-12 w-20 h-20 border-b-2 border-l-2 border-emerald-500/30 rounded-bl-[40px]" />
+                 <div className="absolute bottom-12 right-12 w-20 h-20 border-b-2 border-r-2 border-emerald-500/30 rounded-br-[40px]" />
+                 
+                 {/* Scanning Circle */}
+                 <div className={`w-[480px] h-[480px] rounded-full border border-white/5 flex items-center justify-center transition-all duration-1000 ${status === "detecting" ? "scale-100 opacity-100" : "scale-90 opacity-0"}`}>
+                    <div className="w-[440px] h-[440px] rounded-full border-4 border-dashed border-emerald-500/20 animate-[spin_30s_linear_infinite]" />
+                 </div>
 
-                {/* Status Banners */}
-                {status === 'blinking' && (
-                  <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-[#16A34A] text-white px-6 py-2 rounded-full flex items-center gap-2 animate-bounce shadow-lg">
-                    <CheckCircle2 className="w-5 h-5" />
-                    <span className="font-black text-sm uppercase tracking-widest">Blink Detected!</span>
-                  </div>
-                )}
+                 {/* Active Scan Line */}
+                 {status === "detecting" && (
+                   <div className="absolute inset-0 overflow-hidden rounded-[55px]">
+                      <div className="w-full h-1 bg-emerald-500/40 shadow-[0_0_30px_#10b981] animate-[scan_4s_ease-in-out_infinite]" />
+                   </div>
+                 )}
               </div>
 
-              {/* Controls Section */}
-              <div className="p-8">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
-                      {status === 'ready' && <Camera className="w-6 h-6 text-[#16A34A]" />}
-                      {status === 'detecting' && <RefreshCw className="w-6 h-6 text-[#16A34A] animate-spin" />}
-                      {status === 'captured' && <CheckCircle2 className="w-6 h-6 text-[#16A34A]" />}
-                      {status === 'error' && <AlertCircle className="w-6 h-6 text-red-600" />}
-                      
-                      {status === 'ready' && "Camera Ready"}
-                      {status === 'detecting' && "Verification in Progress"}
-                      {status === 'blinking' && "Blink Detected!"}
-                      {status === 'captured' && "Identity Verified"}
-                      {status === 'error' && "Access Error"}
-                      {status === 'saving' && "Processing Face Vector..."}
-                    </h3>
-                    <p className="text-slate-500 text-[15px] font-medium leading-relaxed">
-                      {status === 'ready' && "Position your face within the frame and click 'Start Verification' to begin the liveness challenge."}
-                      {status === 'detecting' && "Please look directly at the camera and blink once to prove you are a live user."}
-                      {status === 'captured' && "Your facial identity has been successfully secured. Redirecting to your profile..."}
-                      {status === 'error' && errorMessage}
+              {status === "detecting" && (
+                <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-6">
+                  <div className="bg-slate-900/40 backdrop-blur-3xl px-12 py-6 rounded-[40px] border border-white/10 flex flex-col items-center shadow-3xl min-w-[300px]">
+                    <span className="font-black text-[11px] uppercase tracking-[0.5em] text-emerald-400 mb-2">Protocol: {livenessStep}</span>
+                    <p className="text-4xl font-black text-white italic tracking-tighter uppercase">
+                       {livenessStep === "match" ? "Face Center" : livenessStep === "blink" ? "Action: Blink" : livenessStep === "left" ? "Rotate Left" : "Rotate Right"}
                     </p>
                   </div>
-
-                  <div className="shrink-0">
-                    {status === 'ready' && (
-                      <button 
-                        onClick={startDetection}
-                        className="bg-[#16A34A] hover:bg-[#15803d] text-white px-8 py-4 rounded-2xl font-black text-lg transition-all active:scale-95 flex items-center gap-3 shadow-lg shadow-[#16A34A]/20"
-                      >
-                        <ShieldCheck className="w-6 h-6" />
-                        Start Verification
-                      </button>
-                    )}
-
-                    {status === 'detecting' && (
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-48 h-3 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-[#16A34A] transition-all duration-300" style={{ width: `${progress}%` }} />
-                        </div>
-                        <span className="text-xs font-black text-[#16A34A] uppercase tracking-tighter animate-pulse">Waiting for Blink...</span>
-                      </div>
-                    )}
-                  </div>
                 </div>
+              )}
+
+              {status === "captured" && (
+                <div className="absolute inset-0 bg-emerald-600/95 backdrop-blur-2xl flex flex-col items-center justify-center text-white animate-in fade-in duration-700">
+                  <CheckCircle2 className="w-32 h-32 mb-8 animate-bounce" />
+                  <h3 className="text-4xl font-black uppercase tracking-[0.3em]">Master Enrolled</h3>
+                  <p className="mt-4 font-bold opacity-80">Securing biometric anchor...</p>
+                </div>
+              )}
+            </div>
+
+            {error && (
+              <div className="max-w-md mx-auto p-5 bg-red-50 text-red-600 rounded-3xl border border-red-100 flex items-center justify-center gap-3 animate-pulse">
+                <AlertCircle className="w-6 h-6" /> 
+                <span className="font-black text-xs uppercase tracking-widest">{error}</span>
               </div>
-            </div>
-
-            {/* Instruction Grid */}
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { icon: <Camera className="text-[#16A34A]" />, title: "Lighting", desc: "Ensure your room is well lit and your face is clear." },
-                { icon: <ShieldCheck className="text-[#16A34A]" />, title: "Liveness", desc: "The system will ask for a blink to prevent photo spoofing." },
-                { icon: <RefreshCw className="text-[#16A34A]" />, title: "Privacy", desc: "We store a mathematical vector, not your actual image." },
-              ].map((item, i) => (
-                <div key={i} className="bg-white/50 border border-slate-100 rounded-2xl p-6 flex flex-col gap-3">
-                  <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center border border-slate-50">
-                    {item.icon}
-                  </div>
-                  <h4 className="font-bold text-slate-800">{item.title}</h4>
-                  <p className="text-sm text-slate-500 font-medium leading-relaxed">{item.desc}</p>
-                </div>
-              ))}
-            </div>
+            )}
           </div>
         </main>
       </div>
-
       <style jsx global>{`
         @keyframes scan {
-          0% { top: 0%; opacity: 0; }
-          5% { opacity: 1; }
-          95% { opacity: 1; }
-          100% { top: 100%; opacity: 0; }
-        }
-        .animate-scan {
-          animation: scan 3s linear infinite;
+          0% { transform: translateY(-20px); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(600px); opacity: 0; }
         }
       `}</style>
     </div>

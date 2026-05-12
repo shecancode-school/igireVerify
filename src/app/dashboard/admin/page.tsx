@@ -24,7 +24,8 @@ import {
   ChevronLeft,
   ChevronRight,
   XCircle,
-  BookOpen
+  BookOpen,
+  Bell
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -107,7 +108,7 @@ interface AttendanceRecord {
   checkOutPhotoUrl?: string;
 }
 
-type TabType = 'overview' | 'programs' | 'users' | 'attendance' | 'reports' | 'settings';
+type TabType = 'overview' | 'programs' | 'users' | 'attendance' | 'reports' | 'communications' | 'settings';
 
 function getProgramTimezone(record: any) {
   return record.programTimeZone || 'Africa/Kigali';
@@ -129,6 +130,16 @@ export default function AdminDashboard() {
     setActiveTab(tab);
     router.push(`/dashboard/admin?tab=${tab}`);
   };
+
+  // Notification Form State
+  const [notifForm, setNotifForm] = useState({
+    title: "",
+    message: "",
+    recipientId: "all",
+  });
+  const [notifBusy, setNotifBusy] = useState(false);
+  const [notifSuccess, setNotifSuccess] = useState("");
+  const [notifError, setNotifError] = useState("");
   const [stats, setStats] = useState<Stats>({
     totalPrograms: 0,
     totalUsers: 0,
@@ -238,6 +249,31 @@ export default function AdminDashboard() {
   const [reportEndDate, setReportEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [reportProgramId, setReportProgramId] = useState('');
   const [attendanceProgramFilter, setAttendanceProgramFilter] = useState('');
+
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNotifBusy(true);
+    setNotifSuccess("");
+    setNotifError("");
+    try {
+      const res = await fetch("/api/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(notifForm),
+      });
+      if (res.ok) {
+        setNotifSuccess("Message broadcasted successfully!");
+        setNotifForm({ title: "", message: "", recipientId: "all" });
+      } else {
+        const data = await res.json();
+        setNotifError(data.error || "Failed to send message.");
+      }
+    } catch (e) {
+      setNotifError("Network error.");
+    } finally {
+      setNotifBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (activeTab === 'attendance') {
@@ -680,6 +716,7 @@ export default function AdminDashboard() {
     { id: 'programs' as TabType, name: 'Programs', icon: BookOpen },
     { id: 'users' as TabType, name: 'Users', icon: Users },
     { id: 'reports' as TabType, name: 'Reports', icon: FileText },
+    { id: 'communications' as TabType, name: 'Communications', icon: Bell },
     { id: 'settings' as TabType, name: 'Settings', icon: Settings },
   ];
 
@@ -858,7 +895,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center sm:items-start gap-2 sm:gap-4 border-b-4 border-b-green-500">
+                  <div className="bg-white p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center sm:items-start gap-2 sm:gap-4 border-b-4 border-b-green-600">
                     <div className="bg-green-50 w-10 sm:w-12 md:w-14 h-10 sm:h-12 md:h-14 rounded-full flex items-center justify-center shrink-0">
                       <CheckSquare className="w-5 sm:w-6 md:w-7 h-5 sm:h-6 md:h-7 text-green-600" />
                     </div>
@@ -1532,6 +1569,88 @@ export default function AdminDashboard() {
                         <FileText className="w-5 h-5" /> Download Word Document
                       </button>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {activeTab === 'communications' && (
+              <div className="space-y-6 max-w-4xl">
+                <h1 className="text-3xl font-black text-slate-900 tracking-tight">Platform Communications</h1>
+                <p className="text-slate-500 font-medium">Broadcast official announcements and notifications to all users or specific roles.</p>
+                
+                <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm">
+                  <form onSubmit={handleSendNotification} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Subject / Title</label>
+                        <input
+                          type="text"
+                          required
+                          value={notifForm.title}
+                          onChange={(e) => setNotifForm({ ...notifForm, title: e.target.value })}
+                          placeholder="e.g. System Maintenance"
+                          className="w-full px-5 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-[#16A34A] focus:border-transparent outline-none font-medium"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Recipient Audience</label>
+                        <select
+                          value={notifForm.recipientId}
+                          onChange={(e) => setNotifForm({ ...notifForm, recipientId: e.target.value })}
+                          className="w-full px-5 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-[#16A34A] focus:border-transparent outline-none font-medium bg-white"
+                        >
+                          <option value="all">Everyone (Global Broadcast)</option>
+                          <option value="staff">Staff Only</option>
+                          <option value="participant">Participants Only</option>
+                          {programs.length > 0 && (
+                            <optgroup label="Specific Programs">
+                              {programs.map(p => (
+                                <option key={p._id} value={p._id}>{p.name}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Message Content</label>
+                      <textarea
+                        required
+                        value={notifForm.message}
+                        onChange={(e) => setNotifForm({ ...notifForm, message: e.target.value })}
+                        placeholder="Type your official announcement here..."
+                        className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-[#16A34A] focus:border-transparent outline-none font-medium min-h-[160px]"
+                      />
+                    </div>
+                    
+                    {notifSuccess && (
+                      <div className="p-4 bg-emerald-50 text-emerald-700 rounded-2xl font-bold text-sm border border-emerald-100 flex items-center gap-2">
+                        <UserCheck className="w-4 h-4" /> {notifSuccess}
+                      </div>
+                    )}
+                    {notifError && (
+                      <div className="p-4 bg-red-50 text-red-700 rounded-2xl font-bold text-sm border border-red-100 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4" /> {notifError}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={notifBusy}
+                      className="w-full py-5 bg-slate-900 text-white rounded-[24px] font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-slate-900/20 hover:-translate-y-1 active:translate-y-0 transition-all disabled:opacity-50"
+                    >
+                      {notifBusy ? "Broadcasting..." : "Broadcast Message"}
+                    </button>
+                  </form>
+                </div>
+                
+                <div className="bg-[#14532D] rounded-[40px] p-10 text-white flex items-center justify-between overflow-hidden relative">
+                  <div className="relative z-10">
+                    <h2 className="text-2xl font-black mb-2 tracking-tight">Need to reach someone specific?</h2>
+                    <p className="text-emerald-100/60 font-medium max-w-md">You can search for individual users in the 'Users' tab to send personalized notifications (feature coming soon).</p>
+                  </div>
+                  <div className="absolute right-[-20px] bottom-[-20px] opacity-10">
+                     <Bell className="w-64 h-64" />
                   </div>
                 </div>
               </div>

@@ -161,54 +161,52 @@ export default function AttendanceCalendar({ programId, userId }: CalendarProps)
   }
 
   return (
-    <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+    <div className="bg-white rounded-[32px] p-5 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-50">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-50">
+        <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsExpanded(false)}
-            className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors"
+            className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4" />
           </button>
-          <h2 className="text-[17px] font-extrabold text-slate-800 tracking-tight">Attendance Calendar</h2>
+          <h2 className="text-[15px] font-black text-slate-800 tracking-tight">Calendar</h2>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 mr-2">
-            <button onClick={previousMonth} className="p-1.5 hover:bg-gray-50 rounded-lg text-slate-400 hover:text-slate-900 transition-colors">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-[14px] font-black text-slate-900 min-w-[100px] text-center uppercase tracking-tight">
-              {monthName}
-            </span>
-            <button onClick={nextMonth} className="p-1.5 hover:bg-gray-50 rounded-lg text-slate-400 hover:text-slate-900 transition-colors">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+        <div className="flex items-center gap-2">
+          <button onClick={previousMonth} className="p-1 hover:bg-gray-50 rounded-md text-slate-400 hover:text-slate-900">
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+          <span className="text-[12px] font-black text-slate-900 min-w-[80px] text-center uppercase tracking-tight">
+            {monthName}
+          </span>
+          <button onClick={nextMonth} className="p-1 hover:bg-gray-50 rounded-md text-slate-400 hover:text-slate-900">
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
-      {/* Calendar Body (Centered & Compact) */}
-      <div className="max-w-[340px] mx-auto w-full">
+      {/* Calendar Body (Tighter Grid) */}
+      <div className="max-w-[280px] mx-auto w-full">
         {/* Day Headers */}
-        <div className="grid grid-cols-7 gap-2 mb-4">
-          {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((day) => (
-            <div key={day} className="text-center text-[10px] font-black text-slate-900 tracking-[0.1em] opacity-100">
+        <div className="grid grid-cols-7 gap-1 mb-3">
+          {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
+            <div key={day} className="text-center text-[9px] font-black text-slate-400 tracking-widest">
               {day}
             </div>
           ))}
         </div>
 
         {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-2 mb-8">
-          {/* Empty days before month starts */}
+        <div className="grid grid-cols-7 gap-1.5 mb-6">
+          {/* Empty days */}
           {emptyDays.map((i) => (
             <div key={`empty-${i}`} className="flex items-center justify-center aspect-square">
-              <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+              <div className="w-0.5 h-0.5 rounded-full bg-slate-200"></div>
             </div>
           ))}
 
-          {/* Days of the month */}
+          {/* Days */}
           {daysArray.map((day) => {
             const record = getAttendanceStatus(day);
             const status = deriveStatusFromRecord(record);
@@ -217,9 +215,9 @@ export default function AttendanceCalendar({ programId, userId }: CalendarProps)
               <button
                 key={day}
                 onClick={() => record && setSelectedDate(record)}
-                className={`w-9 h-9 flex items-center justify-center rounded-full font-black text-[13px] transition-all border-2 ${
-                  status === "present" ? "bg-white text-green-600 border-green-500 shadow-[0_2px_8px_rgba(34,197,94,0.2)]" :
-                  status === "absent" ? "bg-white text-red-500 border-red-500 shadow-[0_2px_8px_rgba(239,68,68,0.2)]" :
+                className={`w-8 h-8 flex items-center justify-center rounded-full font-black text-[11px] transition-all border-2 ${
+                  status === "present" ? "bg-white text-green-600 border-green-500 shadow-sm" :
+                  status === "absent" ? "bg-white text-red-500 border-red-500 shadow-sm" :
                   "bg-white text-slate-900 border-slate-50"
                 } ${status === "none" ? "cursor-default border-transparent" : "cursor-pointer hover:border-slate-300 active:scale-90"}`}
               >

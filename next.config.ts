@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
     ],
   },
   
+  devIndicators: {
+    appIsrStatus: false,
+    buildActivity: false,
+  },
   serverExternalPackages: ['socket.io', 'socket.io-client'],
   poweredByHeader: false,
   async headers() {

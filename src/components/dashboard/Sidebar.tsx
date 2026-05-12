@@ -35,75 +35,38 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="w-full sm:w-20 md:w-24 lg:w-[120px] flex-shrink-0 h-20 sm:h-screen sm:min-h-screen flex flex-row sm:flex-col items-center justify-around sm:justify-start px-2 sm:px-0 fixed bottom-0 sm:top-0 left-0 z-50 overflow-x-auto sm:overflow-visible shadow-[0_-4px_10px_rgba(0,0,0,0.1)] sm:shadow-none transition-all duration-300"
-      style={{ background: "#88A77B" }}
+      className="w-full sm:w-20 lg:w-32 flex flex-row sm:flex-col items-center justify-around sm:justify-start px-2 py-4 sm:py-8 fixed bottom-0 sm:top-0 sm:left-0 z-50 bg-[#88A77B] shadow-xl sm:h-screen transition-all duration-300"
     >
       
-      {/* Logo Area */}
-      <div className="hidden sm:flex items-center justify-center w-full py-8 mb-4 border-b border-white/10 overflow-hidden">
-        <Link href="/home">
-          <h1 className="font-black text-[18px] leading-none tracking-tighter whitespace-nowrap px-4 py-2 bg-white/10 rounded-full">
-            <span style={{ color: "#F97316" }}>Igire</span>
-            <span style={{ color: "#14532D" }}>Verify</span>
-          </h1>
+      {/* Logo Pill */}
+      <div className="hidden sm:flex items-center justify-center w-full mb-10 px-2">
+        <Link href="/home" className="bg-white/10 px-3 py-2 rounded-full backdrop-blur-sm transition-transform hover:scale-105 flex items-center justify-center whitespace-nowrap">
+          <span className="font-black text-xs lg:text-sm" style={{ color: '#F97316' }}>Igire</span>
+          <span className="font-black text-xs lg:text-sm" style={{ color: '#14532D' }}>Verify</span>
         </Link>
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 flex flex-row sm:flex-col gap-4 sm:gap-8 w-full sm:w-auto items-center sm:items-stretch justify-center sm:justify-start px-1 sm:px-2">
+      <nav className="flex-1 flex flex-row sm:flex-col gap-2 sm:gap-6 w-full sm:w-auto items-center justify-center sm:justify-start px-2">
         {navItems.map((item) => {
           const safePathname = pathname || "";
           const isActive = safePathname === item.href || (item.href !== "/dashboard/participant" && safePathname.startsWith(item.href));
           
-          if (["History", "Notifications", "Help"].includes(item.label)) {
-            return (
-              <button
-                key={item.href}
-                onClick={() => toast.custom(() => (
-                  <div className="bg-white border border-[#7FAF8C]/30 rounded-xl shadow-xl p-4 flex gap-4 w-[min(360px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] items-start relative overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F97316]"></div>
-                    <div className="bg-[#7FAF8C]/20 p-2 rounded-full shrink-0 mt-0.5">
-                      <NavIcon name={item.icon} active={true} customColor="#14532D" />
-                    </div>
-                    <div className="flex flex-col gap-1.5 pt-0.5">
-                      <h3 className="font-extrabold text-[#14532D] text-[15px] tracking-tight">{item.label} Feature Coming Soon</h3>
-                      <p className="text-slate-600 text-[13px] font-medium leading-relaxed">We are currently building an amazing experience for this section. Please check back soon!</p>
-                    </div>
-                  </div>
-                ))}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl sm:rounded-2xl transition-all duration-200 min-w-[56px] sm:min-w-fit md:min-w-fit min-h-[56px] sm:min-h-fit
-                         ${isActive ? "bg-white shadow-md text-[#14532D]" : "hover:bg-white/10 text-white"}`}
-                title={item.label}
-              >
-                <div className="">
-                  <NavIcon name={item.icon} active={isActive} />
-                </div>
-                <span className="sm:hidden text-[9px] font-medium leading-none whitespace-nowrap mt-1 opacity-80">{item.label}</span>
-              </button>
-            );
-          }
-
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center p-2 rounded-xl sm:rounded-2xl transition-all duration-200 min-w-[56px] sm:min-w-fit md:min-w-fit min-h-[56px] sm:min-h-fit
-                         ${isActive ? "bg-white shadow-md" : "hover:bg-white/10"}`}
+              className={`w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center transition-all duration-300
+                         ${isActive ? "bg-white shadow-lg scale-110" : "hover:bg-white/10"}`}
               title={item.label}
             >
-              <div className="">
-                <NavIcon name={item.icon} active={isActive} />
-              </div>
-              <span className="sm:hidden text-[9px] text-white font-medium leading-none whitespace-nowrap mt-1 opacity-80">{item.label}</span>
+              <NavIcon name={item.icon} active={isActive} customColor={isActive ? "#14532D" : "#FFFFFF"} />
+              <span className="sm:hidden text-[9px] font-black uppercase tracking-widest mt-1 opacity-80">{item.label.substring(0, 4)}</span>
             </Link>
           );
+
         })}
       </nav>
-
-      {/* Bottom Spacer */}
-      <div className="hidden sm:flex items-center justify-center w-full pb-10 mt-auto">
-      </div>
-
     </aside>
 
   );

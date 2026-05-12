@@ -50,7 +50,7 @@ export default function AttendanceLandingPage() {
     <div className="min-h-screen bg-white flex flex-col-reverse md:flex-row">
       <Sidebar />
 
-      <div className="flex-1 w-full sm:ml-20 md:ml-24 lg:ml-[120px] pb-24 md:pb-0">
+      <div className="flex-1 w-full sm:ml-20 md:ml-24 lg:ml-32 pb-24 md:pb-0">
         <TopBar {...userData} />
 
         <main className="px-4 md:px-12 py-10 bg-white min-h-[calc(100vh-90px)] flex flex-col items-center">

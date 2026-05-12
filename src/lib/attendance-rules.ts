@@ -79,38 +79,41 @@ export function getAttendanceWindowMessage(
 
 
   if (!rules.days.includes(dayName)) {
-    return `Today (${dayName}) is not a scheduled working day for your program. Please check back during scheduled sessions: ${rules.days.join(", ")}.`;
+    return `Today (${dayName}) is not a scheduled working day for your program. Please check back during scheduled sessions.`;
   }
 
   if (type === 'checkin') {
     if (timeStr < rules.checkInStart) {
-      return `Check-in opens at ${toDisplayTime(rules.checkInStart)}. Please return during the scheduled time window.`;
+      return `Check-in hasn't opened yet. It starts at ${toDisplayTime(rules.checkInStart)}.`;
     }
     if (timeStr > rules.checkInEnd) {
-      return `Check-in window closed at ${toDisplayTime(rules.checkInEnd)}. Please check in during the scheduled window (${toDisplayTime(rules.checkInStart)} - ${toDisplayTime(rules.checkInEnd)}).`;
+      return `The check-in window closed at ${toDisplayTime(rules.checkInEnd)}.`;
     }
   } else {
 
     if (timeStr < rules.classStart) {
-      return `It's too early to check out. Session officially started at ${toDisplayTime(rules.classStart)}.`;
+      return `Session officially started at ${toDisplayTime(rules.classStart)}. It's too early for check-out.`;
     }
     if (timeStr < rules.checkOutStart) {
-      return `Check-out window hasn't opened yet. It starts at ${toDisplayTime(rules.checkOutStart)}. Please stay until the session ends.`;
+      return `The check-out window opens at ${toDisplayTime(rules.checkOutStart)}. Please remain until the session concludes.`;
     }
     if (timeStr > rules.checkOutEnd) {
-      return `Check-out is only allowed between ${toDisplayTime(rules.checkOutStart)} and ${toDisplayTime(rules.checkOutEnd)}. Please return during the scheduled window.`;
+      return `The check-out window has already closed (${toDisplayTime(rules.checkOutEnd)}).`;
     }
   }
   return null;
 }
 
+import { toZonedTime } from "date-fns-tz";
+
 export function isWindowOpenNow(
   type: 'checkin' | 'checkout',
-  rules: AttendanceRules | null | undefined
+  rules: AttendanceRules | null | undefined,
+  timeZone: string = 'Africa/Kigali'
 ): { isOpen: boolean; message: string | null } {
   if (!rules) return { isOpen: true, message: null }; 
   
-  const now = new Date();
+  const now = toZonedTime(new Date(), timeZone);
   const message = getAttendanceWindowMessage(type, rules, now);
   
   return {

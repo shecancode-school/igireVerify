@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getAuthClaimsFromCookies } from "@/lib/auth";
 import { getDb } from "@/lib/mongodb";
-import { STAFF_RULES } from "@/lib/attendance-rules";
+import { STAFF_RULES, isWindowOpenNow } from "@/lib/attendance-rules";
 
 
 export async function GET() {
@@ -64,6 +64,21 @@ export async function GET() {
       checkInWindow = `${STAFF_RULES.checkInStart} - ${STAFF_RULES.checkInEnd} (Staff Default)`;
     }
 
+    // Calculate window open/closed status
+    let programRules = isStaffRole ? STAFF_RULES : null;
+    let tz = 'Africa/Kigali';
+
+    if (programIdStr && ObjectId.isValid(programIdStr) && !["staff-unassigned", "ceo-global", "admin-sys"].includes(programIdStr)) {
+      const programDoc = await db.collection("programs").findOne({ _id: new ObjectId(programIdStr) });
+      if (programDoc) {
+        programRules = programDoc.schedule;
+        if (programDoc.timeZone) tz = programDoc.timeZone;
+      }
+    }
+
+    const checkInStatus = isWindowOpenNow('checkin', programRules, tz);
+    const checkOutStatus = isWindowOpenNow('checkout', programRules, tz);
+
     return NextResponse.json({
       userName: user.name,
       programName,
@@ -75,6 +90,10 @@ export async function GET() {
       email: user.email,
       profilePhotoUrl: user.profilePhotoUrl || null,
       checkInWindow,
+      isCheckInOpen: checkInStatus.isOpen,
+      checkInMessage: checkInStatus.message,
+      isCheckOutOpen: checkOutStatus.isOpen,
+      checkOutMessage: checkOutStatus.message,
       isFaceRegistered: user.isFaceRegistered || false,
       faceDescriptor: user.faceDescriptor || null,
     });

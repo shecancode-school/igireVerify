@@ -165,16 +165,27 @@ export default function TopBar({
                     <p className="text-[15px] font-black text-gray-900 leading-none mb-1.5">{userName}</p>
                     <p className="text-[11px] text-[#22c55e] font-black uppercase tracking-widest">{userPosition || programName || userRole}</p>
                   </div>
-                  <div className="p-2 space-y-1">
-                    <a href={profileLink} className="flex items-center gap-4 px-5 py-4 text-[14px] font-bold text-gray-600 hover:bg-gray-50 rounded-[20px] transition-colors">
-                      <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>
-                      Profile Management
+                  {/* Menu Items */}
+                  <div className="py-2">
+                    <a href={profileLink} className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      </div>
+                      My Profile
+                    </a>
+                    <a href={userRole === 'participant' ? '/dashboard/participant/help' : '/dashboard/staff?tab=help'} className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium">
+                      <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      </div>
+                      Help Center
                     </a>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-4 px-5 py-4 text-[14px] font-black text-red-600 hover:bg-red-50 rounded-[20px] transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-bold text-left"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                      <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                      </div>
                       Sign Out
                     </button>
                   </div>

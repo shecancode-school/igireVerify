@@ -130,6 +130,14 @@ export default function StaffDashboardClient() {
   const [manualBusy, setManualBusy] = useState(false);
   const [manualMessage, setManualMessage] = useState("");
 
+  // Notifications State
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  // History State (Staff's own attendance)
+  const [myHistory, setMyHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
   // Specialized Widget States
   const [activeSession, setActiveSession] = useState<{ programId: string, name: string } | null>(null);
   const [studentSearch, setStudentSearch] = useState("");
@@ -235,6 +243,54 @@ export default function StaffDashboardClient() {
   useEffect(() => {
     if (activeTab === "live") loadActivity();
   }, [activeTab, loadActivity]);
+
+  const loadNotifications = useCallback(async () => {
+    setNotifLoading(true);
+    try {
+      const res = await fetch("/api/notifications");
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setNotifLoading(false);
+    }
+  }, []);
+
+  const markAsRead = async (id: string) => {
+    try {
+      await fetch("/api/notifications/read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notificationId: id }),
+      });
+      loadNotifications();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const loadMyHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch("/api/attendance/stats"); // This usually returns user stats/history
+      if (res.ok) {
+        const data = await res.json();
+        setMyHistory(data.history || []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "notifications") loadNotifications();
+    if (activeTab === "history") loadMyHistory();
+  }, [activeTab, loadNotifications, loadMyHistory]);
 
   useEffect(() => {
     if (activeTab === "programs") loadRoster();
@@ -451,7 +507,7 @@ export default function StaffDashboardClient() {
   return (
     <div className="flex min-h-screen bg-[#F5F5F5] w-full overflow-x-hidden">
       <StaffSidebar />
-      <div className="flex-1 min-w-0 flex flex-col sm:ml-20 md:ml-24 lg:ml-[120px] min-h-[100dvh] pb-24 lg:pb-0">
+      <div className="flex-1 min-w-0 flex flex-col sm:ml-20 md:ml-24 lg:ml-32 min-h-[100dvh] pb-24 lg:pb-0">
         <TopBar
           userName={topUser?.userName}
           programName={topUser?.programName}
@@ -618,13 +674,15 @@ export default function StaffDashboardClient() {
                     {r === "today" ? "Today" : r === "week" ? "7 days" : "This month"}
                   </button>
                 ))}
-                <button
-                  type="button"
-                  onClick={exportTableCsv}
-                  className="px-4 py-2 rounded-full text-sm font-semibold bg-[#C47D0E] text-white ml-auto"
-                >
-                  Export table CSV
-                </button>
+                {["admin", "super-admin"].includes(topUser?.role || "") && (
+                  <button
+                    type="button"
+                    onClick={exportTableCsv}
+                    className="px-4 py-2 rounded-full text-sm font-semibold bg-[#C47D0E] text-white ml-auto"
+                  >
+                    Export table CSV
+                  </button>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-2 mb-8">
@@ -1009,26 +1067,34 @@ export default function StaffDashboardClient() {
                     ))}
                   </select>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    disabled={repBusy}
-                    onClick={() => runReport("csv")}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#16A34A] text-white font-semibold text-sm disabled:opacity-50"
-                  >
-                    <Download className="w-4 h-4" />
-                    Excel / CSV
-                  </button>
-                  <button
-                    type="button"
-                    disabled={repBusy}
-                    onClick={downloadReportPdf}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#C47D0E] text-white font-semibold text-sm disabled:opacity-50"
-                  >
-                    <FileText className="w-4 h-4" />
-                    PDF
-                  </button>
-                </div>
+                {["admin", "super-admin"].includes(topUser?.role || "") ? (
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      disabled={repBusy}
+                      onClick={() => runReport("csv")}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#16A34A] text-white font-semibold text-sm disabled:opacity-50"
+                    >
+                      <Download className="w-4 h-4" />
+                      Excel / CSV
+                    </button>
+                    <button
+                      type="button"
+                      disabled={repBusy}
+                      onClick={downloadReportPdf}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#C47D0E] text-white font-semibold text-sm disabled:opacity-50"
+                    >
+                      <FileText className="w-4 h-4" />
+                      PDF
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                    <p className="text-sm text-amber-700 font-medium">
+                      Reports are restricted to System Administrators. If you need a custom report, please contact the HR department.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1164,6 +1230,123 @@ export default function StaffDashboardClient() {
                 >
                   {manualBusy ? "Saving..." : "Save manual attendance"}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "notifications" && (
+            <div className="space-y-6 max-w-4xl">
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight">Notifications</h1>
+                <button onClick={loadNotifications} className="text-xs font-black uppercase text-[#16A34A] tracking-widest hover:underline">Refresh</button>
+              </div>
+              <div className="space-y-4">
+                {notifLoading ? (
+                  <p className="text-center py-12 text-slate-400 font-medium italic">Loading communications...</p>
+                ) : notifications.length === 0 ? (
+                  <div className="bg-white rounded-[32px] p-16 text-center border border-slate-100 shadow-sm">
+                    <Bell className="w-12 h-12 mx-auto mb-4 text-slate-200" />
+                    <p className="text-slate-500 font-medium italic">No notifications at this time.</p>
+                  </div>
+                ) : (
+                  notifications.map((n) => (
+                    <div key={n._id} className={`p-6 rounded-[28px] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-md ${!n.readBy?.includes(topUser?.userName) ? 'border-l-4 border-l-[#16A34A]' : ''}`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-bold text-slate-800">{n.title}</h3>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          {format(new Date(n.createdAt), "MMM d, HH:mm")}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-600 leading-relaxed mb-4">{n.message}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black text-[#16A34A] uppercase tracking-widest">From: {n.senderName}</span>
+                        {!n.readBy?.includes(topUser?.userName) && (
+                          <button onClick={() => markAsRead(n._id)} className="text-[10px] font-black uppercase text-slate-400 hover:text-[#16A34A] tracking-widest transition-colors">Mark as read</button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "history" && (
+            <div className="space-y-6 max-w-4xl">
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Personal Attendance History</h1>
+              <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-900 text-white">
+                      <th className="px-6 py-4 text-left font-black uppercase tracking-widest text-[10px]">Date</th>
+                      <th className="px-6 py-4 text-center font-black uppercase tracking-widest text-[10px]">Check-in</th>
+                      <th className="px-6 py-4 text-center font-black uppercase tracking-widest text-[10px]">Check-out</th>
+                      <th className="px-6 py-4 text-center font-black uppercase tracking-widest text-[10px]">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {historyLoading ? (
+                      <tr><td colSpan={4} className="p-12 text-center text-slate-400 italic">Loading records...</td></tr>
+                    ) : myHistory.length === 0 ? (
+                      <tr><td colSpan={4} className="p-12 text-center text-slate-400 italic">No attendance records found.</td></tr>
+                    ) : (
+                      myHistory.map((h) => (
+                        <tr key={h._id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-6 py-4 font-bold text-slate-700">{format(new Date(h.date), "MMM d, yyyy")}</td>
+                          <td className="px-6 py-4 text-center text-slate-600 font-medium">{h.checkInTime ? format(new Date(h.checkInTime), "HH:mm") : "—"}</td>
+                          <td className="px-6 py-4 text-center text-slate-600 font-medium">{h.checkOutTime ? format(new Date(h.checkOutTime), "HH:mm") : "—"}</td>
+                          <td className="px-6 py-4 text-center">
+                            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${h.checkInStatus === 'on-time' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                              {h.checkInStatus || "Present"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "help" && (
+            <div className="space-y-6 max-w-3xl">
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Staff Support Portal</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm">
+                  <HelpCircle className="w-10 h-10 text-[#16A34A] mb-4" />
+                  <h3 className="font-bold text-slate-800 mb-2">Technical Issues</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed mb-6">Having trouble with AI facial recognition or GPS location? Our team is here to help.</p>
+                  <button className="w-full py-4 bg-[#16A34A] text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-500/20 hover:-translate-y-1 transition-all">Submit Ticket</button>
+                </div>
+                <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm">
+                  <Activity className="w-10 h-10 text-[#C47D0E] mb-4" />
+                  <h3 className="font-bold text-slate-800 mb-2">Policy Questions</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed mb-6">Need clarification on check-in windows, late policies, or manual adjustments?</p>
+                  <button className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-slate-900/20 hover:-translate-y-1 transition-all">Contact HR</button>
+                </div>
+              </div>
+              <div className="bg-emerald-900 rounded-[32px] p-10 text-white relative overflow-hidden">
+                <div className="relative z-10">
+                   <h2 className="text-xl font-bold mb-4">Quick FAQ</h2>
+                   <div className="space-y-4">
+                      <details className="group border-b border-white/10 pb-4">
+                         <summary className="font-bold cursor-pointer list-none flex justify-between items-center">
+                            How do I register my face?
+                            <span className="group-open:rotate-180 transition-transform">↓</span>
+                         </summary>
+                         <p className="mt-3 text-sm text-emerald-100 leading-relaxed opacity-80">Go to Profile Management in the top right menu and click "Secure Biometric Anchor" to enroll.</p>
+                      </details>
+                      <details className="group border-b border-white/10 pb-4">
+                         <summary className="font-bold cursor-pointer list-none flex justify-between items-center">
+                            What if my GPS is inaccurate?
+                            <span className="group-open:rotate-180 transition-transform">↓</span>
+                         </summary>
+                         <p className="mt-3 text-sm text-emerald-100 leading-relaxed opacity-80">Ensure high-accuracy mode is enabled on your device and you are not behind a thick concrete wall.</p>
+                      </details>
+                   </div>
+                </div>
+                <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
               </div>
             </div>
           )}

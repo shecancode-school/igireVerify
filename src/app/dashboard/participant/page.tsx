@@ -53,7 +53,7 @@ export default async function ParticipantDashboard() {
 
       <Sidebar />
 
-      <div className="flex flex-1 flex-col min-w-0 sm:ml-20 md:ml-24 lg:ml-[120px] pb-24 sm:pb-0">
+      <div className="flex flex-1 flex-col min-w-0 sm:ml-20 md:ml-24 lg:ml-32 pb-24 sm:pb-0">
 
         <TopBar
           userName={userData.userName}

@@ -98,6 +98,7 @@ async function seed() {
     console.error("Seeding failed:", error);
   } finally {
     await client.close();
+    
   }
 }
 
