@@ -11,7 +11,10 @@ export async function GET() {
     const programs = db.collection("programs");
 
     const programList = await programs
-      .find({ isActive: true })
+      .find({ 
+        isActive: true,
+        endDate: { $gte: new Date() }
+      })
       .project({ _id: 1, name: 1, code: 1 }) // Only return safe, necessary fields
       .sort({ createdAt: -1 })
       .toArray();

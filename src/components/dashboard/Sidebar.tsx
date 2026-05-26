@@ -8,21 +8,36 @@ import { toast } from "sonner";
 export default function Sidebar() {
   const pathname = usePathname();
   const [userInitial, setUserInitial] = useState("U");
+  const [hasUnread, setHasUnread] = useState(false);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndNotifications = async () => {
       try {
         const response = await fetch("/api/auth/me");
         if (response.ok) {
           const data = await response.json();
           const name = data.name || data.userName || data.full_name || "User";
           setUserInitial(name.charAt(0).toUpperCase());
+
+          const userId = data.userId || data.id || data._id;
+          if (userId) {
+            const notifRes = await fetch("/api/notifications");
+            if (notifRes.ok) {
+              const notifData = await notifRes.json();
+              const notifications = notifData.notifications || [];
+              const unread = notifications.some((n: any) => {
+                const readByArr = n.readBy || [];
+                return !readByArr.some((id: any) => String(id) === String(userId));
+              });
+              setHasUnread(unread);
+            }
+          }
         }
       } catch (error) {
         console.error("Sidebar fetch error:", error);
       }
     };
-    fetchUser();
+    fetchUserAndNotifications();
   }, []);
 
   const navItems = [
@@ -49,50 +64,24 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      {/* Navigation Items */}
       <nav className="flex-1 flex flex-row sm:flex-col gap-4 sm:gap-8 w-full sm:w-auto items-center sm:items-stretch justify-center sm:justify-start px-1 sm:px-2">
         {navItems.map((item) => {
           const safePathname = pathname || "";
           const isActive = safePathname === item.href || (item.href !== "/dashboard/participant" && safePathname.startsWith(item.href));
           
-          if (["History", "Notifications", "Help"].includes(item.label)) {
-            return (
-              <button
-                key={item.href}
-                onClick={() => toast.custom(() => (
-                  <div className="bg-white border border-[#7FAF8C]/30 rounded-xl shadow-xl p-4 flex gap-4 w-[min(360px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] items-start relative overflow-hidden">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F97316]"></div>
-                    <div className="bg-[#7FAF8C]/20 p-2 rounded-full shrink-0 mt-0.5">
-                      <NavIcon name={item.icon} active={true} customColor="#14532D" />
-                    </div>
-                    <div className="flex flex-col gap-1.5 pt-0.5">
-                      <h3 className="font-extrabold text-[#14532D] text-[15px] tracking-tight">{item.label} Feature Coming Soon</h3>
-                      <p className="text-slate-600 text-[13px] font-medium leading-relaxed">We are currently building an amazing experience for this section. Please check back soon!</p>
-                    </div>
-                  </div>
-                ))}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl sm:rounded-2xl transition-all duration-200 min-w-[56px] sm:min-w-fit md:min-w-fit min-h-[56px] sm:min-h-fit
-                         ${isActive ? "bg-white shadow-md text-[#14532D]" : "hover:bg-white/10 text-white"}`}
-                title={item.label}
-              >
-                <div className="">
-                  <NavIcon name={item.icon} active={isActive} />
-                </div>
-                <span className="sm:hidden text-[9px] font-medium leading-none whitespace-nowrap mt-1 opacity-80">{item.label}</span>
-              </button>
-            );
-          }
-
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center p-2 rounded-xl sm:rounded-2xl transition-all duration-200 min-w-[56px] sm:min-w-fit md:min-w-fit min-h-[56px] sm:min-h-fit
+              className={`flex flex-col items-center justify-center p-2 rounded-xl sm:rounded-2xl transition-all duration-200 min-w-[56px] sm:min-w-fit md:min-w-fit min-h-[56px] sm:min-h-fit relative
                          ${isActive ? "bg-white shadow-md" : "hover:bg-white/10"}`}
               title={item.label}
             >
-              <div className="">
+              <div className="relative">
                 <NavIcon name={item.icon} active={isActive} />
+                {item.icon === "bell" && hasUnread && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 border border-white rounded-full animate-pulse z-10"></span>
+                )}
               </div>
               <span className="sm:hidden text-[9px] text-white font-medium leading-none whitespace-nowrap mt-1 opacity-80">{item.label}</span>
             </Link>

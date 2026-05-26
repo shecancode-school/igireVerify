@@ -53,11 +53,15 @@ export async function POST(req: NextRequest) {
         
 
         const programs = db.collection("programs");
-        const programExists = await programs.findOne({ _id: resolvedProgramId, isActive: true });
+        const programExists = await programs.findOne({ 
+          _id: resolvedProgramId, 
+          isActive: true,
+          endDate: { $gte: new Date() }
+        });
         
         if (!programExists) {
           return NextResponse.json(
-            { error: "Selected program no longer exists or is inactive" },
+            { error: "Selected program no longer exists, is inactive, or has ended" },
             { status: 400 }
           );
         }
@@ -66,6 +70,7 @@ export async function POST(req: NextRequest) {
         const programs = db.collection("programs");
         const program = await programs.findOne({
           isActive: true,
+          endDate: { $gte: new Date() },
           $or: [
             { code: programLookupValue.toLowerCase() },
             { name: { $regex: `^${programLookupValue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } },
