@@ -40,7 +40,7 @@ function appBaseUrl() {
   return (
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.APP_URL ||
-    "https://verify.igire.vercel.app"
+    "https://verify.igirerwanda.org"
   );
 }
 

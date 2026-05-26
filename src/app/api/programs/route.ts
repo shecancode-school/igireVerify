@@ -16,8 +16,15 @@ export async function GET() {
     const db = await getDb();
     const programs = db.collection("programs");
 
+    const query: any = { isActive: true };
+
+    // Do not expose ended programs to participants
+    if (claims.role === "participant") {
+      query.endDate = { $gte: new Date() };
+    }
+
     const programList = await programs
-      .find({ isActive: true })
+      .find(query)
       .sort({ createdAt: -1 })
       .toArray();
 
