@@ -1,0 +1,21 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "dashboard",
+    "main",
+    "origin",
+    "phasetwo"
+  ],
+  "parent": {
+    "dashboard": "main",
+    "main": null,
+    "origin": "main",
+    "phasetwo": "main"
+  },
+  "order": [
+    "main",
+    "dashboard",
+    "origin",
+    "phasetwo"
+  ]
+}
